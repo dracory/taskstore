@@ -16,7 +16,7 @@ require (
 	github.com/dracory/req v0.1.0
 	github.com/dracory/sb v0.11.0
 	github.com/dracory/uid v1.7.0
-	github.com/dromara/carbon/v2 v2.6.1
+	github.com/dromara/carbon/v2 v2.6.11
 	github.com/gouniverse/hb v1.87.0
 	github.com/mingrammer/cfmt v1.1.0
 	github.com/spf13/cast v1.9.2
@@ -25,7 +25,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dracory/database v0.3.0 // indirect
-	github.com/go-sql-driver/mysql v1.9.1 // indirect
+	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
