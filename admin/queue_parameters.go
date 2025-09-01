@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/form"
+	"github.com/dracory/bs"
+	"github.com/dracory/form"
+	"github.com/dracory/req"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 )
 
 func queueParameters(logger slog.Logger, store taskstore.StoreInterface) *queueParametersCeontroller {
@@ -132,7 +132,7 @@ func (c *queueParametersCeontroller) modal(data queueParametersCeontrollerData) 
 func (c *queueParametersCeontroller) prepareData(r *http.Request) (data queueParametersCeontrollerData, err error) {
 	data.request = r
 
-	data.queueID = utils.Req(r, "queue_id", "")
+	data.queueID = req.GetStringTrimmed(r, "queue_id")
 
 	if data.queueID == "" {
 		return data, errors.New("queue_id is required")

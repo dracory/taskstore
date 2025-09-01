@@ -3,11 +3,12 @@ package admin
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	urlpkg "net/url"
 
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/taskstore"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
@@ -157,4 +158,17 @@ func breadcrumbsUI(breadcrumbs []Breadcrumb) hb.TagInterface {
 		Child(ol)
 
 	return nav
+}
+
+// isJSON is naive implementation for superficial, rough and fast checking for JSON
+func isJSON(str string) bool {
+	if strings.HasPrefix(str, "{") && strings.HasSuffix(str, "}") {
+		return true
+	}
+
+	if strings.HasPrefix(str, "[") && strings.HasSuffix(str, "]") {
+		return true
+	}
+
+	return false
 }

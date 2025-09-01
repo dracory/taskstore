@@ -1,18 +1,18 @@
 package admin
 
 import (
+	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/form"
+	"github.com/dracory/bs"
+	"github.com/dracory/form"
+	"github.com/dracory/req"
+	"github.com/dracory/sb"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/maputils"
-	"github.com/gouniverse/sb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 	"github.com/samber/lo"
+	"github.com/spf13/cast"
 )
 
 func queueCreate(logger slog.Logger, store taskstore.StoreInterface) *queueCreateController {
@@ -50,7 +50,7 @@ func (c *queueCreateController) formSubmitted(data queueCreateControllerData) hb
 		data.formParameters = "{}"
 	}
 
-	if !utils.IsJSON(data.formParameters) {
+	if !isJSON(data.formParameters) {
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task Parameters is not valid JSON", Position: "top-right"})
 	}
 
@@ -65,14 +65,13 @@ func (c *queueCreateController) formSubmitted(data queueCreateControllerData) hb
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task not found", Position: "top-right"})
 	}
 
-	taskParametersAny, err := utils.FromJSON(data.formParameters, map[string]interface{}{})
-
-	if err != nil {
+	taskParametersAny := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(data.formParameters), &taskParametersAny); err != nil {
 		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
 
-	taskParametersMap := maputils.AnyToMapStringAny(taskParametersAny)
+	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
 	_, err = c.store.TaskEnqueueByAlias(task.Alias(), taskParametersMap)
 
@@ -195,9 +194,9 @@ func (c *queueCreateController) modalQueueCreate(data queueCreateControllerData)
 
 func (c *queueCreateController) prepareData(r *http.Request) (data queueCreateControllerData, err error) {
 	data.request = r
-	data.formParameters = strings.TrimSpace(utils.Req(r, "parameters", ""))
-	data.formStatus = strings.TrimSpace(utils.Req(r, "status", ""))
-	data.formTaskID = strings.TrimSpace(utils.Req(r, "task_id", ""))
+	data.formParameters = req.GetStringTrimmed(r, "parameters")
+	data.formStatus = req.GetStringTrimmed(r, "status")
+	data.formTaskID = req.GetStringTrimmed(r, "task_id")
 
 	if data.taskList, err = c.store.TaskList(taskstore.TaskQuery().
 		SetOrderBy(taskstore.COLUMN_TITLE).

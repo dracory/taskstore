@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/cdn"
+	"github.com/dracory/bs"
+	"github.com/dracory/cdn"
+	"github.com/dracory/req"
+	"github.com/dracory/sb"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/sb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
@@ -324,20 +324,19 @@ func (controller *taskManagerController) prepareData(r *http.Request) (data task
 	var err error
 	initialPerPage := 20
 	data.request = r
-	data.action = utils.Req(r, "action", "")
-	data.taskID = utils.Req(r, "task_id", "")
+	data.action = req.GetStringTrimmed(r, "action")
+	data.taskID = req.GetStringTrimmed(r, "task_id")
 
-	data.page = utils.Req(r, "page", "0")
+	data.page = req.GetStringTrimmed(r, "page")
 	data.pageInt = cast.ToInt(data.page)
-	data.perPage = cast.ToInt(utils.Req(r, "per_page", cast.ToString(initialPerPage)))
-	data.sortOrder = utils.Req(r, "sort", sb.DESC)
-	data.sortBy = utils.Req(r, "by", taskstore.COLUMN_CREATED_AT)
-
-	data.formCreatedFrom = utils.Req(r, "filter_created_from", "")
-	data.formCreatedTo = utils.Req(r, "filter_created_to", "")
-	data.formName = utils.Req(r, "filter_name", "")
-	data.formTaskID = utils.Req(r, "filter_task_id", "")
-	data.formStatus = utils.Req(r, "filter_status", "")
+	data.perPage = cast.ToInt(req.GetStringTrimmedOr(r, "per_page", cast.ToString(initialPerPage)))
+	data.sortOrder = req.GetStringTrimmedOr(r, "sort", sb.DESC)
+	data.sortBy = req.GetStringTrimmedOr(r, "by", taskstore.COLUMN_CREATED_AT)
+	data.formCreatedFrom = req.GetStringTrimmed(r, "filter_created_from")
+	data.formCreatedTo = req.GetStringTrimmed(r, "filter_created_to")
+	data.formName = req.GetStringTrimmed(r, "filter_name")
+	data.formTaskID = req.GetStringTrimmed(r, "filter_task_id")
+	data.formStatus = req.GetStringTrimmed(r, "filter_status")
 
 	data.recordList, data.recordCount, err = controller.fetchRecordList(data)
 

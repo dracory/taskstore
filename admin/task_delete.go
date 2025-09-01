@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/form"
+	"github.com/dracory/bs"
+	"github.com/dracory/form"
+	"github.com/dracory/req"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 	"github.com/spf13/cast"
 )
 
@@ -179,7 +179,7 @@ func (c *taskDeleteCeontroller) modal(data taskDeleteCeontrollerData) *hb.Tag {
 func (c *taskDeleteCeontroller) prepareData(r *http.Request) (data taskDeleteCeontrollerData, err error) {
 	data.request = r
 
-	data.taskID = utils.Req(r, "task_id", "")
+	data.taskID = req.GetStringTrimmed(r, "task_id")
 
 	if data.taskID == "" {
 		return data, errors.New("task_id is required")

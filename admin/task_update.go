@@ -5,11 +5,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/form"
+	"github.com/dracory/bs"
+	"github.com/dracory/form"
+	"github.com/dracory/req"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 )
 
 func taskUpdate(logger slog.Logger, store taskstore.StoreInterface) *taskUpdateController {
@@ -240,7 +240,7 @@ func (c *taskUpdateController) modal(data taskUpdateControllerData) *hb.Tag {
 func (c *taskUpdateController) prepareData(r *http.Request) (data taskUpdateControllerData, err error) {
 	data.request = r
 
-	data.taskID = utils.Req(r, "task_id", "")
+	data.taskID = req.GetStringTrimmed(r, "task_id")
 
 	if data.taskID == "" {
 		return data, errors.New("task_id is required")
@@ -264,10 +264,10 @@ func (c *taskUpdateController) prepareData(r *http.Request) (data taskUpdateCont
 	}
 
 	if r.Method == http.MethodPost {
-		data.formAlias = utils.Req(r, "alias", "")
-		data.formDescription = utils.Req(r, "description", "")
-		data.formStatus = utils.Req(r, "status", "")
-		data.formTitle = utils.Req(r, "title", "")
+		data.formAlias = req.GetStringTrimmed(r, "alias")
+		data.formDescription = req.GetStringTrimmed(r, "description")
+		data.formStatus = req.GetStringTrimmed(r, "status")
+		data.formTitle = req.GetStringTrimmed(r, "title")
 	}
 
 	return data, nil

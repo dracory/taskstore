@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
-	"github.com/gouniverse/sb"
-	"github.com/gouniverse/utils"
 	"github.com/mingrammer/cfmt"
+	"github.com/spf13/cast"
 )
 
 // Store defines a session store
@@ -223,13 +223,13 @@ func (store *Store) QueuedTaskProcess(queuedTask QueueInterface) (bool, error) {
 // TaskExecuteCli - CLI tool to find a task by its alias and execute its handler
 // - alias "list" is reserved. it lists all the available commands
 func (store *Store) TaskExecuteCli(alias string, args []string) bool {
-	argumentsMap := utils.ArgsToMap(args)
+	argumentsMap := argsToMap(args)
 	cfmt.Infoln("Executing task: ", alias, " with arguments: ", argumentsMap)
 
 	// Lists the available tasks
 	if alias == "list" {
 		for index, taskHandler := range store.TaskHandlerList() {
-			cfmt.Warningln(utils.ToString(index+1) + ". Task Alias: " + taskHandler.Alias())
+			cfmt.Warningln(cast.ToString(index+1) + ". Task Alias: " + taskHandler.Alias())
 			cfmt.Infoln("    - Task Title: " + taskHandler.Title())
 			cfmt.Infoln("    - Task Description: " + taskHandler.Description())
 		}
@@ -292,4 +292,32 @@ func (store *Store) taskHandlerFunc(taskAlias string) func(queuedTask QueueInter
 		store.QueueUpdate(queuedTask)
 		return false
 	}
+}
+
+// argsToMap converts command line arguments to a key value map
+// supports filled (i.e. --user=12) and unfilled (i.e. --force) arguments
+func argsToMap(args []string) map[string]string {
+	kv := map[string]string{}
+	for i := 0; i < len(args); i++ {
+		current := args[i]
+
+		if strings.HasPrefix(current, "--") {
+			if strings.Contains(current, "=") {
+				currentArray := strings.Split(current, "=")
+				kv[currentArray[0][2:]] = currentArray[1]
+			} else {
+				next := ""
+				if len(args) > i+1 {
+					next = args[i+1]
+				}
+
+				if strings.HasPrefix(next, "--") {
+					kv[current[2:]] = ""
+					continue
+				}
+				kv[current[2:]] = next
+			}
+		}
+	}
+	return kv
 }

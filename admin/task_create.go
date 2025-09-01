@@ -4,11 +4,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/form"
+	"github.com/dracory/bs"
+	"github.com/dracory/form"
+	"github.com/dracory/req"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 )
 
 func taskCreate(logger slog.Logger, store taskstore.StoreInterface) *taskCreateController {
@@ -177,10 +177,10 @@ func (c *taskCreateController) modalTaskCreate(data taskCreateControllerData) *h
 
 func (c *taskCreateController) prepareData(r *http.Request) (data taskCreateControllerData, err error) {
 	data.request = r
-	data.formAlias = utils.Req(r, "alias", "")
-	data.formDescription = utils.Req(r, "description", "")
-	data.formStatus = utils.Req(r, "status", "")
-	data.formTitle = utils.Req(r, "title", "")
+	data.formAlias = req.GetStringTrimmed(r, "alias")
+	data.formDescription = req.GetStringTrimmed(r, "description")
+	data.formStatus = req.GetStringTrimmed(r, "status")
+	data.formTitle = req.GetStringTrimmed(r, "title")
 
 	return data, nil
 }

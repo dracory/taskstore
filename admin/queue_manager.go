@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/cdn"
+	"github.com/dracory/bs"
+	"github.com/dracory/cdn"
+	"github.com/dracory/req"
 
-	"github.com/gouniverse/form"
+	"github.com/dracory/form"
+	"github.com/dracory/sb"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/sb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
@@ -564,20 +564,20 @@ func (controller *queueManagerController) prepareData(r *http.Request) (data que
 	var err error
 	initialPerPage := 20
 	data.request = r
-	data.action = utils.Req(r, "action", "")
-	data.queueID = utils.Req(r, "queue_id", "")
+	data.action = req.GetStringTrimmed(r, "action")
+	data.queueID = req.GetStringTrimmed(r, "queue_id")
 
-	data.page = utils.Req(r, "page", "0")
+	data.page = req.GetStringTrimmed(r, "page")
 	data.pageInt = cast.ToInt(data.page)
-	data.perPage = cast.ToInt(utils.Req(r, "per_page", cast.ToString(initialPerPage)))
-	data.sortOrder = utils.Req(r, "sort", sb.DESC)
-	data.sortBy = utils.Req(r, "by", taskstore.COLUMN_CREATED_AT)
+	data.perPage = cast.ToInt(req.GetStringTrimmedOr(r, "per_page", cast.ToString(initialPerPage)))
+	data.sortOrder = req.GetStringTrimmed(r, "sort")
+	data.sortBy = req.GetStringTrimmed(r, "by")
 
-	data.formCreatedFrom = utils.Req(r, "filter_created_from", "")
-	data.formCreatedTo = utils.Req(r, "filter_created_to", "")
-	data.formName = utils.Req(r, "filter_name", "")
-	data.formQueueID = utils.Req(r, "filter_queue_id", "")
-	data.formStatus = utils.Req(r, "filter_status", "")
+	data.formCreatedFrom = req.GetStringTrimmed(r, "filter_created_from")
+	data.formCreatedTo = req.GetStringTrimmed(r, "filter_created_to")
+	data.formName = req.GetStringTrimmed(r, "filter_name")
+	data.formQueueID = req.GetStringTrimmed(r, "filter_queue_id")
+	data.formStatus = req.GetStringTrimmed(r, "filter_status")
 
 	data.recordList, data.recordCount, err = controller.fetchRecordList(data)
 

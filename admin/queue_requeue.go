@@ -1,17 +1,17 @@
 package admin
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/form"
+	"github.com/dracory/bs"
+	"github.com/dracory/form"
+	"github.com/dracory/req"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/maputils"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
+	"github.com/spf13/cast"
 )
 
 func queueRequeue(logger slog.Logger, store taskstore.StoreInterface) *queueRequeueController {
@@ -45,7 +45,7 @@ func (c *queueRequeueController) formSubmitted(data queueRequeueControllerData) 
 		data.formParameters = "{}"
 	}
 
-	if !utils.IsJSON(data.formParameters) {
+	if !isJSON(data.formParameters) {
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task Parameters is not valid JSON", Position: "top-right"})
 	}
 
@@ -60,14 +60,13 @@ func (c *queueRequeueController) formSubmitted(data queueRequeueControllerData) 
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task not found", Position: "top-right"})
 	}
 
-	taskParametersAny, err := utils.FromJSON(data.formParameters, map[string]interface{}{})
-
-	if err != nil {
+	taskParametersAny := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(data.formParameters), &taskParametersAny); err != nil {
 		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
 
-	taskParametersMap := maputils.AnyToMapStringAny(taskParametersAny)
+	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
 	_, err = c.store.TaskEnqueueByAlias(task.Alias(), taskParametersMap)
 
@@ -188,7 +187,7 @@ func (c *queueRequeueController) modal(data queueRequeueControllerData) *hb.Tag 
 
 func (c *queueRequeueController) prepareData(r *http.Request) (data queueRequeueControllerData, err error) {
 	data.request = r
-	data.queueID = strings.TrimSpace(utils.Req(r, "queue_id", ""))
+	data.queueID = req.GetStringTrimmed(r, "queue_id")
 
 	if data.queueID == "" {
 		return data, errors.New("queue_id is required")
@@ -207,7 +206,7 @@ func (c *queueRequeueController) prepareData(r *http.Request) (data queueRequeue
 	}
 
 	if r.Method == http.MethodPost {
-		data.formParameters = strings.TrimSpace(utils.Req(r, "parameters", ""))
+		data.formParameters = req.GetStringTrimmed(r, "parameters")
 	}
 
 	return data, nil

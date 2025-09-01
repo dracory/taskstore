@@ -4,13 +4,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
 
-	"github.com/gouniverse/bs"
-	"github.com/gouniverse/form"
+	"github.com/dracory/bs"
+	"github.com/dracory/form"
+	"github.com/dracory/req"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 )
 
 func queueTaskRestart(logger slog.Logger, store taskstore.StoreInterface) *queueTaskRestartController {
@@ -156,7 +155,7 @@ func (c *queueTaskRestartController) modal(data queueTaskRestartControllerData) 
 
 func (c *queueTaskRestartController) prepareData(r *http.Request) (data queueTaskRestartControllerData, err error) {
 	data.request = r
-	data.queueID = strings.TrimSpace(utils.Req(r, "queue_id", ""))
+	data.queueID = req.GetStringTrimmed(r, "queue_id")
 
 	if data.queueID == "" {
 		return data, errors.New("queue_id is required")

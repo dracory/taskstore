@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/dracory/req"
+	"github.com/dracory/taskstore"
 	"github.com/gouniverse/hb"
-	"github.com/gouniverse/taskstore"
-	"github.com/gouniverse/utils"
 )
 
 type Layout interface {
@@ -68,7 +68,7 @@ type admin struct {
 }
 
 func (a *admin) handler() hb.TagInterface {
-	controller := utils.Req(a.request, "controller", "")
+	controller := req.GetStringTrimmed(a.request, "controller")
 
 	if controller == "" {
 		controller = pathHome

@@ -1,6 +1,6 @@
 package taskstore
 
-import "github.com/gouniverse/sb"
+import "github.com/dracory/sb"
 
 // SqlCreateQueueTable returns a SQL string for creating the Queue table
 func (st *Store) SqlCreateQueueTable() string {
