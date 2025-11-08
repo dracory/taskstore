@@ -7,7 +7,7 @@ import (
 )
 
 func Test_Store_SqlCreateQueueTable(t *testing.T) {
-	store, err := InitStore("test_queue_table_create.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("SqlCreateQueueTable: Error[%v]", err)
 	}

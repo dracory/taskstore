@@ -2,24 +2,26 @@ package taskstore
 
 import (
 	"database/sql"
-	"os"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
-func InitDB(filepath string) *sql.DB {
-	os.Remove(filepath) // remove database
-	dsn := filepath + "?parseTime=true"
-	db, err := sql.Open("sqlite3", dsn)
+func initDB() (*sql.DB, error) {
+	dsn := ":memory:?parseTime=true"
+	db, err := sql.Open("sqlite", dsn)
+
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return db
+	return db, nil
 }
 
-func InitStore(databaseName string) (*Store, error) {
-	db := InitDB(databaseName)
+func initStore() (*Store, error) {
+	db, err := initDB()
+	if err != nil {
+		return nil, err
+	}
 	return NewStore(NewStoreOptions{
 		TaskTableName:      "task",
 		QueueTableName:     "queue",

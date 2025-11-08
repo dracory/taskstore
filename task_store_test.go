@@ -6,7 +6,7 @@ import (
 )
 
 func Test_Store_TaskCreate(t *testing.T) {
-	store, err := InitStore("test_task_create.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueCreate: Error[%v]", err)
 	}
