@@ -19,7 +19,7 @@ func Test_Store_SqlCreateQueueTable(t *testing.T) {
 }
 
 func Test_Store_QueueCreate(t *testing.T) {
-	store, err := InitStore("test_queue_create.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueCreate: Error[%v]", err)
 	}
@@ -45,7 +45,7 @@ func Test_Store_QueueCreate(t *testing.T) {
 }
 
 func Test_Store_QueueDeleteByID(t *testing.T) {
-	store, err := InitStore("test_queue_delete_by_id.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueList: Error[%v]", err)
 	}
@@ -90,7 +90,7 @@ func Test_Store_QueueDeleteByID(t *testing.T) {
 }
 
 func Test_Store_QueueFail(t *testing.T) {
-	store, err := InitStore("test_queue_fail.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueFail: Error[%v]", err)
 	}
@@ -121,7 +121,7 @@ func Test_Store_QueueFail(t *testing.T) {
 }
 
 func Test_Store_QueueFindByID(t *testing.T) {
-	store, err := InitStore("test_queue_find_by_id.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueFindByID: Error[%v]", err)
 	}
@@ -159,7 +159,7 @@ func Test_Store_QueueFindByID(t *testing.T) {
 }
 
 func Test_Store_QueueList(t *testing.T) {
-	store, err := InitStore("test_queue_list.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueList: Error[%v]", err)
 	}
@@ -203,7 +203,7 @@ func Test_Store_QueueList(t *testing.T) {
 }
 
 func Test_Store_QueueSoftDeleteByID(t *testing.T) {
-	store, err := InitStore("test_queue_soft_delete_by_id.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueSoftDeleteByID: Error[%v]", err)
 	}
@@ -244,7 +244,7 @@ func Test_Store_QueueSoftDeleteByID(t *testing.T) {
 }
 
 func Test_Store_QueueSuccess(t *testing.T) {
-	store, err := InitStore("test_queue_success.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueSuccess: Error[%v]", err)
 	}
@@ -274,7 +274,7 @@ func Test_Store_QueueSuccess(t *testing.T) {
 }
 
 func Test_Store_QueueUpdate(t *testing.T) {
-	store, err := InitStore("test_queue_update.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("QueueUpdate: Error[%v]", err)
 	}
@@ -324,7 +324,7 @@ type Temp struct {
 }
 
 func Test_Queue_ParametersMap(t *testing.T) {
-	store, err := InitStore("test_queue_get_parameters.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatalf("GetParameters: Error[%v]", err)
 	}

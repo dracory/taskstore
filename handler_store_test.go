@@ -7,7 +7,7 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 	handler := new(testHandler)
 	handler2 := new(testHandler2)
 
-	store, err := InitStore("test_task_create.db")
+	store, err := initStore()
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in Store init: received ", "[", err, "]")
 	}
