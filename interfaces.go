@@ -1,6 +1,10 @@
 package taskstore
 
-import "github.com/dromara/carbon/v2"
+import (
+	"context"
+
+	"github.com/dromara/carbon/v2"
+)
 
 type QueueInterface interface {
 	Data() map[string]string
@@ -258,7 +262,7 @@ type StoreInterface interface {
 	QueueSoftDeleteByID(id string) error
 	QueueUpdate(Queue QueueInterface) error
 
-	QueueRunGoroutine(processSeconds int, unstuckMinutes int)
+	QueueRunGoroutine(ctx context.Context, processSeconds int, unstuckMinutes int)
 	QueuedTaskProcess(queuedTask QueueInterface) (bool, error)
 
 	TaskEnqueueByAlias(alias string, parameters map[string]interface{}) (QueueInterface, error)

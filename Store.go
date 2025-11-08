@@ -1,10 +1,12 @@
 package taskstore
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dracory/sb"
@@ -22,6 +24,9 @@ type Store struct {
 	dbDriverName       string
 	automigrateEnabled bool
 	debugEnabled       bool
+	queueMu            sync.Mutex
+	queueCancel        context.CancelFunc
+	queueWG            sync.WaitGroup
 }
 
 var _ StoreInterface = (*Store)(nil)
@@ -105,27 +110,113 @@ func (st *Store) EnableDebug(debugEnabled bool) StoreInterface {
 	return st
 }
 
-// QueueRunGoroutine goroutine to run the queue
+// QueueRunGoroutine starts the queue processor and binds it to the provided context.
+// The processor will exit once the context is canceled.
 //
 // Example:
-// go myTaskStore.QueueRunGoroutine(10, 2)
+//
+//	go myTaskStore.QueueRunGoroutine(10, 2)
 //
 // Params:
-// - processSeconds int - time to wait until processing the next task (i.e. 10s)
-// - unstuckMinutes int - time to wait before mark running tasks as failed
-func (store *Store) QueueRunGoroutine(processSeconds int, unstuckMinutes int) {
-	i := 0
+//   - processSeconds int - time to wait until processing the next task (i.e. 10s)
+//   - unstuckMinutes int - time to wait before mark running tasks as failed
+func (store *Store) QueueRunGoroutine(ctx context.Context, processSeconds int, unstuckMinutes int) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if ctx.Err() != nil {
+		return
+	}
+
+	store.queueMu.Lock()
+	if store.queueCancel != nil {
+		store.queueMu.Unlock()
+		return
+	}
+
+	runCtx, cancel := context.WithCancel(ctx)
+	store.queueCancel = cancel
+	store.queueWG.Add(1)
+	store.queueMu.Unlock()
+
+	go func() {
+		defer func() {
+			store.queueMu.Lock()
+			store.queueCancel = nil
+			store.queueMu.Unlock()
+			store.queueWG.Done()
+		}()
+
+		store.queueRunLoop(runCtx, processSeconds, unstuckMinutes)
+	}()
+}
+
+func (store *Store) queueRunLoop(ctx context.Context, processSeconds int, unstuckMinutes int) {
+	if processSeconds <= 0 {
+		processSeconds = 10
+	}
+	if unstuckMinutes <= 0 {
+		unstuckMinutes = 1
+	}
+
 	for {
-		i++
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
 
 		store.QueueUnstuck(unstuckMinutes)
 
-		time.Sleep(1 * time.Second) // Sleep 1 second
+		if !sleepWithContext(ctx, time.Second) {
+			return
+		}
 
-		store.QueueProcessNext()
+		if err := store.QueueProcessNext(); err != nil && store.debugEnabled {
+			log.Println("QueueProcessNext error:", err)
+		}
 
-		time.Sleep(time.Duration(processSeconds) * time.Second) // Every 10 seconds
+		if !sleepWithContext(ctx, time.Duration(processSeconds)*time.Second) {
+			return
+		}
 	}
+}
+
+func sleepWithContext(ctx context.Context, d time.Duration) bool {
+	if d <= 0 {
+		select {
+		case <-ctx.Done():
+			return false
+		default:
+			return true
+		}
+	}
+
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+// QueueStop stops the queue processor that was started via QueueRunWithContext or QueueRunGoroutine.
+// It blocks until the worker goroutine has fully drained and exited.
+func (store *Store) QueueStop() {
+	store.queueMu.Lock()
+	cancel := store.queueCancel
+	if cancel == nil {
+		store.queueMu.Unlock()
+		return
+	}
+	store.queueCancel = nil
+	store.queueMu.Unlock()
+
+	cancel()
+	store.queueWG.Wait()
 }
 
 // QueueUnstuck clears the queue of tasks running for more than the
