@@ -202,6 +202,57 @@ func Test_Store_TaskQueueList(t *testing.T) {
 	}
 }
 
+func Test_Store_TaskQueueFindNextQueuedTaskByQueue(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error[%v]", err)
+	}
+
+	query := store.SqlCreateTaskQueueTable()
+	if strings.Contains(query, "unsupported driver") {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: UnExpected Query, received [%v]", query)
+	}
+
+	_, err = store.db.Exec(query)
+	if err != nil {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Table creation error: [%v]", err)
+	}
+
+	// default queue task
+	defaultTask := NewTaskQueue().
+		SetTaskID("TASK_DEFAULT").
+		SetAttempts(1).
+		SetStatus(TaskQueueStatusQueued)
+
+	// named queue task
+	namedTask := NewTaskQueue().
+		SetTaskID("TASK_EMAILS").
+		SetAttempts(1).
+		SetStatus(TaskQueueStatusQueued).
+		SetQueueName("emails")
+
+	if err := store.TaskQueueCreate(defaultTask); err != nil {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error creating default task: [%v]", err)
+	}
+
+	if err := store.TaskQueueCreate(namedTask); err != nil {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error creating named task: [%v]", err)
+	}
+
+	q, err := store.TaskQueueFindNextQueuedTaskByQueue("emails")
+	if err != nil {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error[%v]", err)
+	}
+
+	if q == nil {
+		t.Fatal("TaskQueueFindNextQueuedTaskByQueue: Expected a queued task for 'emails' queue, got nil")
+	}
+
+	if q.TaskID() != "TASK_EMAILS" {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Expected TASK_EMAILS, got %s", q.TaskID())
+	}
+}
+
 func Test_Store_TaskQueueSoftDeleteByID(t *testing.T) {
 	store, err := initStore()
 	if err != nil {

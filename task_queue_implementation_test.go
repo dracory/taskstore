@@ -51,6 +51,7 @@ func TestNewTaskQueueFromExistingData(t *testing.T) {
 		COLUMN_STARTED_AT:   "2023-01-01 12:30:00",
 		COLUMN_COMPLETED_AT: "2023-01-01 13:00:00",
 		COLUMN_DELETED_AT:   "2023-01-03 12:00:00",
+		COLUMN_QUEUE_NAME:   "test-queue",
 	}
 
 	queue := NewTaskQueueFromExistingData(data)
@@ -81,6 +82,10 @@ func TestNewTaskQueueFromExistingData(t *testing.T) {
 
 	if queue.Details() != "test details" {
 		t.Errorf("NewTaskQueueFromExistingData: Expected Details to be 'test details', got %s", queue.Details())
+	}
+
+	if queue.QueueName() != "test-queue" {
+		t.Errorf("NewTaskQueueFromExistingData: Expected QueueName to be 'test-queue', got %s", queue.QueueName())
 	}
 }
 
@@ -419,6 +424,13 @@ func TestTaskQueue_SettersAndGetters(t *testing.T) {
 		t.Errorf("Details: Expected %s, got %s", testDetails, queue.Details())
 	}
 
+	// Test QueueName
+	testQueueName := "my-queue"
+	queue.SetQueueName(testQueueName)
+	if queue.QueueName() != testQueueName {
+		t.Errorf("QueueName: Expected %s, got %s", testQueueName, queue.QueueName())
+	}
+
 	// Test Parameters
 	testParameters := `{"key":"value"}`
 	queue.SetParameters(testParameters)
@@ -473,7 +485,8 @@ func TestTaskQueue_ChainedSetters(t *testing.T) {
 		SetUpdatedAt("2023-01-02 11:00:00").
 		SetStartedAt("2023-01-01 10:30:00").
 		SetCompletedAt("2023-01-01 11:30:00").
-		SetSoftDeletedAt("2023-01-03 12:00:00")
+		SetSoftDeletedAt("2023-01-03 12:00:00").
+		SetQueueName("chained-queue")
 
 	if result != queue {
 		t.Error("ChainedSetters: Expected setters to return the same queue instance for chaining")
@@ -500,5 +513,8 @@ func TestTaskQueue_ChainedSetters(t *testing.T) {
 	}
 	if queue.Parameters() != `{"key":"value"}` {
 		t.Error("ChainedSetters: Parameters not set correctly")
+	}
+	if queue.QueueName() != "chained-queue" {
+		t.Error("ChainedSetters: QueueName not set correctly")
 	}
 }

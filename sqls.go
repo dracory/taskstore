@@ -68,6 +68,12 @@ func (st *Store) SqlCreateTaskQueueTable() string {
 			Type:     sb.COLUMN_TYPE_DATETIME,
 			Nullable: true,
 		}).
+		Column(sb.Column{
+			Name:     COLUMN_QUEUE_NAME,
+			Type:     sb.COLUMN_TYPE_STRING,
+			Length:   100,
+			Nullable: true,
+		}).
 		Create()
 }
 

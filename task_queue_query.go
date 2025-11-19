@@ -162,6 +162,19 @@ func (q *taskQueueQuery) SetTaskID(taskID string) TaskQueueQueryInterface {
 	return q
 }
 
+func (q *taskQueueQuery) HasQueueName() bool {
+	return q.hasProperty("queue_name")
+}
+
+func (q *taskQueueQuery) QueueName() string {
+	return q.properties["queue_name"].(string)
+}
+
+func (q *taskQueueQuery) SetQueueName(queueName string) TaskQueueQueryInterface {
+	q.properties["queue_name"] = queueName
+	return q
+}
+
 func (q *taskQueueQuery) HasOffset() bool {
 	return q.hasProperty("offset")
 }

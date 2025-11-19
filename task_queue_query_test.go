@@ -139,6 +139,28 @@ func TestTaskQueueQuery_Validate(t *testing.T) {
 	}
 }
 
+func TestTaskQueueQuery_QueueName(t *testing.T) {
+	query := TaskQueueQuery()
+
+	// Test default state
+	if query.HasQueueName() {
+		t.Error("HasQueueName: Expected false for new query")
+	}
+
+	// Test setting queue name
+	testQueueName := "emails"
+	result := query.SetQueueName(testQueueName)
+	if result != query {
+		t.Error("SetQueueName: Expected method to return the same query instance")
+	}
+	if !query.HasQueueName() {
+		t.Error("HasQueueName: Expected true after setting queue name")
+	}
+	if query.QueueName() != testQueueName {
+		t.Errorf("QueueName: Expected '%s', got '%s'", testQueueName, query.QueueName())
+	}
+}
+
 func TestTaskQueueQuery_Columns(t *testing.T) {
 	query := TaskQueueQuery()
 
@@ -506,7 +528,8 @@ func TestTaskQueueQuery_ChainedSetters(t *testing.T) {
 		SetSoftDeletedIncluded(true).
 		SetSortOrder("DESC").
 		SetStatus("queued").
-		SetStatusIn([]string{"queued", "running"})
+		SetStatusIn([]string{"queued", "running"}).
+		SetQueueName("queue-chained")
 
 	if result != query {
 		t.Error("ChainedSetters: Expected all setters to return the same query instance for chaining")
@@ -554,5 +577,8 @@ func TestTaskQueueQuery_ChainedSetters(t *testing.T) {
 	}
 	if len(query.StatusIn()) != 2 {
 		t.Error("ChainedSetters: StatusIn not set correctly")
+	}
+	if !query.HasQueueName() || query.QueueName() != "queue-chained" {
+		t.Error("ChainedSetters: QueueName not set correctly")
 	}
 }

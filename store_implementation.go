@@ -25,8 +25,12 @@ type Store struct {
 	automigrateEnabled      bool
 	debugEnabled            bool
 	queueMu                 sync.Mutex
-	queueCancel             context.CancelFunc
-	queueWG                 sync.WaitGroup
+	queueRunners            map[string]*queueRunner
+}
+
+type queueRunner struct {
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
 var _ StoreInterface = (*Store)(nil)
@@ -50,6 +54,7 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 		db:                      opts.DB,
 		dbDriverName:            opts.DbDriverName,
 		debugEnabled:            opts.DebugEnabled,
+		queueRunners:            map[string]*queueRunner{},
 	}
 
 	if store.taskDefinitionTableName == "" {
@@ -121,6 +126,10 @@ func (st *Store) EnableDebug(debugEnabled bool) StoreInterface {
 //   - processSeconds int - time to wait until processing the next task (i.e. 10s)
 //   - unstuckMinutes int - time to wait before mark running tasks as failed
 func (store *Store) QueueRunGoroutine(ctx context.Context, processSeconds int, unstuckMinutes int) {
+	store.QueueRunSync(ctx, DefaultQueueName, processSeconds, unstuckMinutes)
+}
+
+func (store *Store) QueueRunSync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -128,30 +137,67 @@ func (store *Store) QueueRunGoroutine(ctx context.Context, processSeconds int, u
 		return
 	}
 
+	queueName = normalizeQueueName(queueName)
+
 	store.queueMu.Lock()
-	if store.queueCancel != nil {
+	if _, exists := store.queueRunners[queueName]; exists {
 		store.queueMu.Unlock()
 		return
 	}
 
 	runCtx, cancel := context.WithCancel(ctx)
-	store.queueCancel = cancel
-	store.queueWG.Add(1)
+	runner := &queueRunner{cancel: cancel}
+	runner.wg.Add(1)
+	store.queueRunners[queueName] = runner
 	store.queueMu.Unlock()
 
 	go func() {
 		defer func() {
 			store.queueMu.Lock()
-			store.queueCancel = nil
+			delete(store.queueRunners, queueName)
 			store.queueMu.Unlock()
-			store.queueWG.Done()
+			runner.wg.Done()
 		}()
 
-		store.queueRunLoop(runCtx, processSeconds, unstuckMinutes)
+		store.queueRunLoopSync(runCtx, queueName, processSeconds, unstuckMinutes)
 	}()
 }
 
-func (store *Store) queueRunLoop(ctx context.Context, processSeconds int, unstuckMinutes int) {
+func (store *Store) QueueRunAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if ctx.Err() != nil {
+		return
+	}
+
+	queueName = normalizeQueueName(queueName)
+
+	store.queueMu.Lock()
+	if _, exists := store.queueRunners[queueName]; exists {
+		store.queueMu.Unlock()
+		return
+	}
+
+	runCtx, cancel := context.WithCancel(ctx)
+	runner := &queueRunner{cancel: cancel}
+	runner.wg.Add(1)
+	store.queueRunners[queueName] = runner
+	store.queueMu.Unlock()
+
+	go func() {
+		defer func() {
+			store.queueMu.Lock()
+			delete(store.queueRunners, queueName)
+			store.queueMu.Unlock()
+			runner.wg.Done()
+		}()
+
+		store.queueRunLoopAsync(runCtx, queueName, processSeconds, unstuckMinutes)
+	}()
+}
+
+func (store *Store) queueRunLoopSync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
 	if processSeconds <= 0 {
 		processSeconds = 10
 	}
@@ -166,14 +212,45 @@ func (store *Store) queueRunLoop(ctx context.Context, processSeconds int, unstuc
 		default:
 		}
 
-		store.TaskQueueUnstuck(unstuckMinutes)
+		store.TaskQueueUnstuckByQueue(queueName, unstuckMinutes)
 
 		if !sleepWithContext(ctx, time.Second) {
 			return
 		}
 
-		if err := store.TaskQueueProcessNext(); err != nil && store.debugEnabled {
+		if err := store.TaskQueueProcessNextByQueue(queueName); err != nil && store.debugEnabled {
 			log.Println("TaskQueueProcessNext error:", err)
+		}
+
+		if !sleepWithContext(ctx, time.Duration(processSeconds)*time.Second) {
+			return
+		}
+	}
+}
+
+func (store *Store) queueRunLoopAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+	if processSeconds <= 0 {
+		processSeconds = 10
+	}
+	if unstuckMinutes <= 0 {
+		unstuckMinutes = 1
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		store.TaskQueueUnstuckByQueue(queueName, unstuckMinutes)
+
+		if !sleepWithContext(ctx, time.Second) {
+			return
+		}
+
+		if err := store.TaskQueueProcessNextAsyncByQueue(queueName); err != nil && store.debugEnabled {
+			log.Println("TaskQueueProcessNextAsync error:", err)
 		}
 
 		if !sleepWithContext(ctx, time.Duration(processSeconds)*time.Second) {
@@ -207,16 +284,16 @@ func sleepWithContext(ctx context.Context, d time.Duration) bool {
 // It blocks until the worker goroutine has fully drained and exited.
 func (store *Store) QueueStop() {
 	store.queueMu.Lock()
-	cancel := store.queueCancel
-	if cancel == nil {
+	runner, exists := store.queueRunners[DefaultQueueName]
+	if !exists {
 		store.queueMu.Unlock()
 		return
 	}
-	store.queueCancel = nil
+	delete(store.queueRunners, DefaultQueueName)
 	store.queueMu.Unlock()
 
-	cancel()
-	store.queueWG.Wait()
+	runner.cancel()
+	runner.wg.Wait()
 }
 
 // TaskQueueUnstuck clears the queue of tasks running for more than the
@@ -234,7 +311,11 @@ func (store *Store) QueueStop() {
 // 2. If running for more than the specified wait minutes mark as failed
 // =================================================================
 func (store *Store) TaskQueueUnstuck(waitMinutes int) {
-	runningTasks := store.TaskQueueFindRunning(3)
+	store.TaskQueueUnstuckByQueue("", waitMinutes)
+}
+
+func (store *Store) TaskQueueUnstuckByQueue(queueName string, waitMinutes int) {
+	runningTasks := store.TaskQueueFindRunningByQueue(queueName, 3)
 
 	if len(runningTasks) < 1 {
 		return

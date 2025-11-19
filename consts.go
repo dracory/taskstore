@@ -33,3 +33,6 @@ const COLUMN_UPDATED_AT = "updated_at"
 
 const ASC = "asc"
 const DESC = "desc"
+
+const COLUMN_QUEUE_NAME = "queue_name"
+const DefaultQueueName = "default"

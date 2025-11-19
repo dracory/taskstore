@@ -142,6 +142,15 @@ func (o *taskQueue) SetDetails(details string) TaskQueueInterface {
 	return o
 }
 
+func (o *taskQueue) QueueName() string {
+	return o.Get(COLUMN_QUEUE_NAME)
+}
+
+func (o *taskQueue) SetQueueName(queueName string) TaskQueueInterface {
+	o.Set(COLUMN_QUEUE_NAME, queueName)
+	return o
+}
+
 func (o *taskQueue) SetID(id string) TaskQueueInterface {
 	o.Set(COLUMN_ID, id)
 	return o

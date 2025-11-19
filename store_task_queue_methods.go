@@ -165,35 +165,11 @@ func (store *Store) TaskQueueFindByID(id string) (TaskQueueInterface, error) {
 }
 
 func (store *Store) TaskQueueFindRunning(limit int) []TaskQueueInterface {
-
-	runningTasks, errList := store.TaskQueueList(TaskQueueQuery().
-		SetStatus(TaskQueueStatusRunning).
-		SetLimit(limit).
-		SetOrderBy(COLUMN_CREATED_AT).
-		SetSortOrder(ASC))
-
-	if errList != nil {
-		return nil
-	}
-
-	return runningTasks
+	return store.TaskQueueFindRunningByQueue("", limit)
 }
 
 func (store *Store) TaskQueueFindNextQueuedTask() (TaskQueueInterface, error) {
-	queuedTasks, errList := store.TaskQueueList(TaskQueueQuery().SetStatus(TaskQueueStatusQueued).
-		SetLimit(1).
-		SetOrderBy(COLUMN_CREATED_AT).
-		SetSortOrder(ASC))
-
-	if errList != nil {
-		return nil, errList
-	}
-
-	if len(queuedTasks) < 1 {
-		return nil, nil
-	}
-
-	return queuedTasks[0], nil
+	return store.TaskQueueFindNextQueuedTaskByQueue("")
 }
 
 func (store *Store) TaskQueueList(query TaskQueueQueryInterface) ([]TaskQueueInterface, error) {
@@ -236,14 +212,64 @@ func (store *Store) TaskQueueList(query TaskQueueQueryInterface) ([]TaskQueueInt
 }
 
 func (store *Store) TaskQueueProcessNext() error {
-	runningTasks := store.TaskQueueFindRunning(1)
+	return store.TaskQueueProcessNextByQueue("")
+}
+
+func normalizeQueueName(queueName string) string {
+	if queueName == "" {
+		return DefaultQueueName
+	}
+	return queueName
+}
+
+func (store *Store) TaskQueueFindRunningByQueue(queueName string, limit int) []TaskQueueInterface {
+	queueName = normalizeQueueName(queueName)
+
+	runningTasks, errList := store.TaskQueueList(TaskQueueQuery().
+		SetStatus(TaskQueueStatusRunning).
+		SetQueueName(queueName).
+		SetLimit(limit).
+		SetOrderBy(COLUMN_CREATED_AT).
+		SetSortOrder(ASC))
+
+	if errList != nil {
+		return nil
+	}
+
+	return runningTasks
+}
+
+func (store *Store) TaskQueueFindNextQueuedTaskByQueue(queueName string) (TaskQueueInterface, error) {
+	queueName = normalizeQueueName(queueName)
+
+	queuedTasks, errList := store.TaskQueueList(TaskQueueQuery().SetStatus(TaskQueueStatusQueued).
+		SetQueueName(queueName).
+		SetLimit(1).
+		SetOrderBy(COLUMN_CREATED_AT).
+		SetSortOrder(ASC))
+
+	if errList != nil {
+		return nil, errList
+	}
+
+	if len(queuedTasks) < 1 {
+		return nil, nil
+	}
+
+	return queuedTasks[0], nil
+}
+
+func (store *Store) TaskQueueProcessNextByQueue(queueName string) error {
+	queueName = normalizeQueueName(queueName)
+
+	runningTasks := store.TaskQueueFindRunningByQueue(queueName, 1)
 
 	if len(runningTasks) > 0 {
 		log.Println("There is already a running task " + runningTasks[0].ID() + " (#" + runningTasks[0].ID() + "). Queue stopped while completed'")
 		return nil
 	}
 
-	nextQueuedTask, err := store.TaskQueueFindNextQueuedTask()
+	nextQueuedTask, err := store.TaskQueueFindNextQueuedTaskByQueue(queueName)
 
 	if err != nil {
 		return err
@@ -257,6 +283,30 @@ func (store *Store) TaskQueueProcessNext() error {
 	_, err = store.QueuedTaskProcess(nextQueuedTask)
 
 	return err
+}
+
+func (store *Store) TaskQueueProcessNextAsyncByQueue(queueName string) error {
+	queueName = normalizeQueueName(queueName)
+
+	nextQueuedTask, err := store.TaskQueueFindNextQueuedTaskByQueue(queueName)
+
+	if err != nil {
+		return err
+	}
+
+	if nextQueuedTask == nil {
+		// DEBUG log.Println("No queued tasks")
+		return nil
+	}
+
+	go func(q TaskQueueInterface) {
+		_, err := store.QueuedTaskProcess(q)
+		if err != nil && store.debugEnabled {
+			log.Println("QueuedTaskProcess error:", err)
+		}
+	}(nextQueuedTask)
+
+	return nil
 }
 
 func (store *Store) TaskQueueSoftDelete(queue TaskQueueInterface) error {
