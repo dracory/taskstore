@@ -53,30 +53,30 @@ const (
 	MonthOfYearDecember  MonthOfYear = "DECEMBER"
 )
 
-type RecurrenceRule interface {
+type RecurrenceRuleInterface interface {
 	GetFrequency() Frequency
-	SetFrequency(Frequency) RecurrenceRule
+	SetFrequency(Frequency) RecurrenceRuleInterface
 
 	GetStartsAt() string
-	SetStartsAt(dateTimeUTC string) RecurrenceRule
+	SetStartsAt(dateTimeUTC string) RecurrenceRuleInterface
 
 	GetEndsAt() string
-	SetEndsAt(dateTimeUTC string) RecurrenceRule
+	SetEndsAt(dateTimeUTC string) RecurrenceRuleInterface
 
 	GetInterval() int
-	SetInterval(int) RecurrenceRule
+	SetInterval(int) RecurrenceRuleInterface
 
 	GetDaysOfWeek() []DayOfWeek
-	SetDaysOfWeek([]DayOfWeek) RecurrenceRule
+	SetDaysOfWeek([]DayOfWeek) RecurrenceRuleInterface
 
 	GetDaysOfMonth() []int
-	SetDaysOfMonth([]int) RecurrenceRule
+	SetDaysOfMonth([]int) RecurrenceRuleInterface
 
 	GetMonthsOfYear() []MonthOfYear
-	SetMonthsOfYear([]MonthOfYear) RecurrenceRule
+	SetMonthsOfYear([]MonthOfYear) RecurrenceRuleInterface
 }
 
-func NextRunAt(rule RecurrenceRule, now *carbon.Carbon) (*carbon.Carbon, error) {
+func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon, error) {
 	startsAt := parseDateTime(rule.GetStartsAt())
 
 	endsAt := parseDateTime(rule.GetEndsAt())
@@ -316,7 +316,7 @@ func parseDateTime(dateTimeUTC string) *carbon.Carbon {
 // 	}
 // }
 
-func NewRecurrenceRule() RecurrenceRule {
+func NewRecurrenceRule() RecurrenceRuleInterface {
 	r := recurrenceRule{}
 
 	// By default, it does not have an end time
@@ -342,7 +342,7 @@ func (r *recurrenceRule) GetFrequency() Frequency {
 	return r.frequency
 }
 
-func (r *recurrenceRule) SetFrequency(frequency Frequency) RecurrenceRule {
+func (r *recurrenceRule) SetFrequency(frequency Frequency) RecurrenceRuleInterface {
 	r.frequency = frequency
 	return r
 }
@@ -351,7 +351,7 @@ func (r *recurrenceRule) GetStartsAt() string {
 	return r.startsAt
 }
 
-func (r *recurrenceRule) SetStartsAt(startsAt string) RecurrenceRule {
+func (r *recurrenceRule) SetStartsAt(startsAt string) RecurrenceRuleInterface {
 	r.startsAt = startsAt
 	return r
 }
@@ -360,7 +360,7 @@ func (r *recurrenceRule) GetEndsAt() string {
 	return r.endsAt
 }
 
-func (r *recurrenceRule) SetEndsAt(endsAt string) RecurrenceRule {
+func (r *recurrenceRule) SetEndsAt(endsAt string) RecurrenceRuleInterface {
 	r.endsAt = endsAt
 	return r
 }
@@ -369,7 +369,7 @@ func (r *recurrenceRule) GetInterval() int {
 	return r.interval
 }
 
-func (r *recurrenceRule) SetInterval(interval int) RecurrenceRule {
+func (r *recurrenceRule) SetInterval(interval int) RecurrenceRuleInterface {
 	r.interval = interval
 	return r
 }
@@ -378,7 +378,7 @@ func (r *recurrenceRule) GetDaysOfWeek() []DayOfWeek {
 	return r.daysOfWeek
 }
 
-func (r *recurrenceRule) SetDaysOfWeek(daysOfWeek []DayOfWeek) RecurrenceRule {
+func (r *recurrenceRule) SetDaysOfWeek(daysOfWeek []DayOfWeek) RecurrenceRuleInterface {
 	r.daysOfWeek = daysOfWeek
 	return r
 }
@@ -387,7 +387,7 @@ func (r *recurrenceRule) GetDaysOfMonth() []int {
 	return r.daysOfMonth
 }
 
-func (r *recurrenceRule) SetDaysOfMonth(daysOfMonth []int) RecurrenceRule {
+func (r *recurrenceRule) SetDaysOfMonth(daysOfMonth []int) RecurrenceRuleInterface {
 	r.daysOfMonth = daysOfMonth
 	return r
 }
@@ -396,7 +396,7 @@ func (r *recurrenceRule) GetMonthsOfYear() []MonthOfYear {
 	return r.monthsOfYear
 }
 
-func (r *recurrenceRule) SetMonthsOfYear(monthsOfYear []MonthOfYear) RecurrenceRule {
+func (r *recurrenceRule) SetMonthsOfYear(monthsOfYear []MonthOfYear) RecurrenceRuleInterface {
 	r.monthsOfYear = monthsOfYear
 	return r
 }
@@ -406,7 +406,7 @@ func (r *recurrenceRule) String() string {
 		r.frequency, r.startsAt, r.endsAt, r.interval, r.daysOfWeek, r.daysOfMonth, r.monthsOfYear)
 }
 
-func (r *recurrenceRule) Clone() RecurrenceRule {
+func (r *recurrenceRule) Clone() RecurrenceRuleInterface {
 	return &recurrenceRule{
 		frequency:    r.frequency,
 		startsAt:     r.startsAt,

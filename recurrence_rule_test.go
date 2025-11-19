@@ -10,7 +10,7 @@ import (
 func TestNextRunAt(t *testing.T) {
 	type testCase struct {
 		name        string
-		rule        RecurrenceRule
+		rule        RecurrenceRuleInterface
 		now         *carbon.Carbon
 		expected    *carbon.Carbon
 		expectedErr string
