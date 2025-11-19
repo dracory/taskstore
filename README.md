@@ -20,7 +20,7 @@ For commercial use, please use my [contact page](https://lesichkov.co.uk/contact
 ## Installation
 
 ```
-go get github.com/gouniverse/taskstore
+go get github.com/dracory/taskstore
 ```
 
 ## Setup
@@ -28,8 +28,8 @@ go get github.com/gouniverse/taskstore
 ```golang
 myTaskStore = taskstore.NewStore(taskstore.NewStoreOptions{
 	DB:                 databaseInstance,
-    TaskTableName:      "my_task"
-	QueueTableName:     "my_queue",
+	TaskDefinitionTableName: "my_task_definition",
+	TaskQueueTableName:      "my_task_queue",
 	AutomigrateEnabled: true,
 	DebugEnabled:       false,
 })
@@ -82,7 +82,7 @@ func (task *HelloWorldTask) Description() string {
 }
 
 // Enqueue. Optional shortcut to quickly add this task to the task queue
-func (task *HelloWorldTask) Enqueue(name string) (task *taskstore.Queue, err error) {
+func (task *HelloWorldTask) Enqueue(name string) (taskQueue taskstore.TaskQueueInterface, err error) {
 	return myTaskStore.TaskEnqueueByAlias(task.Alias(), map[string]any{
 		"name": name,
 	})
@@ -151,38 +151,39 @@ NewHelloWorldTask().Enqueue("Tom Jones")
 
 ## Starting the Task Queue
 
-To start the task queue call the QueueRunGoroutine. 
+To start the task queue call `QueueRunGoroutine` with a context. 
 It allows you to specify the interval for processing the queued tasks (i.e. every 10 seconds)
-Also to set timeout for queued tasks. After a queued task is started if it has not completed in the specified timeout it will be marked as failed, and the rest of he tasks will start to be processed.
+and to set a timeout for queued tasks. After a queued task is started, if it has not completed in the specified timeout it will be marked as failed, and the rest of the tasks will start to be processed.
 
-```
-myTaskStore.QueueRunGoroutine(10, 2) // every 10s, unstuck after 2 mins
+```golang
+ctx := context.Background()
+myTaskStore.QueueRunGoroutine(ctx, 10, 2) // every 10s, unstuck after 2 mins
 ```
 
 ## Store Methods
 
-- AutoMigrate() error - automigrate (creates) the task and queue table
-- EnableDebug(debug bool) - enables / disables the debug option
+- `AutoMigrate() error` – automigrates (creates) the task definition and task queue tables
+- `EnableDebug(debug bool) StoreInterface` – enables / disables the debug option
 
-## Task Methods
-- TaskCreate(Task *Task) (bool, error) -  creates a Task
-- TaskEnqueueByAlias(taskAlias string, parameters map[string]interface{}) (*Queue, error) -  finds a task by its alias and appends it to the queue
-- TaskList(options map[string]string) ([]Task, error) - lists tasks
-- TaskFindByAlias(alias string) *Task - finds a Task by alias
-- TaskFindByID(id string) *Task - finds a task by ID
-- TaskUpdate(Task *Task) bool - updates a task
+## Task Definition Methods
 
-## Queue Methods
-- QueueCreate(queue *Queue) error - creates a new queued task
-- QueueDeleteByID(id string) *Queue - deleted a queued task by ID
-- QueueFindByID(id string) *Queue - finds a queued task by ID
-- QueueFail(queue *Queue) error - fails a queued task
-- QueueSoftDeleteByID(id string) *Queue - soft delete a queued task by ID (populates the deleted_at field)
-- QueueSuccess(queue *Queue) error -  completes a queued task  successfully
-- QueueList(options QueueListOptions) ([]Queue, error) - lists the queued tasks
-- QueueUpdate(queue *Queue) error - updates a queued task
-- Queue > GetParameters() (map[string]interface{}, error) - gets the parameters of the queued task
-- Queue > AppendDetails(details string) - appends details to the queued task
+- `TaskDefinitionCreate(task TaskDefinitionInterface) error` – creates a task definition
+- `TaskDefinitionFindByAlias(alias string) (TaskDefinitionInterface, error)` – finds a task definition by alias
+- `TaskDefinitionFindByID(id string) (TaskDefinitionInterface, error)` – finds a task definition by ID
+- `TaskDefinitionList(options TaskDefinitionQueryInterface) ([]TaskDefinitionInterface, error)` – lists task definitions
+- `TaskDefinitionUpdate(task TaskDefinitionInterface) error` – updates a task definition
+- `TaskDefinitionSoftDelete(task TaskDefinitionInterface) error` – soft deletes a task definition
+
+## Task Queue Methods
+
+- `TaskQueueCreate(queue TaskQueueInterface) error` – creates a new queued task
+- `TaskQueueDeleteByID(id string) error` – deletes a queued task by ID
+- `TaskQueueFindByID(id string) (TaskQueueInterface, error)` – finds a queued task by ID
+- `TaskQueueFail(queue TaskQueueInterface) error` – marks a queued task as failed
+- `TaskQueueSoftDeleteByID(id string) error` – soft deletes a queued task by ID (populates the deleted_at field)
+- `TaskQueueSuccess(queue TaskQueueInterface) error` – completes a queued task successfully
+- `TaskQueueList(options TaskQueueQueryInterface) ([]TaskQueueInterface, error)` – lists the queued tasks
+- `TaskQueueUpdate(queue TaskQueueInterface) error` – updates a queued task
 
 ## Frequently Asked Questions (FAQ)
 
