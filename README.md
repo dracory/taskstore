@@ -23,6 +23,68 @@ For commercial use, please use my [contact page](https://lesichkov.co.uk/contact
 go get github.com/dracory/taskstore
 ```
 
+## Queue Features
+
+### Atomic Task Claiming
+Tasks are claimed atomically using database transactions with `SELECT FOR UPDATE`, preventing race conditions where multiple workers might process the same task simultaneously.
+
+### Concurrency Control
+- **Default limit**: 10 concurrent tasks per queue
+- **Configurable**: Set via `MaxConcurrency` in `NewStoreOptions`
+- **Semaphore-based**: Automatic backpressure when limit is reached
+
+```golang
+store, err := taskstore.NewStore(taskstore.NewStoreOptions{
+    DB:                      databaseInstance,
+    TaskDefinitionTableName: "task_definition",
+    TaskQueueTableName:      "task_queue",
+    MaxConcurrency:          20, // Allow 20 concurrent tasks
+})
+```
+
+### Graceful Shutdown
+- `QueueStop()` – Stop default queue and wait for all tasks to complete
+- `QueueStopByName(queueName)` – Stop specific queue and wait for all tasks
+- Ensures no task goroutines are abandoned
+
+```golang
+// Start async queue
+store.QueueRunAsync(ctx, "emails", 10, 1)
+
+// Later: gracefully stop and wait for completion
+store.QueueStopByName("emails")
+```
+
+### Error Handling
+Configure custom error handlers for monitoring and alerting:
+
+```golang
+store.SetErrorHandler(func(queueName, taskID string, err error) {
+    log.Printf("[ERROR] Queue: %s, Task: %s, Error: %v", queue Name, taskID, err)
+    // Send to monitoring system
+    metrics.RecordTaskError(queueName, taskID)
+})
+```
+
+### Context Propagation (Optional)
+Task handlers can optionally implement `TaskHandlerWithContext` to support cancellation:
+
+```golang
+func (h *EmailHandler) HandleWithContext(ctx context.Context) bool {
+    select {
+    case <-ctx.Done():
+        h.LogInfo("Task cancelled")
+        return false
+    case <-time.After(5 * time.Second):
+        // Send email...
+        h.LogSuccess("Email sent")
+        return true
+    }
+}
+```
+
+**Note**: Existing handlers without `HandleWithContext` continue to work - this is fully backward compatible.
+
 ## Setup
 
 ```golang

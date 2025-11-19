@@ -317,7 +317,7 @@ func (store *Store) queueRunLoopAsync(ctx context.Context, queueName string, pro
 				runner.taskWg.Done() // Mark goroutine as complete
 			}()
 
-			_, processErr := store.QueuedTaskProcess(task)
+			_, processErr := store.QueuedTaskProcessWithContext(ctx, task)
 			if processErr != nil {
 				// Call error handler if configured
 				if store.errorHandler != nil {
@@ -418,6 +418,13 @@ func (store *Store) TaskQueueUnstuckByQueue(queueName string, waitMinutes int) {
 }
 
 func (store *Store) QueuedTaskProcess(queuedTask TaskQueueInterface) (bool, error) {
+	return store.QueuedTaskProcessWithContext(context.Background(), queuedTask)
+}
+
+// QueuedTaskProcessWithContext processes a queued task with context support.
+// It checks if the handler implements TaskHandlerWithContext and uses that if available,
+// otherwise falls back to the standard Handle() method for backward compatibility.
+func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask TaskQueueInterface) (bool, error) {
 	// 1. Start queued task
 	attempts := queuedTask.Attempts() + 1
 
@@ -456,7 +463,8 @@ func (store *Store) QueuedTaskProcess(queuedTask TaskQueueInterface) (bool, erro
 		return false, nil
 	}
 
-	handlerFunc := store.taskHandlerFunc(task.Alias())
+	// 3. Get handler and check if it supports context
+	handlerFunc := store.taskHandlerFuncWithContext(task.Alias(), ctx)
 
 	result := handlerFunc(queuedTask)
 
@@ -549,6 +557,39 @@ func (store *Store) taskHandlerFunc(taskAlias string) func(queuedTask TaskQueueI
 	// 		}
 	// 	}
 	// }
+
+	return func(queuedTask TaskQueueInterface) bool {
+		queuedTask.AppendDetails("No handler for alias: " + taskAlias)
+		store.TaskQueueUpdate(queuedTask)
+		return false
+	}
+}
+
+// taskHandlerFuncWithContext finds the TaskHandler and returns a function that
+// checks if the handler implements TaskHandlerWithContext. If it does, it calls
+// HandleWithContext(ctx), otherwise it falls back to Handle() for backward compatibility.
+func (store *Store) taskHandlerFuncWithContext(taskAlias string, ctx context.Context) func(queuedTask TaskQueueInterface) bool {
+	unifyName := func(name string) string {
+		name = strings.ReplaceAll(name, "-", "")
+		name = strings.ReplaceAll(name, "_", "")
+		return name
+	}
+
+	for _, taskHandler := range store.taskHandlers {
+		if strings.EqualFold(unifyName(taskHandler.Alias()), unifyName(taskAlias)) {
+			return func(queuedTask TaskQueueInterface) bool {
+				taskHandler.SetQueuedTask(queuedTask)
+
+				// Check if handler implements TaskHandlerWithContext
+				if contextHandler, ok := taskHandler.(TaskHandlerWithContext); ok {
+					return contextHandler.HandleWithContext(ctx)
+				}
+
+				// Fall back to standard Handle() for backward compatibility
+				return taskHandler.Handle()
+			}
+		}
+	}
 
 	return func(queuedTask TaskQueueInterface) bool {
 		queuedTask.AppendDetails("No handler for alias: " + taskAlias)
