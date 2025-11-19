@@ -19,7 +19,7 @@ For commercial use, please use my [contact page](https://lesichkov.co.uk/contact
 
 ## Installation
 
-```
+```bash
 go get github.com/dracory/taskstore
 ```
 
@@ -48,8 +48,8 @@ store, err := taskstore.NewStore(taskstore.NewStoreOptions{
 - Ensures no task goroutines are abandoned
 
 ```golang
-// Start async queue
-store.QueueRunAsync(ctx, "emails", 10, 1)
+// Start concurrent queue
+store.QueueRunConcurrent(ctx, "emails", 10, 1)
 
 // Later: gracefully stop and wait for completion
 store.QueueStopByName("emails")
@@ -213,13 +213,19 @@ NewHelloWorldTask().Enqueue("Tom Jones")
 
 ## Starting the Task Queue
 
-To start the task queue call `QueueRunGoroutine` with a context. 
-It allows you to specify the interval for processing the queued tasks (i.e. every 10 seconds)
-and to set a timeout for queued tasks. After a queued task is started, if it has not completed in the specified timeout it will be marked as failed, and the rest of the tasks will start to be processed.
+To start the task queue, use one of the queue run methods:
 
 ```golang
 ctx := context.Background()
-myTaskStore.QueueRunGoroutine(ctx, 10, 2) // every 10s, unstuck after 2 mins
+
+// Option 1: Run default queue (serial processing)
+myTaskStore.QueueRunDefault(ctx, 10, 2) // every 10s, unstuck after 2 mins
+
+// Option 2: Run named queue with serial processing
+myTaskStore.QueueRunSerial(ctx, "emails", 10, 2)
+
+// Option 3: Run named queue with concurrent processing (respects MaxConcurrency)
+myTaskStore.QueueRunConcurrent(ctx, "emails", 10, 2)
 ```
 
 ## Store Methods

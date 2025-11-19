@@ -29,48 +29,9 @@ A task queue item represents a specific instance of a task to be executed.
 
 ### 4. Recurrence Rules
 The package supports recurring tasks via `RecurrenceRule`.
-- **Frequency**: Secondly, Minutely, Hourly, Daily, Weekly, Monthly, Yearly.
-- **Configuration**: Interval, Start/End times, Days of Week/Month.
-- **Logic**: `NextRunAt` calculates the next execution time based on the rule and current time.
-
-## Architecture
-
-- **Interfaces**: `interfaces.go` defines the contracts for Task Definitions, Task Queues, and the Store, promoting modularity and testability.
-- **Persistence**: Uses `goqu` for SQL generation and `sb` (likely a database helper) for execution, supporting multiple dialects.
-- **Worker**: The `QueueRunGoroutine` method starts a background worker that polls the database for `queued` tasks and processes them.
-- **Resilience**: Handles timeouts (unstuck mechanism) and retries (via `Attempts`).
-
-## Usage Flow
-1. **Setup**: Initialize `Store` with database connection.
-2. **Define Task**: Create a struct implementing `TaskHandlerInterface`.
-3. **Register**: Add the handler to the store using `TaskHandlerAdd`.
-4. **Enqueue**: Trigger a task execution via `TaskEnqueueByAlias`.
-5. **Process**: Run `QueueRunGoroutine` to start processing tasks.
-
-## Data Model
-- **Task Definitions Table**: Stores task definitions.
 - **Task Queues Table**: Stores task execution instances (the task queue).
 
 ```mermaid
-erDiagram
-    TASK ||--o{ QUEUE : has
-    TASK {
-        string id PK
-        string status
-        string alias
-        string title
-        text description
-        text memo
-        datetime created_at
-        datetime updated_at
-        datetime deleted_at
-    }
-    QUEUE {
-        string id PK
-        string status
-        string task_id FK
-        text parameters
-        text output
         text details
         int attempts
         datetime started_at
