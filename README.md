@@ -35,26 +35,26 @@ myTaskStore = taskstore.NewStore(taskstore.NewStoreOptions{
 })
 ```
 
-## Tasks
+## Task Definitions
 
-The task specifies a unit of work to be completed. It can be performed immediately, 
-or enqueued to the database and deferreed for asynchronious processing, ensuring your
+The task definition specifies a unit of work to be completed. It can be performed immediately, 
+or enqueued to the database and deferred for asynchronous processing, ensuring your
 application remains responsive.
 
-Each task is uniquely identified by an alias and provides a human-readable title and description.
+Each task definition is uniquely identified by an alias and provides a human-readable title and description.
 
-Each task is uniquely identified by an alias that allows the task to be easily called. 
-A human-readable title and description to give the user more information on the task.
+Each task definition is uniquely identified by an alias that allows the task to be easily called. 
+A human-readable title and description give the user more information on the task definition.
 
-To define a task, implement the TaskHandlerInterface and provide a Handle method
+To define a task definition, implement the TaskHandlerInterface and provide a Handle method
 that contains the task's logic.
 
 Optionally, extend the TaskHandlerBase struct for additional features like parameter
 retrieval.
 
-Tasks can be executed directly from the command line (CLI) or as part of a background queue.
+Task definitions can be executed directly from the command line (CLI) or as part of a background task queue.
 
-The tasks placed in the queue will be processed at specified interval.
+The tasks placed in the task queue will be processed at a specified interval.
 
 ```golang
 package tasks
@@ -81,7 +81,7 @@ func (task *HelloWorldTask) Description() string {
 	return "Say hello world"
 }
 
-// Enqueue. Optional shortcut to quickly add this task to the queue
+// Enqueue. Optional shortcut to quickly add this task to the task queue
 func (task *HelloWorldTask) Enqueue(name string) (task *taskstore.Queue, err error) {
 	return myTaskStore.TaskEnqueueByAlias(task.Alias(), map[string]any{
 		"name": name,
@@ -91,7 +91,7 @@ func (task *HelloWorldTask) Enqueue(name string) (task *taskstore.Queue, err err
 func (task *HelloWorldTask) Handle() bool {
 	name := handler.GetParam("name")
 
-        // Optional to allow adding the task to the queue manually. Useful while in development
+        // Optional to allow adding the task to the task queue manually. Useful while in development
 	if !task.HasQueuedTask() && task.GetParam("enqueue") == "yes" {
 		_, err := handler.Enqueue(name)
 
@@ -113,15 +113,15 @@ func (task *HelloWorldTask) Handle() bool {
 	return true
 }
 ```
-## Registering the Tasks to the TaskStore
+## Registering Task Definitions to the TaskStore
 
-Registering the task to the task store will persist it in the database.
+Registering the task definition to the task store will persist it in the database.
 
 ```
 myTaskStore.TaskHandlerAdd(NewHelloWorldTask(), true)
 ```
 
-## Executing Tasks in the Terminal
+## Executing Task Definitions in the Terminal
 
 To add the option to execute tasks from the terminal add the following to your main method
 
@@ -134,9 +134,9 @@ Example:
 go run . HelloWorldTask --name="Tom Jones"
 ```
 
-## Adding the Task to the Queue
+## Adding the Task to the Task Queue
 
-To add a task to the background queue
+To add a task to the background task queue
 
 ```
 myTaskStore.TaskEnqueueByAlias(NewHelloWorldTask.Alias(), map[string]any{
@@ -149,9 +149,9 @@ Or if you have defined an Enqueue method as in the example task above.
 NewHelloWorldTask().Enqueue("Tom Jones")
 ```
 
-## Starting the Queue
+## Starting the Task Queue
 
-To start the queue call the QueueRunGoroutine. 
+To start the task queue call the QueueRunGoroutine. 
 It allows you to specify the interval for processing the queued tasks (i.e. every 10 seconds)
 Also to set timeout for queued tasks. After a queued task is started if it has not completed in the specified timeout it will be marked as failed, and the rest of he tasks will start to be processed.
 
@@ -208,11 +208,11 @@ at specific intervals or on demand.
 - Flexibility: Schedule tasks to run at specific intervals or on demand.
 - Ease of use: Define tasks using a simple interface and integrate with your existing application.
 
-### 4. How do I create a task in TaskStore?
-To create a task, you'll need to implement the TaskHandlerInterface and provide a Handle method that contains the task's logic. You can also extend the TaskHandlerBase struct for additional features.
+### 4. How do I create a task definition in TaskStore?
+To create a task definition, you'll need to implement the TaskHandlerInterface and provide a Handle method that contains the task's logic. You can also extend the TaskHandlerBase struct for additional features.
 
 ### 5. How do I schedule a task to run in the background?
-Use the TaskEnqueueByAlias method to add a task to the background queue. You can specify the interval at which the queue is processed using the QueueRunGoroutine method.
+Use the TaskEnqueueByAlias method to add a task to the background task queue. You can specify the interval at which the task queue is processed using the QueueRunGoroutine method.
 
 ### 6. Can I monitor the status of tasks?
 Yes, TaskStore provides methods to list tasks, check their status, and view task details.

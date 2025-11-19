@@ -2,7 +2,6 @@ package admin
 
 import (
 	"encoding/json"
-	"errors"
 	"log/slog"
 	"net/http"
 
@@ -10,23 +9,25 @@ import (
 	"github.com/dracory/form"
 	"github.com/dracory/hb"
 	"github.com/dracory/req"
+	"github.com/dracory/sb"
 	"github.com/dracory/taskstore"
+	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
-func queueRequeue(logger slog.Logger, store taskstore.StoreInterface) *queueRequeueController {
-	return &queueRequeueController{
+func taskQueueCreate(logger slog.Logger, store taskstore.StoreInterface) *taskQueueCreateController {
+	return &taskQueueCreateController{
 		logger: logger,
 		store:  store,
 	}
 }
 
-type queueRequeueController struct {
+type taskQueueCreateController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 }
 
-func (c *queueRequeueController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskQueueCreateController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, err := c.prepareData(r)
 
 	if err != nil {
@@ -37,10 +38,14 @@ func (c *queueRequeueController) ToTag(w http.ResponseWriter, r *http.Request) h
 		return c.formSubmitted(data)
 	}
 
-	return c.modal(data)
+	return c.modalQueueCreate(data)
 }
 
-func (c *queueRequeueController) formSubmitted(data queueRequeueControllerData) hb.TagInterface {
+func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateControllerData) hb.TagInterface {
+	if data.formTaskID == "" {
+		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task is required.", Position: "top-right"})
+	}
+
 	if data.formParameters == "" {
 		data.formParameters = "{}"
 	}
@@ -49,10 +54,10 @@ func (c *queueRequeueController) formSubmitted(data queueRequeueControllerData) 
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task Parameters is not valid JSON", Position: "top-right"})
 	}
 
-	task, err := c.store.TaskFindByID(data.queue.TaskID())
+	task, err := c.store.TaskDefinitionFindByID(data.formTaskID)
 
 	if err != nil {
-		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
+		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
 
@@ -62,7 +67,7 @@ func (c *queueRequeueController) formSubmitted(data queueRequeueControllerData) 
 
 	taskParametersAny := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(data.formParameters), &taskParametersAny); err != nil {
-		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
+		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
 
@@ -71,7 +76,7 @@ func (c *queueRequeueController) formSubmitted(data queueRequeueControllerData) 
 	_, err = c.store.TaskEnqueueByAlias(task.Alias(), taskParametersMap)
 
 	if err != nil {
-		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
+		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
 
@@ -80,21 +85,9 @@ func (c *queueRequeueController) formSubmitted(data queueRequeueControllerData) 
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *queueRequeueController) modal(data queueRequeueControllerData) *hb.Tag {
-	modalID := `ModalQueueRequeue`
+func (c *taskQueueCreateController) modalQueueCreate(data taskQueueCreateControllerData) *hb.Tag {
+	modalID := `ModalQueueCreate`
 	formID := modalID + `Form`
-
-	divInfo := hb.Div().
-		Class("alert alert-info").
-		Text(`A new task will be created with the following parameters. You may  edit the parameters if necessary`)
-
-	fieldInfo := form.NewField(form.FieldOptions{
-		Label:    "Queue",
-		Type:     form.FORM_FIELD_TYPE_RAW,
-		Value:    divInfo.ToHTML(),
-		Required: true,
-	})
-
 	fieldParameters := form.NewField(form.FieldOptions{
 		Label:    "Parameters",
 		Name:     "parameters",
@@ -109,19 +102,33 @@ func (c *queueRequeueController) modal(data queueRequeueControllerData) *hb.Tag 
 		Value: hb.Style(`#` + formID + ` textarea[name="parameters"] { height: 200px; }`).ToHTML(),
 	})
 
-	fieldQueueID := form.NewField(form.FieldOptions{
-		Label:    "Queue ID",
-		Name:     "queue_id",
-		Type:     form.FORM_FIELD_TYPE_HIDDEN,
-		Value:    data.queueID,
+	fieldTaskID := form.NewField(form.FieldOptions{
+		Label:    "Task",
+		Name:     "task_id",
+		Type:     form.FORM_FIELD_TYPE_SELECT,
+		Value:    data.formTaskID,
+		Help:     "The task that will be added to the queue to be executed.",
 		Required: true,
+		Options: func() []form.FieldOption {
+			options := []form.FieldOption{{
+				Value: "-- select task --",
+				Key:   "",
+			}}
+			lo.Map(data.taskList, func(task taskstore.TaskDefinitionInterface, _ int) form.FieldOption {
+				options = append(options, form.FieldOption{
+					Value: task.Title(),
+					Key:   task.ID(),
+				})
+				return form.FieldOption{}
+			})
+			return options
+		}(),
 	})
 
 	formCreate := form.NewForm(form.FormOptions{
 		ID: formID,
 		Fields: []form.FieldInterface{
-			fieldQueueID,
-			fieldInfo,
+			fieldTaskID,
 			fieldParametersSize,
 			fieldParameters,
 		},
@@ -140,12 +147,12 @@ func (c *queueRequeueController) modal(data queueRequeueControllerData) *hb.Tag 
 		Class("btn btn-secondary float-start").
 		OnClick(modalCloseScript)
 
-	buttonRequeue := hb.Button().
-		Child(hb.I().Class("bi bi-database-add me-2")).
-		HTML("Add to queue").
+	buttonCreate := hb.Button().
+		Child(hb.I().Class("bi bi-run me-2")).
+		HTML("Create").
 		Class("btn btn-success float-end").
 		HxInclude(`#` + modalID).
-		HxPost(url(data.request, pathQueueRequeue, nil)).
+		HxPost(url(data.request, pathTaskQueueCreate, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -158,7 +165,7 @@ func (c *queueRequeueController) modal(data queueRequeueControllerData) *hb.Tag 
 				bs.ModalContent().Children([]hb.TagInterface{
 					bs.ModalHeader().Children([]hb.TagInterface{
 						hb.Heading5().
-							Text("Requeue as New Task to Queue").
+							Text("Add New Task to Queue").
 							Style(`padding: 0px; margin: 0px;`),
 						butonModalClose,
 					}),
@@ -169,7 +176,7 @@ func (c *queueRequeueController) modal(data queueRequeueControllerData) *hb.Tag 
 					bs.ModalFooter().
 						Style(`display:flex;justify-content:space-between;`).
 						Child(buttonCancel).
-						Child(buttonRequeue),
+						Child(buttonCreate),
 				}),
 			}),
 		})
@@ -185,37 +192,28 @@ func (c *queueRequeueController) modal(data queueRequeueControllerData) *hb.Tag 
 	})
 }
 
-func (c *queueRequeueController) prepareData(r *http.Request) (data queueRequeueControllerData, err error) {
+func (c *taskQueueCreateController) prepareData(r *http.Request) (data taskQueueCreateControllerData, err error) {
 	data.request = r
-	data.queueID = req.GetStringTrimmed(r, "queue_id")
+	data.formParameters = req.GetStringTrimmed(r, "parameters")
+	data.formStatus = req.GetStringTrimmed(r, "status")
+	data.formTaskID = req.GetStringTrimmed(r, "task_id")
 
-	if data.queueID == "" {
-		return data, errors.New("queue_id is required")
-	}
-
-	if data.queue, err = c.store.QueueFindByID(data.queueID); err != nil {
+	if data.taskList, err = c.store.TaskDefinitionList(taskstore.TaskDefinitionQuery().
+		SetOrderBy(taskstore.COLUMN_TITLE).
+		SetSortOrder(sb.ASC).
+		SetOffset(0).
+		SetLimit(100)); err != nil {
 		return data, err
-	}
-
-	if data.queue == nil {
-		return data, errors.New("queue not found")
-	}
-
-	if r.Method == http.MethodGet {
-		data.formParameters = data.queue.Parameters()
-	}
-
-	if r.Method == http.MethodPost {
-		data.formParameters = req.GetStringTrimmed(r, "parameters")
 	}
 
 	return data, nil
 }
 
-type queueRequeueControllerData struct {
-	request *http.Request
-	queueID string
-	queue   taskstore.QueueInterface
+type taskQueueCreateControllerData struct {
+	request  *http.Request
+	taskList []taskstore.TaskDefinitionInterface
 
+	formTaskID     string
 	formParameters string
+	formStatus     string
 }

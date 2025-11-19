@@ -12,19 +12,19 @@ import (
 	"github.com/dracory/taskstore"
 )
 
-func queueParameters(logger slog.Logger, store taskstore.StoreInterface) *queueParametersCeontroller {
-	return &queueParametersCeontroller{
+func taskQueueParameters(logger slog.Logger, store taskstore.StoreInterface) *taskQueueParametersController {
+	return &taskQueueParametersController{
 		logger: logger,
 		store:  store,
 	}
 }
 
-type queueParametersCeontroller struct {
+type taskQueueParametersController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 }
 
-func (c *queueParametersCeontroller) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskQueueParametersController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, err := c.prepareData(r)
 
 	if err != nil {
@@ -41,7 +41,7 @@ func (c *queueParametersCeontroller) ToTag(w http.ResponseWriter, r *http.Reques
 	return c.modal(data)
 }
 
-func (c *queueParametersCeontroller) modal(data queueParametersCeontrollerData) *hb.Tag {
+func (c *taskQueueParametersController) modal(data taskQueueParametersControllerData) *hb.Tag {
 	modalID := `ModalQueueDetails`
 	formID := modalID + `Form`
 
@@ -129,7 +129,7 @@ func (c *queueParametersCeontroller) modal(data queueParametersCeontrollerData) 
 	})
 }
 
-func (c *queueParametersCeontroller) prepareData(r *http.Request) (data queueParametersCeontrollerData, err error) {
+func (c *taskQueueParametersController) prepareData(r *http.Request) (data taskQueueParametersControllerData, err error) {
 	data.request = r
 
 	data.queueID = req.GetStringTrimmed(r, "queue_id")
@@ -138,7 +138,7 @@ func (c *queueParametersCeontroller) prepareData(r *http.Request) (data queuePar
 		return data, errors.New("queue_id is required")
 	}
 
-	data.queue, err = c.store.QueueFindByID(data.queueID)
+	data.queue, err = c.store.TaskQueueFindByID(data.queueID)
 
 	if err != nil {
 		return data, err
@@ -151,8 +151,8 @@ func (c *queueParametersCeontroller) prepareData(r *http.Request) (data queuePar
 	return data, nil
 }
 
-type queueParametersCeontrollerData struct {
+type taskQueueParametersControllerData struct {
 	request *http.Request
 	queueID string
-	queue   taskstore.QueueInterface
+	queue   taskstore.TaskQueueInterface
 }

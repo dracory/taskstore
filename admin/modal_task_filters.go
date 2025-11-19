@@ -10,7 +10,7 @@ import (
 	"github.com/samber/lo"
 )
 
-func (controller *queueManagerController) modalTaskFilters(data queueManagerControllerData) *hb.Tag {
+func (controller *taskQueueManagerController) modalTaskFilters(data taskQueueManagerControllerData) *hb.Tag {
 	modalCloseScript := `document.getElementById('ModalMessage').remove();document.getElementById('ModalBackdrop').remove();`
 
 	title := hb.Heading5().
@@ -34,7 +34,7 @@ func (controller *queueManagerController) modalTaskFilters(data queueManagerCont
 		Class("btn btn-primary float-end").
 		OnClick(`FormFilters.submit();` + modalCloseScript)
 
-	aliasOptions := lo.Map(data.taskList, func(task taskstore.TaskInterface, _ int) form.FieldOption {
+	aliasOptions := lo.Map(data.taskList, func(task taskstore.TaskDefinitionInterface, _ int) form.FieldOption {
 		return form.FieldOption{
 			Value: task.Title(),
 			Key:   task.ID(),
@@ -65,27 +65,27 @@ func (controller *queueManagerController) modalTaskFilters(data queueManagerCont
 					},
 					{
 						Value: "Queued",
-						Key:   taskstore.QueueStatusQueued,
+						Key:   taskstore.TaskQueueStatusQueued,
 					},
 					{
 						Value: "Running",
-						Key:   taskstore.QueueStatusRunning,
+						Key:   taskstore.TaskQueueStatusRunning,
 					},
 					{
 						Value: "Canceled",
-						Key:   taskstore.QueueStatusCanceled,
+						Key:   taskstore.TaskQueueStatusCanceled,
 					},
 					{
 						Value: "Failed",
-						Key:   taskstore.QueueStatusFailed,
+						Key:   taskstore.TaskQueueStatusFailed,
 					},
 					{
 						Value: "Success",
-						Key:   taskstore.QueueStatusSuccess,
+						Key:   taskstore.TaskQueueStatusSuccess,
 					},
 					{
 						Value: "Deleted",
-						Key:   taskstore.QueueStatusDeleted,
+						Key:   taskstore.TaskQueueStatusDeleted,
 					},
 				},
 			}),

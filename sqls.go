@@ -93,6 +93,11 @@ func (st *Store) SqlCreateTaskDefinitionTable() string {
 			Length: 255,
 		}).
 		Column(sb.Column{
+			Name:     COLUMN_MEMO,
+			Type:     sb.COLUMN_TYPE_TEXT,
+			Nullable: true,
+		}).
+		Column(sb.Column{
 			Name:     COLUMN_DESCRIPTION,
 			Type:     sb.COLUMN_TYPE_STRING,
 			Length:   255,

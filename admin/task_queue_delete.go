@@ -12,19 +12,19 @@ import (
 	"github.com/dracory/taskstore"
 )
 
-func queueDelete(logger slog.Logger, store taskstore.StoreInterface) *queueDeleteCeontroller {
-	return &queueDeleteCeontroller{
+func taskQueueDelete(logger slog.Logger, store taskstore.StoreInterface) *taskQueueDeleteController {
+	return &taskQueueDeleteController{
 		logger: logger,
 		store:  store,
 	}
 }
 
-type queueDeleteCeontroller struct {
+type taskQueueDeleteController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 }
 
-func (c *queueDeleteCeontroller) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskQueueDeleteController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, err := c.prepareData(r)
 
 	if err != nil {
@@ -45,8 +45,8 @@ func (c *queueDeleteCeontroller) ToTag(w http.ResponseWriter, r *http.Request) h
 	return c.modal(data)
 }
 
-func (c *queueDeleteCeontroller) formSubmitted(data queueDeleteCeontrollerData) hb.TagInterface {
-	if err := c.store.QueueSoftDelete(data.queue); err != nil {
+func (c *taskQueueDeleteController) formSubmitted(data taskQueueDeleteControllerData) hb.TagInterface {
+	if err := c.store.TaskQueueSoftDelete(data.queue); err != nil {
 		return hb.Swal(hb.SwalOptions{
 			Icon:              "error",
 			Title:             "Error",
@@ -69,7 +69,7 @@ func (c *queueDeleteCeontroller) formSubmitted(data queueDeleteCeontrollerData) 
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *queueDeleteCeontroller) modal(data queueDeleteCeontrollerData) *hb.Tag {
+func (c *taskQueueDeleteController) modal(data taskQueueDeleteControllerData) *hb.Tag {
 	fieldDanger := form.NewField(form.FieldOptions{
 		Type: form.FORM_FIELD_TYPE_RAW,
 		Value: hb.Wrap().
@@ -120,7 +120,7 @@ func (c *queueDeleteCeontroller) modal(data queueDeleteCeontrollerData) *hb.Tag 
 		HTML("Delete").
 		Class("btn btn-danger float-end").
 		HxInclude(`#ModalQueueDelete`).
-		HxPost(url(data.request, pathQueueDelete, nil)).
+		HxPost(url(data.request, pathTaskQueueDelete, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -160,7 +160,7 @@ func (c *queueDeleteCeontroller) modal(data queueDeleteCeontrollerData) *hb.Tag 
 	})
 }
 
-func (c *queueDeleteCeontroller) prepareData(r *http.Request) (data queueDeleteCeontrollerData, err error) {
+func (c *taskQueueDeleteController) prepareData(r *http.Request) (data taskQueueDeleteControllerData, err error) {
 	data.request = r
 
 	data.queueID = req.GetStringTrimmed(r, "queue_id")
@@ -169,7 +169,7 @@ func (c *queueDeleteCeontroller) prepareData(r *http.Request) (data queueDeleteC
 		return data, errors.New("queue_id is required")
 	}
 
-	data.queue, err = c.store.QueueFindByID(data.queueID)
+	data.queue, err = c.store.TaskQueueFindByID(data.queueID)
 
 	if err != nil {
 		return data, err
@@ -182,8 +182,8 @@ func (c *queueDeleteCeontroller) prepareData(r *http.Request) (data queueDeleteC
 	return data, nil
 }
 
-type queueDeleteCeontrollerData struct {
+type taskQueueDeleteControllerData struct {
 	request *http.Request
 	queueID string
-	queue   taskstore.QueueInterface
+	queue   taskstore.TaskQueueInterface
 }

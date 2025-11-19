@@ -17,21 +17,21 @@ import (
 
 const actionModalTaskFilterShow = "modal_task_filter_show"
 
-func taskManager(logger slog.Logger, store taskstore.StoreInterface, layout Layout) *taskManagerController {
-	return &taskManagerController{
+func taskDefinitionManager(logger slog.Logger, store taskstore.StoreInterface, layout Layout) *taskDefinitionManagerController {
+	return &taskDefinitionManagerController{
 		logger: logger,
 		store:  store,
 		layout: layout,
 	}
 }
 
-type taskManagerController struct {
+type taskDefinitionManagerController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 	layout Layout
 }
 
-func (c *taskManagerController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskDefinitionManagerController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, errorMessage := c.prepareData(r)
 
 	c.layout.SetTitle("Task Manager | Zeppelin")
@@ -68,12 +68,12 @@ func (c *taskManagerController) ToTag(w http.ResponseWriter, r *http.Request) hb
 	return hb.Raw(c.layout.Render(w, r))
 }
 
-func (controller *taskManagerController) page(data taskManagerControllerData) hb.TagInterface {
+func (controller *taskDefinitionManagerController) page(data taskDefinitionManagerControllerData) hb.TagInterface {
 	adminHeader := adminHeader(controller.store, &controller.logger, data.request)
 	breadcrumbs := breadcrumbs(data.request, []Breadcrumb{
 		{
 			Name: "Task Manager",
-			URL:  url(data.request, pathTaskManager, map[string]string{}),
+			URL:  url(data.request, pathTaskDefinitionManager, map[string]string{}),
 		},
 	})
 
@@ -81,7 +81,7 @@ func (controller *taskManagerController) page(data taskManagerControllerData) hb
 		Class("btn btn-primary float-end").
 		Child(hb.I().Class("bi bi-plus-circle").Style("margin-top:-4px;margin-right:8px;font-size:16px;")).
 		HTML("New Task").
-		HxGet(url(data.request, pathTaskCreate, nil)).
+		HxGet(url(data.request, pathTaskDefinitionCreate, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -99,7 +99,7 @@ func (controller *taskManagerController) page(data taskManagerControllerData) hb
 		Child(controller.tableRecords(data))
 }
 
-func (controller *taskManagerController) tableRecords(data taskManagerControllerData) hb.TagInterface {
+func (controller *taskDefinitionManagerController) tableRecords(data taskDefinitionManagerControllerData) hb.TagInterface {
 	table := hb.Table().
 		Class("table table-striped table-hover table-bordered").
 		Children([]hb.TagInterface{
@@ -125,7 +125,7 @@ func (controller *taskManagerController) tableRecords(data taskManagerController
 						HTML("Actions"),
 				}),
 			}),
-			hb.Tbody().Children(lo.Map(data.recordList, func(task taskstore.TaskInterface, _ int) hb.TagInterface {
+			hb.Tbody().Children(lo.Map(data.recordList, func(task taskstore.TaskDefinitionInterface, _ int) hb.TagInterface {
 				taskName := task.Title()
 				taskAlias := task.Alias()
 
@@ -134,7 +134,7 @@ func (controller *taskManagerController) tableRecords(data taskManagerController
 					Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 					Child(hb.I().Class("bi bi-trash")).
 					Title("Delete task").
-					HxGet(url(data.request, pathTaskDelete, map[string]string{
+					HxGet(url(data.request, pathTaskDefinitionDelete, map[string]string{
 						"task_id": task.ID(),
 					})).
 					HxTarget("body").
@@ -145,7 +145,7 @@ func (controller *taskManagerController) tableRecords(data taskManagerController
 					Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 					Child(hb.I().Class("bi bi-pencil-square")).
 					Title("Edit task").
-					HxGet(url(data.request, pathTaskUpdate, map[string]string{
+					HxGet(url(data.request, pathTaskDefinitionUpdate, map[string]string{
 						"task_id": task.ID(),
 					})).
 					HxTarget("body").
@@ -197,7 +197,7 @@ func (controller *taskManagerController) tableRecords(data taskManagerController
 	})
 }
 
-func (controller *taskManagerController) sortableColumnLabel(data taskManagerControllerData, tableLabel string, columnName string) hb.TagInterface {
+func (controller *taskDefinitionManagerController) sortableColumnLabel(data taskDefinitionManagerControllerData, tableLabel string, columnName string) hb.TagInterface {
 	isSelected := strings.EqualFold(data.sortBy, columnName)
 
 	direction := lo.If(data.sortOrder == sb.ASC, sb.DESC).Else(sb.ASC)
@@ -206,8 +206,8 @@ func (controller *taskManagerController) sortableColumnLabel(data taskManagerCon
 		direction = sb.ASC
 	}
 
-	link := url(data.request, pathTaskManager, map[string]string{
-		"controller":     pathTaskManager,
+	link := url(data.request, pathTaskDefinitionManager, map[string]string{
+		"controller":     pathTaskDefinitionManager,
 		"page":           "0",
 		"by":             columnName,
 		"sort":           direction,
@@ -223,7 +223,7 @@ func (controller *taskManagerController) sortableColumnLabel(data taskManagerCon
 		Href(link)
 }
 
-func (controller *taskManagerController) sortingIndicator(columnName string, sortByColumnName string, sortOrder string) hb.TagInterface {
+func (controller *taskDefinitionManagerController) sortingIndicator(columnName string, sortByColumnName string, sortOrder string) hb.TagInterface {
 	isSelected := strings.EqualFold(sortByColumnName, columnName)
 
 	direction := lo.If(isSelected && sortOrder == "asc", "up").
@@ -239,13 +239,13 @@ func (controller *taskManagerController) sortingIndicator(columnName string, sor
 	return sortingIndicator
 }
 
-func (controller *taskManagerController) tableFilter(data taskManagerControllerData) hb.TagInterface {
+func (controller *taskDefinitionManagerController) tableFilter(data taskDefinitionManagerControllerData) hb.TagInterface {
 	buttonFilter := hb.Button().
 		Class("btn btn-sm btn-info text-white me-2").
 		Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 		Child(hb.I().Class("bi bi-filter me-2")).
 		Text("Filters").
-		HxPost(url(data.request, pathTaskManager, map[string]string{
+		HxPost(url(data.request, pathTaskDefinitionManager, map[string]string{
 			"action":       actionModalTaskFilterShow,
 			"name":         data.formName,
 			"status":       data.formStatus,
@@ -295,8 +295,8 @@ func (controller *taskManagerController) tableFilter(data taskManagerControllerD
 		})
 }
 
-func (controller *taskManagerController) tablePagination(data taskManagerControllerData, count int, page int, perPage int) hb.TagInterface {
-	url := url(data.request, pathTaskManager, map[string]string{
+func (controller *taskDefinitionManagerController) tablePagination(data taskDefinitionManagerControllerData, count int, page int, perPage int) hb.TagInterface {
+	url := url(data.request, pathTaskDefinitionManager, map[string]string{
 		"status":       data.formStatus,
 		"name":         data.formName,
 		"created_from": data.formCreatedFrom,
@@ -320,7 +320,7 @@ func (controller *taskManagerController) tablePagination(data taskManagerControl
 		HTML(pagination)
 }
 
-func (controller *taskManagerController) prepareData(r *http.Request) (data taskManagerControllerData, errorMessage string) {
+func (controller *taskDefinitionManagerController) prepareData(r *http.Request) (data taskDefinitionManagerControllerData, errorMessage string) {
 	var err error
 	initialPerPage := 20
 	data.request = r
@@ -348,7 +348,7 @@ func (controller *taskManagerController) prepareData(r *http.Request) (data task
 	return data, ""
 }
 
-func (controller *taskManagerController) fetchRecordList(data taskManagerControllerData) (records []taskstore.TaskInterface, recordCount int64, err error) {
+func (controller *taskDefinitionManagerController) fetchRecordList(data taskDefinitionManagerControllerData) (records []taskstore.TaskDefinitionInterface, recordCount int64, err error) {
 	taskIDs := []string{}
 
 	if data.formTaskID != "" {
@@ -363,7 +363,7 @@ func (controller *taskManagerController) fetchRecordList(data taskManagerControl
 	// 	query.CreatedAtLte = data.formCreatedTo + " 23:59:59"
 	// }
 
-	query := taskstore.TaskQuery().
+	query := taskstore.TaskDefinitionQuery().
 		SetLimit(data.perPage).
 		SetOffset(data.pageInt * data.perPage).
 		SetOrderBy(data.sortBy).
@@ -381,22 +381,22 @@ func (controller *taskManagerController) fetchRecordList(data taskManagerControl
 	// 	query = query.SetNameLike(data.formName)
 	// }
 
-	recordList, err := controller.store.TaskList(query)
+	recordList, err := controller.store.TaskDefinitionList(query)
 
 	if err != nil {
 		return records, 0, err
 	}
 
-	recordCount, err = controller.store.TaskCount(query)
+	recordCount, err = controller.store.TaskDefinitionCount(query)
 
 	if err != nil {
-		return []taskstore.TaskInterface{}, 0, err
+		return []taskstore.TaskDefinitionInterface{}, 0, err
 	}
 
 	return recordList, recordCount, nil
 }
 
-type taskManagerControllerData struct {
+type taskDefinitionManagerControllerData struct {
 	request *http.Request
 	action  string
 
@@ -412,7 +412,7 @@ type taskManagerControllerData struct {
 	formCreatedTo   string
 	formTaskID      string
 
-	recordList  []taskstore.TaskInterface
+	recordList  []taskstore.TaskDefinitionInterface
 	recordCount int64
 
 	taskID string

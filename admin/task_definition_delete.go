@@ -13,19 +13,19 @@ import (
 	"github.com/spf13/cast"
 )
 
-func taskDelete(logger slog.Logger, store taskstore.StoreInterface) *taskDeleteCeontroller {
-	return &taskDeleteCeontroller{
+func taskDefinitionDelete(logger slog.Logger, store taskstore.StoreInterface) *taskDefinitionDeleteController {
+	return &taskDefinitionDeleteController{
 		logger: logger,
 		store:  store,
 	}
 }
 
-type taskDeleteCeontroller struct {
+type taskDefinitionDeleteController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 }
 
-func (c *taskDeleteCeontroller) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskDefinitionDeleteController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, err := c.prepareData(r)
 
 	if err != nil {
@@ -46,9 +46,9 @@ func (c *taskDeleteCeontroller) ToTag(w http.ResponseWriter, r *http.Request) hb
 	return c.modal(data)
 }
 
-func (c *taskDeleteCeontroller) formSubmitted(data taskDeleteCeontrollerData) hb.TagInterface {
+func (c *taskDefinitionDeleteController) formSubmitted(data taskDefinitionDeleteControllerData) hb.TagInterface {
 	for _, queuedTask := range data.relatedQueuesToDelete {
-		if err := c.store.QueueSoftDeleteByID(queuedTask.ID()); err != nil {
+		if err := c.store.TaskQueueSoftDeleteByID(queuedTask.ID()); err != nil {
 			return hb.Swal(hb.SwalOptions{
 				Icon:              "error",
 				Title:             "Error",
@@ -60,7 +60,7 @@ func (c *taskDeleteCeontroller) formSubmitted(data taskDeleteCeontrollerData) hb
 		}
 	}
 
-	if err := c.store.TaskSoftDelete(data.task); err != nil {
+	if err := c.store.TaskDefinitionSoftDelete(data.task); err != nil {
 		return hb.Swal(hb.SwalOptions{
 			Icon:              "error",
 			Title:             "Error",
@@ -83,7 +83,7 @@ func (c *taskDeleteCeontroller) formSubmitted(data taskDeleteCeontrollerData) hb
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *taskDeleteCeontroller) modal(data taskDeleteCeontrollerData) *hb.Tag {
+func (c *taskDefinitionDeleteController) modal(data taskDefinitionDeleteControllerData) *hb.Tag {
 	fieldDanger := form.NewField(form.FieldOptions{
 		Type: form.FORM_FIELD_TYPE_RAW,
 		Value: hb.Wrap().
@@ -136,7 +136,7 @@ func (c *taskDeleteCeontroller) modal(data taskDeleteCeontrollerData) *hb.Tag {
 		HTML("Delete").
 		Class("btn btn-danger float-end").
 		HxInclude(`#ModalTaskDelete`).
-		HxPost(url(data.request, pathTaskDelete, nil)).
+		HxPost(url(data.request, pathTaskDefinitionDelete, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -176,7 +176,7 @@ func (c *taskDeleteCeontroller) modal(data taskDeleteCeontrollerData) *hb.Tag {
 	})
 }
 
-func (c *taskDeleteCeontroller) prepareData(r *http.Request) (data taskDeleteCeontrollerData, err error) {
+func (c *taskDefinitionDeleteController) prepareData(r *http.Request) (data taskDefinitionDeleteControllerData, err error) {
 	data.request = r
 
 	data.taskID = req.GetStringTrimmed(r, "task_id")
@@ -185,7 +185,7 @@ func (c *taskDeleteCeontroller) prepareData(r *http.Request) (data taskDeleteCeo
 		return data, errors.New("task_id is required")
 	}
 
-	data.task, err = c.store.TaskFindByID(data.taskID)
+	data.task, err = c.store.TaskDefinitionFindByID(data.taskID)
 
 	if err != nil {
 		return data, err
@@ -196,7 +196,7 @@ func (c *taskDeleteCeontroller) prepareData(r *http.Request) (data taskDeleteCeo
 	}
 
 	if r.Method == http.MethodPost {
-		data.relatedQueuesToDelete, err = c.store.QueueList(taskstore.QueueQuery().
+		data.relatedQueuesToDelete, err = c.store.TaskQueueList(taskstore.TaskQueueQuery().
 			SetTaskID(data.task.ID()).
 			SetColumns([]string{taskstore.COLUMN_ID}))
 
@@ -206,7 +206,7 @@ func (c *taskDeleteCeontroller) prepareData(r *http.Request) (data taskDeleteCeo
 	}
 
 	if r.Method == http.MethodGet {
-		data.relatedQueuedQueuesCount, err = c.store.QueueCount(taskstore.QueueQuery().
+		data.relatedQueuedQueuesCount, err = c.store.TaskQueueCount(taskstore.TaskQueueQuery().
 			SetTaskID(data.task.ID()).
 			SetColumns([]string{taskstore.COLUMN_ID}))
 
@@ -218,10 +218,10 @@ func (c *taskDeleteCeontroller) prepareData(r *http.Request) (data taskDeleteCeo
 	return data, nil
 }
 
-type taskDeleteCeontrollerData struct {
+type taskDefinitionDeleteControllerData struct {
 	request                  *http.Request
 	taskID                   string
-	task                     taskstore.TaskInterface
-	relatedQueuesToDelete    []taskstore.QueueInterface
+	task                     taskstore.TaskDefinitionInterface
+	relatedQueuesToDelete    []taskstore.TaskQueueInterface
 	relatedQueuedQueuesCount int64
 }

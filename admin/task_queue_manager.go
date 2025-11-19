@@ -19,21 +19,21 @@ import (
 
 const actionModalQueueFilterShow = "modal_queue_filter_show"
 
-func queueManager(logger slog.Logger, store taskstore.StoreInterface, layout Layout) *queueManagerController {
-	return &queueManagerController{
+func taskQueueManager(logger slog.Logger, store taskstore.StoreInterface, layout Layout) *taskQueueManagerController {
+	return &taskQueueManagerController{
 		logger: logger,
 		store:  store,
 		layout: layout,
 	}
 }
 
-type queueManagerController struct {
+type taskQueueManagerController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 	layout Layout
 }
 
-func (c *queueManagerController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskQueueManagerController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, errorMessage := c.prepareData(r)
 
 	c.layout.SetTitle("Queue Manager | Zeppelin")
@@ -78,7 +78,7 @@ func (c *queueManagerController) ToTag(w http.ResponseWriter, r *http.Request) h
 	return hb.Raw(c.layout.Render(w, r))
 }
 
-func (*queueManagerController) onModalRecordFilterShow(data queueManagerControllerData) *hb.Tag {
+func (*taskQueueManagerController) onModalRecordFilterShow(data taskQueueManagerControllerData) *hb.Tag {
 	modalCloseScript := `document.getElementById('ModalMessage').remove();document.getElementById('ModalBackdrop').remove();`
 
 	title := hb.Heading5().
@@ -113,7 +113,7 @@ func (*queueManagerController) onModalRecordFilterShow(data queueManagerControll
 	filterForm := form.NewForm(form.FormOptions{
 		ID:        "FormFilters",
 		Method:    http.MethodGet,
-		ActionURL: url(data.request, pathQueueManager, map[string]string{}),
+		ActionURL: url(data.request, pathTaskQueueManager, map[string]string{}),
 		Fields: []form.FieldInterface{
 			form.NewField(form.FieldOptions{
 				Label: "Status",
@@ -128,31 +128,31 @@ func (*queueManagerController) onModalRecordFilterShow(data queueManagerControll
 					},
 					{
 						Value: "Canceled",
-						Key:   taskstore.QueueStatusCanceled,
+						Key:   taskstore.TaskQueueStatusCanceled,
 					},
 					{
 						Value: "Deleted",
-						Key:   taskstore.QueueStatusDeleted,
+						Key:   taskstore.TaskQueueStatusDeleted,
 					},
 					{
 						Value: "Failed",
-						Key:   taskstore.QueueStatusFailed,
+						Key:   taskstore.TaskQueueStatusFailed,
 					},
 					{
 						Value: "Paused",
-						Key:   taskstore.QueueStatusPaused,
+						Key:   taskstore.TaskQueueStatusPaused,
 					},
 					{
 						Value: "Queued",
-						Key:   taskstore.QueueStatusQueued,
+						Key:   taskstore.TaskQueueStatusQueued,
 					},
 					{
 						Value: "Running",
-						Key:   taskstore.QueueStatusRunning,
+						Key:   taskstore.TaskQueueStatusRunning,
 					},
 					{
 						Value: "Success",
-						Key:   taskstore.QueueStatusSuccess,
+						Key:   taskstore.TaskQueueStatusSuccess,
 					},
 				},
 			}),
@@ -182,7 +182,7 @@ func (*queueManagerController) onModalRecordFilterShow(data queueManagerControll
 				Label: "Path",
 				Name:  "path",
 				Type:  form.FORM_FIELD_TYPE_HIDDEN,
-				Value: pathQueueManager,
+				Value: pathTaskQueueManager,
 				Help:  `Path to this page.`,
 			}),
 		},
@@ -223,12 +223,12 @@ func (*queueManagerController) onModalRecordFilterShow(data queueManagerControll
 
 }
 
-func (controller *queueManagerController) page(data queueManagerControllerData) hb.TagInterface {
+func (controller *taskQueueManagerController) page(data taskQueueManagerControllerData) hb.TagInterface {
 	adminHeader := adminHeader(controller.store, &controller.logger, data.request)
 	breadcrumbs := breadcrumbs(data.request, []Breadcrumb{
 		{
 			Name: "Queue Manager",
-			URL:  url(data.request, pathQueueManager, map[string]string{}),
+			URL:  url(data.request, pathTaskQueueManager, map[string]string{}),
 		},
 	})
 
@@ -236,7 +236,7 @@ func (controller *queueManagerController) page(data queueManagerControllerData) 
 		Class("btn btn-primary float-end").
 		Child(hb.I().Class("bi bi-plus-circle").Style("margin-top:-4px;margin-right:8px;font-size:16px;")).
 		HTML("New Task to Queue").
-		HxGet(url(data.request, pathQueueCreate, map[string]string{})).
+		HxGet(url(data.request, pathTaskQueueCreate, map[string]string{})).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -254,7 +254,7 @@ func (controller *queueManagerController) page(data queueManagerControllerData) 
 		Child(controller.tableRecords(data))
 }
 
-func (controller *queueManagerController) tableRecords(data queueManagerControllerData) hb.TagInterface {
+func (controller *taskQueueManagerController) tableRecords(data taskQueueManagerControllerData) hb.TagInterface {
 	table := hb.Table().
 		Class("table table-striped table-hover table-bordered").
 		Children([]hb.TagInterface{
@@ -286,8 +286,8 @@ func (controller *queueManagerController) tableRecords(data queueManagerControll
 						HTML("Actions"),
 				}),
 			}),
-			hb.Tbody().Children(lo.Map(data.recordList, func(queuedTask taskstore.QueueInterface, _ int) hb.TagInterface {
-				task, taskExists := lo.Find(data.taskList, func(t taskstore.TaskInterface) bool {
+			hb.Tbody().Children(lo.Map(data.recordList, func(queuedTask taskstore.TaskQueueInterface, _ int) hb.TagInterface {
+				task, taskExists := lo.Find(data.taskList, func(t taskstore.TaskDefinitionInterface) bool {
 					return t.ID() == queuedTask.TaskID()
 				})
 
@@ -299,7 +299,7 @@ func (controller *queueManagerController) tableRecords(data queueManagerControll
 					Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 					Child(hb.I().Class("bi bi-trash")).
 					Title("Delete task from queue").
-					HxGet(url(data.request, pathQueueDelete, map[string]string{
+					HxGet(url(data.request, pathTaskQueueDelete, map[string]string{
 						"queue_id": queuedTask.ID(),
 					})).
 					HxTarget("body").
@@ -310,7 +310,7 @@ func (controller *queueManagerController) tableRecords(data queueManagerControll
 					Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 					Child(hb.I().Class("bi bi-list-stars")).
 					Title("See queued task parameters").
-					HxGet(url(data.request, pathQueueParameters, map[string]string{
+					HxGet(url(data.request, pathTaskQueueParameters, map[string]string{
 						"queue_id": queuedTask.ID(),
 					})).
 					HxTarget("body").
@@ -321,7 +321,7 @@ func (controller *queueManagerController) tableRecords(data queueManagerControll
 					Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 					Child(hb.I().Class("bi bi-info-circle-fill")).
 					Title("See the details of the job run").
-					HxGet(url(data.request, pathQueueDetails, map[string]string{
+					HxGet(url(data.request, pathTaskQueueDetails, map[string]string{
 						"queue_id": queuedTask.ID(),
 					})).
 					HxTarget("body").
@@ -332,7 +332,7 @@ func (controller *queueManagerController) tableRecords(data queueManagerControll
 					Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 					Child(hb.I().Class("bi bi-database-add")).
 					Title("Add as new task to the queue").
-					HxGet(url(data.request, pathQueueRequeue, map[string]string{
+					HxGet(url(data.request, pathTaskQueueRequeue, map[string]string{
 						"queue_id": queuedTask.ID(),
 					})).
 					HxTarget("body").
@@ -343,7 +343,7 @@ func (controller *queueManagerController) tableRecords(data queueManagerControll
 					Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 					Child(hb.I().Class("bi bi-arrow-clockwise")).
 					Title("Restart this job").
-					HxGet(url(data.request, pathQueueTaskRestart, map[string]string{
+					HxGet(url(data.request, pathTaskQueueTaskRestart, map[string]string{
 						"queue_id": queuedTask.ID(),
 					})).
 					HxTarget("body").
@@ -437,7 +437,7 @@ func (controller *queueManagerController) tableRecords(data queueManagerControll
 	})
 }
 
-func (controller *queueManagerController) sortableColumnLabel(data queueManagerControllerData, tableLabel string, columnName string) hb.TagInterface {
+func (controller *taskQueueManagerController) sortableColumnLabel(data taskQueueManagerControllerData, tableLabel string, columnName string) hb.TagInterface {
 	isSelected := strings.EqualFold(data.sortBy, columnName)
 
 	direction := lo.If(data.sortOrder == sb.ASC, sb.DESC).Else(sb.ASC)
@@ -446,8 +446,8 @@ func (controller *queueManagerController) sortableColumnLabel(data queueManagerC
 		direction = sb.ASC
 	}
 
-	link := url(data.request, pathQueueManager, map[string]string{
-		"controller":     pathQueueManager,
+	link := url(data.request, pathTaskQueueManager, map[string]string{
+		"controller":     pathTaskQueueManager,
 		"page":           "0",
 		"by":             columnName,
 		"sort":           direction,
@@ -463,7 +463,7 @@ func (controller *queueManagerController) sortableColumnLabel(data queueManagerC
 		Href(link)
 }
 
-func (controller *queueManagerController) sortingIndicator(columnName string, sortByColumnName string, sortOrder string) hb.TagInterface {
+func (controller *taskQueueManagerController) sortingIndicator(columnName string, sortByColumnName string, sortOrder string) hb.TagInterface {
 	isSelected := strings.EqualFold(sortByColumnName, columnName)
 
 	direction := lo.If(isSelected && sortOrder == "asc", "up").
@@ -479,13 +479,13 @@ func (controller *queueManagerController) sortingIndicator(columnName string, so
 	return sortingIndicator
 }
 
-func (controller *queueManagerController) tableFilter(data queueManagerControllerData) hb.TagInterface {
+func (controller *taskQueueManagerController) tableFilter(data taskQueueManagerControllerData) hb.TagInterface {
 	buttonFilter := hb.Button().
 		Class("btn btn-sm btn-info text-white me-2").
 		Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
 		Child(hb.I().Class("bi bi-filter me-2")).
 		Text("Filters").
-		HxPost(url(data.request, pathQueueManager, map[string]string{
+		HxPost(url(data.request, pathTaskQueueManager, map[string]string{
 			"action":       actionModalQueueFilterShow,
 			"name":         data.formName,
 			"status":       data.formStatus,
@@ -535,8 +535,8 @@ func (controller *queueManagerController) tableFilter(data queueManagerControlle
 		})
 }
 
-func (controller *queueManagerController) tablePagination(data queueManagerControllerData, count int, page int, perPage int) hb.TagInterface {
-	url := url(data.request, pathQueueManager, map[string]string{
+func (controller *taskQueueManagerController) tablePagination(data taskQueueManagerControllerData, count int, page int, perPage int) hb.TagInterface {
+	url := url(data.request, pathTaskQueueManager, map[string]string{
 		"status":       data.formStatus,
 		"name":         data.formName,
 		"created_from": data.formCreatedFrom,
@@ -560,7 +560,7 @@ func (controller *queueManagerController) tablePagination(data queueManagerContr
 		HTML(pagination)
 }
 
-func (controller *queueManagerController) prepareData(r *http.Request) (data queueManagerControllerData, errorMessage string) {
+func (controller *taskQueueManagerController) prepareData(r *http.Request) (data taskQueueManagerControllerData, errorMessage string) {
 	var err error
 	initialPerPage := 20
 	data.request = r
@@ -586,7 +586,7 @@ func (controller *queueManagerController) prepareData(r *http.Request) (data que
 		return data, "error retrieving web queues"
 	}
 
-	data.taskList, err = controller.store.TaskList(taskstore.TaskQuery().
+	data.taskList, err = controller.store.TaskDefinitionList(taskstore.TaskDefinitionQuery().
 		SetOrderBy(taskstore.COLUMN_ALIAS).
 		SetSortOrder(sb.ASC).
 		SetOffset(0).
@@ -600,7 +600,7 @@ func (controller *queueManagerController) prepareData(r *http.Request) (data que
 	return data, ""
 }
 
-func (controller *queueManagerController) fetchRecordList(data queueManagerControllerData) (records []taskstore.QueueInterface, recordCount int64, err error) {
+func (controller *taskQueueManagerController) fetchRecordList(data taskQueueManagerControllerData) (records []taskstore.TaskQueueInterface, recordCount int64, err error) {
 	queueIDs := []string{}
 
 	if data.formQueueID != "" {
@@ -615,7 +615,7 @@ func (controller *queueManagerController) fetchRecordList(data queueManagerContr
 	// 	query.CreatedAtLte = data.formCreatedTo + " 23:59:59"
 	// }
 
-	query := taskstore.QueueQuery().
+	query := taskstore.TaskQueueQuery().
 		SetLimit(data.perPage).
 		SetOffset(data.pageInt * data.perPage).
 		SetOrderBy(data.sortBy).
@@ -633,22 +633,22 @@ func (controller *queueManagerController) fetchRecordList(data queueManagerContr
 	// 	query = query.SetNameLike(data.formName)
 	// }
 
-	recordList, err := controller.store.QueueList(query)
+	recordList, err := controller.store.TaskQueueList(query)
 
 	if err != nil {
 		return records, 0, err
 	}
 
-	recordCount, err = controller.store.QueueCount(query)
+	recordCount, err = controller.store.TaskQueueCount(query)
 
 	if err != nil {
-		return []taskstore.QueueInterface{}, 0, err
+		return []taskstore.TaskQueueInterface{}, 0, err
 	}
 
 	return recordList, recordCount, nil
 }
 
-type queueManagerControllerData struct {
+type taskQueueManagerControllerData struct {
 	request *http.Request
 	action  string
 
@@ -665,9 +665,9 @@ type queueManagerControllerData struct {
 	formQueueID     string
 	formTaskID      string
 
-	recordList  []taskstore.QueueInterface
+	recordList  []taskstore.TaskQueueInterface
 	recordCount int64
 
 	queueID  string
-	taskList []taskstore.TaskInterface
+	taskList []taskstore.TaskDefinitionInterface
 }

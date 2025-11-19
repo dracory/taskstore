@@ -11,19 +11,19 @@ import (
 	"github.com/dracory/taskstore"
 )
 
-func taskCreate(logger slog.Logger, store taskstore.StoreInterface) *taskCreateController {
-	return &taskCreateController{
+func taskDefinitionCreate(logger slog.Logger, store taskstore.StoreInterface) *taskDefinitionCreateController {
+	return &taskDefinitionCreateController{
 		logger: logger,
 		store:  store,
 	}
 }
 
-type taskCreateController struct {
+type taskDefinitionCreateController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 }
 
-func (c *taskCreateController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskDefinitionCreateController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, err := c.prepareData(r)
 
 	if err != nil {
@@ -37,7 +37,7 @@ func (c *taskCreateController) ToTag(w http.ResponseWriter, r *http.Request) hb.
 	return c.modalTaskCreate(data)
 }
 
-func (c *taskCreateController) formSubmitted(data taskCreateControllerData) hb.TagInterface {
+func (c *taskDefinitionCreateController) formSubmitted(data taskDefinitionCreateControllerData) hb.TagInterface {
 	if data.formTitle == "" {
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Title is required.", Position: "top-right"})
 	}
@@ -50,13 +50,13 @@ func (c *taskCreateController) formSubmitted(data taskCreateControllerData) hb.T
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Status is required.", Position: "top-right"})
 	}
 
-	task := taskstore.NewTask().
+	task := taskstore.NewTaskDefinition().
 		SetTitle(data.formTitle).
 		SetAlias(data.formAlias).
 		SetStatus(data.formStatus).
 		SetDescription(data.formDescription)
 
-	err := c.store.TaskCreate(task)
+	err := c.store.TaskDefinitionCreate(task)
 
 	if err != nil {
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
@@ -67,7 +67,7 @@ func (c *taskCreateController) formSubmitted(data taskCreateControllerData) hb.T
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *taskCreateController) modalTaskCreate(data taskCreateControllerData) *hb.Tag {
+func (c *taskDefinitionCreateController) modalTaskCreate(data taskDefinitionCreateControllerData) *hb.Tag {
 	fieldTitle := form.NewField(form.FieldOptions{
 		Label:    "Title",
 		Name:     "title",
@@ -100,11 +100,11 @@ func (c *taskCreateController) modalTaskCreate(data taskCreateControllerData) *h
 			},
 			{
 				Value: "Active",
-				Key:   taskstore.TaskStatusActive,
+				Key:   taskstore.TaskDefinitionStatusActive,
 			},
 			{
 				Value: "Inactive",
-				Key:   taskstore.TaskStatusCanceled,
+				Key:   taskstore.TaskDefinitionStatusCanceled,
 			},
 		},
 	})
@@ -135,7 +135,7 @@ func (c *taskCreateController) modalTaskCreate(data taskCreateControllerData) *h
 		HTML("Create").
 		Class("btn btn-success float-end").
 		HxInclude(`#ModalTaskCreate`).
-		HxPost(url(data.request, pathTaskCreate, nil)).
+		HxPost(url(data.request, pathTaskDefinitionCreate, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -175,7 +175,7 @@ func (c *taskCreateController) modalTaskCreate(data taskCreateControllerData) *h
 	})
 }
 
-func (c *taskCreateController) prepareData(r *http.Request) (data taskCreateControllerData, err error) {
+func (c *taskDefinitionCreateController) prepareData(r *http.Request) (data taskDefinitionCreateControllerData, err error) {
 	data.request = r
 	data.formAlias = req.GetStringTrimmed(r, "alias")
 	data.formDescription = req.GetStringTrimmed(r, "description")
@@ -185,7 +185,7 @@ func (c *taskCreateController) prepareData(r *http.Request) (data taskCreateCont
 	return data, nil
 }
 
-type taskCreateControllerData struct {
+type taskDefinitionCreateControllerData struct {
 	request *http.Request
 
 	formAlias       string

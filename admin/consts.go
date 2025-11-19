@@ -4,20 +4,20 @@ var endpoint = "" // initialized in admin.go
 
 const pathHome = "home"
 
-const pathQueueCreate = "queue-create"
-const pathQueueDelete = "queue-delete"
-const pathQueueDetails = "queue-details"
-const pathQueueManager = "queue-manager"
-const pathQueueParameters = "queue-parameters"
-const pathQueueRequeue = "queue-requeue"
-const pathQueueTaskRestart = "queue-task-restart"
+const pathTaskQueueCreate = "task-queue-create"
+const pathTaskQueueDelete = "task-queue-delete"
+const pathTaskQueueDetails = "task-queue-details"
+const pathTaskQueueManager = "task-queue-manager"
+const pathTaskQueueParameters = "task-queue-parameters"
+const pathTaskQueueRequeue = "task-queue-requeue"
+const pathTaskQueueTaskRestart = "task-queue-task-restart"
 
 // const pathQueueUpdate = "queue-update"
 
-const pathTaskCreate = "task-create"
-const pathTaskManager = "task-manager"
-const pathTaskUpdate = "task-update"
-const pathTaskDelete = "task-delete"
+const pathTaskDefinitionCreate = "task-definition-create"
+const pathTaskDefinitionManager = "task-definition-manager"
+const pathTaskDefinitionUpdate = "task-definition-update"
+const pathTaskDefinitionDelete = "task-definition-delete"
 
 const actionModalQueuedTaskFilterShow = "modal-queued-task-filter-show"
 

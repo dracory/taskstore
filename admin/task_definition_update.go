@@ -12,19 +12,19 @@ import (
 	"github.com/dracory/taskstore"
 )
 
-func taskUpdate(logger slog.Logger, store taskstore.StoreInterface) *taskUpdateController {
-	return &taskUpdateController{
+func taskDefinitionUpdate(logger slog.Logger, store taskstore.StoreInterface) *taskDefinitionUpdateController {
+	return &taskDefinitionUpdateController{
 		logger: logger,
 		store:  store,
 	}
 }
 
-type taskUpdateController struct {
+type taskDefinitionUpdateController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 }
 
-func (c *taskUpdateController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskDefinitionUpdateController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, err := c.prepareData(r)
 
 	if err != nil {
@@ -45,7 +45,7 @@ func (c *taskUpdateController) ToTag(w http.ResponseWriter, r *http.Request) hb.
 	return c.modal(data)
 }
 
-func (c *taskUpdateController) formSubmitted(data taskUpdateControllerData) hb.TagInterface {
+func (c *taskDefinitionUpdateController) formSubmitted(data taskDefinitionUpdateControllerData) hb.TagInterface {
 	if data.formTitle == "" {
 		return hb.Swal(hb.SwalOptions{
 			Icon:              "error",
@@ -85,7 +85,7 @@ func (c *taskUpdateController) formSubmitted(data taskUpdateControllerData) hb.T
 		SetStatus(data.formStatus).
 		SetDescription(data.formDescription)
 
-	err := c.store.TaskUpdate(data.task)
+	err := c.store.TaskDefinitionUpdate(data.task)
 
 	if err != nil {
 		return hb.Swal(hb.SwalOptions{
@@ -110,7 +110,7 @@ func (c *taskUpdateController) formSubmitted(data taskUpdateControllerData) hb.T
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *taskUpdateController) modal(data taskUpdateControllerData) *hb.Tag {
+func (c *taskDefinitionUpdateController) modal(data taskDefinitionUpdateControllerData) *hb.Tag {
 	fieldTitle := form.NewField(form.FieldOptions{
 		Label:    "Title",
 		Name:     "title",
@@ -143,11 +143,11 @@ func (c *taskUpdateController) modal(data taskUpdateControllerData) *hb.Tag {
 			},
 			{
 				Value: "Active",
-				Key:   taskstore.TaskStatusActive,
+				Key:   taskstore.TaskDefinitionStatusActive,
 			},
 			{
 				Value: "Inactive",
-				Key:   taskstore.TaskStatusCanceled,
+				Key:   taskstore.TaskDefinitionStatusCanceled,
 			},
 		},
 	})
@@ -197,7 +197,7 @@ func (c *taskUpdateController) modal(data taskUpdateControllerData) *hb.Tag {
 		HTML("Save").
 		Class("btn btn-success float-end").
 		HxInclude(`#ModalTaskUpdate`).
-		HxPost(url(data.request, pathTaskUpdate, nil)).
+		HxPost(url(data.request, pathTaskDefinitionUpdate, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -237,7 +237,7 @@ func (c *taskUpdateController) modal(data taskUpdateControllerData) *hb.Tag {
 	})
 }
 
-func (c *taskUpdateController) prepareData(r *http.Request) (data taskUpdateControllerData, err error) {
+func (c *taskDefinitionUpdateController) prepareData(r *http.Request) (data taskDefinitionUpdateControllerData, err error) {
 	data.request = r
 
 	data.taskID = req.GetStringTrimmed(r, "task_id")
@@ -246,7 +246,7 @@ func (c *taskUpdateController) prepareData(r *http.Request) (data taskUpdateCont
 		return data, errors.New("task_id is required")
 	}
 
-	data.task, err = c.store.TaskFindByID(data.taskID)
+	data.task, err = c.store.TaskDefinitionFindByID(data.taskID)
 
 	if err != nil {
 		return data, err
@@ -273,10 +273,10 @@ func (c *taskUpdateController) prepareData(r *http.Request) (data taskUpdateCont
 	return data, nil
 }
 
-type taskUpdateControllerData struct {
+type taskDefinitionUpdateControllerData struct {
 	request *http.Request
 	taskID  string
-	task    taskstore.TaskInterface
+	task    taskstore.TaskDefinitionInterface
 
 	formAlias       string
 	formDescription string

@@ -6,18 +6,18 @@
 ## Core Concepts
 
 ### 1. Store
-The `Store` is the central component that manages the connection to the database and provides methods to interact with tasks and queues. It handles:
+The `Store` is the central component that manages the connection to the database and provides methods to interact with task definitions and task queues. It handles:
 - Database connection and migration (`AutoMigrate`).
-- Task management (Create, Update, Delete, Find).
-- Queue management (Enqueue, Process, Status updates).
+- Task definition management (Create, Update, Delete, Find).
+- Task queue management (Enqueue, Process, Status updates).
 
-### 2. Task
-A `Task` represents a definition of a unit of work. It is identified by a unique **Alias**.
+### 2. Task Definition
+A task definition represents a unit of work. It is identified by a unique **Alias**.
 - **Properties**: Alias, Title, Description, Status (Active/Canceled).
-- **Handler**: Each task is associated with a `TaskHandlerInterface` implementation that defines the actual logic (`Handle` method).
+- **Handler**: Each task definition is associated with a `TaskHandlerInterface` implementation that defines the actual logic (`Handle` method).
 
-### 3. Queue
-A `Queue` item represents a specific instance of a task to be executed.
+### 3. Task Queue
+A task queue item represents a specific instance of a task to be executed.
 - **Properties**:
     - `ID`: Unique identifier.
     - `TaskID`: Reference to the parent Task.
@@ -35,7 +35,7 @@ The package supports recurring tasks via `RecurrenceRule`.
 
 ## Architecture
 
-- **Interfaces**: `interfaces.go` defines the contracts for Tasks, Queues, and the Store, promoting modularity and testability.
+- **Interfaces**: `interfaces.go` defines the contracts for Task Definitions, Task Queues, and the Store, promoting modularity and testability.
 - **Persistence**: Uses `goqu` for SQL generation and `sb` (likely a database helper) for execution, supporting multiple dialects.
 - **Worker**: The `QueueRunGoroutine` method starts a background worker that polls the database for `queued` tasks and processes them.
 - **Resilience**: Handles timeouts (unstuck mechanism) and retries (via `Attempts`).
@@ -48,8 +48,8 @@ The package supports recurring tasks via `RecurrenceRule`.
 5. **Process**: Run `QueueRunGoroutine` to start processing tasks.
 
 ## Data Model
-- **Tasks Table**: Stores task definitions.
-- **Queues Table**: Stores task execution instances (the queue).
+- **Task Definitions Table**: Stores task definitions.
+- **Task Queues Table**: Stores task execution instances (the task queue).
 
 ```mermaid
 erDiagram

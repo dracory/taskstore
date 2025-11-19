@@ -19,22 +19,22 @@ func adminHeader(store taskstore.StoreInterface, logger *slog.Logger, r *http.Re
 		Href(url(r, pathHome, nil)).
 		Class("nav-link")
 	linkQueue := hb.Hyperlink().
-		HTML("Queue").
-		Href(url(r, pathQueueManager, nil)).
+		HTML("Task Queue").
+		Href(url(r, pathTaskQueueManager, nil)).
 		Class("nav-link")
 	linkTasks := hb.Hyperlink().
-		HTML("Tasks").
-		Href(url(r, pathTaskManager, nil)).
+		HTML("Task Definitions").
+		Href(url(r, pathTaskDefinitionManager, nil)).
 		Class("nav-link")
 
-	queueCount, err := store.QueueCount(taskstore.QueueQuery())
+	queueCount, err := store.TaskQueueCount(taskstore.TaskQueueQuery())
 
 	if err != nil {
 		logger.Error(err.Error())
 		queueCount = -1
 	}
 
-	taskCount, err := store.TaskCount(taskstore.TaskQuery())
+	taskCount, err := store.TaskDefinitionCount(taskstore.TaskDefinitionQuery())
 
 	if err != nil {
 		logger.Error(err.Error())

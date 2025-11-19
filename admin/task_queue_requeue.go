@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -10,21 +11,22 @@ import (
 	"github.com/dracory/hb"
 	"github.com/dracory/req"
 	"github.com/dracory/taskstore"
+	"github.com/spf13/cast"
 )
 
-func queueTaskRestart(logger slog.Logger, store taskstore.StoreInterface) *queueTaskRestartController {
-	return &queueTaskRestartController{
+func taskQueueRequeue(logger slog.Logger, store taskstore.StoreInterface) *taskQueueRequeueController {
+	return &taskQueueRequeueController{
 		logger: logger,
 		store:  store,
 	}
 }
 
-type queueTaskRestartController struct {
+type taskQueueRequeueController struct {
 	logger slog.Logger
 	store  taskstore.StoreInterface
 }
 
-func (c *queueTaskRestartController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
+func (c *taskQueueRequeueController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, err := c.prepareData(r)
 
 	if err != nil {
@@ -38,11 +40,19 @@ func (c *queueTaskRestartController) ToTag(w http.ResponseWriter, r *http.Reques
 	return c.modal(data)
 }
 
-func (c *queueTaskRestartController) formSubmitted(data queueTaskRestartControllerData) hb.TagInterface {
-	task, err := c.store.TaskFindByID(data.queue.TaskID())
+func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControllerData) hb.TagInterface {
+	if data.formParameters == "" {
+		data.formParameters = "{}"
+	}
+
+	if !isJSON(data.formParameters) {
+		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task Parameters is not valid JSON", Position: "top-right"})
+	}
+
+	task, err := c.store.TaskDefinitionFindByID(data.queue.TaskID())
 
 	if err != nil {
-		c.logger.Error("At queueTaskRestartController > formSubmitted", "error", err.Error())
+		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
 
@@ -50,10 +60,18 @@ func (c *queueTaskRestartController) formSubmitted(data queueTaskRestartControll
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task not found", Position: "top-right"})
 	}
 
-	task.SetStatus(taskstore.QueueStatusQueued)
+	taskParametersAny := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(data.formParameters), &taskParametersAny); err != nil {
+		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
+		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
+	}
 
-	if err := c.store.TaskUpdate(task); err != nil {
-		c.logger.Error("At queueTaskRestartController > formSubmitted", "error", err.Error())
+	taskParametersMap := cast.ToStringMap(taskParametersAny)
+
+	_, err = c.store.TaskEnqueueByAlias(task.Alias(), taskParametersMap)
+
+	if err != nil {
+		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
 
@@ -62,21 +80,33 @@ func (c *queueTaskRestartController) formSubmitted(data queueTaskRestartControll
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *queueTaskRestartController) modal(data queueTaskRestartControllerData) *hb.Tag {
+func (c *taskQueueRequeueController) modal(data taskQueueRequeueControllerData) *hb.Tag {
 	modalID := `ModalQueueRequeue`
 	formID := modalID + `Form`
 
+	divInfo := hb.Div().
+		Class("alert alert-info").
+		Text(`A new task will be created with the following parameters. You may  edit the parameters if necessary`)
+
 	fieldInfo := form.NewField(form.FieldOptions{
-		Type: form.FORM_FIELD_TYPE_RAW,
-		Value: hb.Wrap().
-			Child(hb.Paragraph().
-				Child(hb.Text(`You are about to restart this task`))).
-			Child(hb.Paragraph().
-				Child(hb.Text(`All the actions executed by this task will be repeated.`))).
-			Child(hb.Paragraph().
-				Child(hb.Text(`Are you sure you want to proceed?`))).
-			ToHTML(),
+		Label:    "Queue",
+		Type:     form.FORM_FIELD_TYPE_RAW,
+		Value:    divInfo.ToHTML(),
 		Required: true,
+	})
+
+	fieldParameters := form.NewField(form.FieldOptions{
+		Label:    "Parameters",
+		Name:     "parameters",
+		Type:     form.FORM_FIELD_TYPE_TEXTAREA,
+		Value:    data.formParameters,
+		Help:     "The parameters of the queued task. Must be valid JSON.",
+		Required: true,
+	})
+
+	fieldParametersSize := form.NewField(form.FieldOptions{
+		Type:  form.FORM_FIELD_TYPE_RAW,
+		Value: hb.Style(`#` + formID + ` textarea[name="parameters"] { height: 200px; }`).ToHTML(),
 	})
 
 	fieldQueueID := form.NewField(form.FieldOptions{
@@ -92,6 +122,8 @@ func (c *queueTaskRestartController) modal(data queueTaskRestartControllerData) 
 		Fields: []form.FieldInterface{
 			fieldQueueID,
 			fieldInfo,
+			fieldParametersSize,
+			fieldParameters,
 		},
 	})
 
@@ -113,7 +145,7 @@ func (c *queueTaskRestartController) modal(data queueTaskRestartControllerData) 
 		HTML("Add to queue").
 		Class("btn btn-success float-end").
 		HxInclude(`#` + modalID).
-		HxPost(url(data.request, pathQueueRequeue, nil)).
+		HxPost(url(data.request, pathTaskQueueRequeue, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
@@ -153,7 +185,7 @@ func (c *queueTaskRestartController) modal(data queueTaskRestartControllerData) 
 	})
 }
 
-func (c *queueTaskRestartController) prepareData(r *http.Request) (data queueTaskRestartControllerData, err error) {
+func (c *taskQueueRequeueController) prepareData(r *http.Request) (data taskQueueRequeueControllerData, err error) {
 	data.request = r
 	data.queueID = req.GetStringTrimmed(r, "queue_id")
 
@@ -161,7 +193,7 @@ func (c *queueTaskRestartController) prepareData(r *http.Request) (data queueTas
 		return data, errors.New("queue_id is required")
 	}
 
-	if data.queue, err = c.store.QueueFindByID(data.queueID); err != nil {
+	if data.queue, err = c.store.TaskQueueFindByID(data.queueID); err != nil {
 		return data, err
 	}
 
@@ -169,11 +201,21 @@ func (c *queueTaskRestartController) prepareData(r *http.Request) (data queueTas
 		return data, errors.New("queue not found")
 	}
 
+	if r.Method == http.MethodGet {
+		data.formParameters = data.queue.Parameters()
+	}
+
+	if r.Method == http.MethodPost {
+		data.formParameters = req.GetStringTrimmed(r, "parameters")
+	}
+
 	return data, nil
 }
 
-type queueTaskRestartControllerData struct {
+type taskQueueRequeueControllerData struct {
 	request *http.Request
 	queueID string
-	queue   taskstore.QueueInterface
+	queue   taskstore.TaskQueueInterface
+
+	formParameters string
 }

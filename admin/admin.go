@@ -74,51 +74,51 @@ func (a *admin) handler() hb.TagInterface {
 		controller = pathHome
 	}
 
-	if controller == pathQueueCreate {
-		return queueCreate(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskQueueCreate {
+		return taskQueueCreate(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathQueueDelete {
-		return queueDelete(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskQueueDelete {
+		return taskQueueDelete(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathQueueDetails {
-		return queueDetails(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskQueueDetails {
+		return taskQueueDetails(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathQueueManager {
-		return queueManager(a.logger, a.store, a.layout).ToTag(a.response, a.request)
+	if controller == pathTaskQueueManager {
+		return taskQueueManager(a.logger, a.store, a.layout).ToTag(a.response, a.request)
 	}
 
-	if controller == pathQueueParameters {
-		return queueParameters(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskQueueParameters {
+		return taskQueueParameters(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathQueueRequeue {
-		return queueRequeue(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskQueueRequeue {
+		return taskQueueRequeue(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathQueueTaskRestart {
-		return queueTaskRestart(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskQueueTaskRestart {
+		return taskQueueTaskRestart(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathTaskCreate {
-		return taskCreate(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskDefinitionCreate {
+		return taskDefinitionCreate(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathTaskDelete {
-		return taskDelete(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskDefinitionDelete {
+		return taskDefinitionDelete(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathTaskManager {
-		return taskManager(a.logger, a.store, a.layout).ToTag(a.response, a.request)
+	if controller == pathTaskDefinitionManager {
+		return taskDefinitionManager(a.logger, a.store, a.layout).ToTag(a.response, a.request)
 	}
 
-	if controller == pathTaskUpdate {
-		return taskUpdate(a.logger, a.store).ToTag(a.response, a.request)
+	if controller == pathTaskDefinitionUpdate {
+		return taskDefinitionUpdate(a.logger, a.store).ToTag(a.response, a.request)
 	}
 
-	if controller == pathQueueCreate {
+	if controller == pathTaskQueueCreate {
 		return hb.Div().Child(hb.H1().HTML(controller))
 	}
 
