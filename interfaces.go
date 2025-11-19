@@ -6,7 +6,7 @@ import (
 	"github.com/dromara/carbon/v2"
 )
 
-type QueueInterface interface {
+type TaskQueueInterface interface {
 	Data() map[string]string
 	DataChanged() map[string]string
 	MarkAsNotDirty()
@@ -21,25 +21,25 @@ type QueueInterface interface {
 	IsSoftDeleted() bool
 
 	Attempts() int
-	SetAttempts(attempts int) QueueInterface
+	SetAttempts(attempts int) TaskQueueInterface
 
 	CompletedAt() string
 	CompletedAtCarbon() *carbon.Carbon
-	SetCompletedAt(completedAt string) QueueInterface
+	SetCompletedAt(completedAt string) TaskQueueInterface
 
 	CreatedAt() string
 	CreatedAtCarbon() *carbon.Carbon
-	SetCreatedAt(createdAt string) QueueInterface
+	SetCreatedAt(createdAt string) TaskQueueInterface
 
 	Details() string
-	AppendDetails(details string) QueueInterface
-	SetDetails(details string) QueueInterface
+	AppendDetails(details string) TaskQueueInterface
+	SetDetails(details string) TaskQueueInterface
 
 	ID() string
-	SetID(id string) QueueInterface
+	SetID(id string) TaskQueueInterface
 
 	// Memo() string
-	// SetMemo(memo string) QueueInterface
+	// SetMemo(memo string) TaskQueueInterface
 
 	// Meta(name string) string
 	// SetMeta(name string, value string) error
@@ -48,92 +48,92 @@ type QueueInterface interface {
 	// UpsertMetas(metas map[string]string) error
 
 	Output() string
-	SetOutput(output string) QueueInterface
+	SetOutput(output string) TaskQueueInterface
 
 	Parameters() string
-	SetParameters(parameters string) QueueInterface
+	SetParameters(parameters string) TaskQueueInterface
 	ParametersMap() (map[string]string, error)
-	SetParametersMap(parameters map[string]string) (QueueInterface, error)
+	SetParametersMap(parameters map[string]string) (TaskQueueInterface, error)
 
 	SoftDeletedAt() string
 	SoftDeletedAtCarbon() *carbon.Carbon
-	SetSoftDeletedAt(deletedAt string) QueueInterface
+	SetSoftDeletedAt(deletedAt string) TaskQueueInterface
 
 	StartedAt() string
 	StartedAtCarbon() *carbon.Carbon
-	SetStartedAt(startedAt string) QueueInterface
+	SetStartedAt(startedAt string) TaskQueueInterface
 
 	Status() string
-	SetStatus(status string) QueueInterface
+	SetStatus(status string) TaskQueueInterface
 
 	TaskID() string
-	SetTaskID(taskID string) QueueInterface
+	SetTaskID(taskID string) TaskQueueInterface
 
 	UpdatedAt() string
 	UpdatedAtCarbon() *carbon.Carbon
-	SetUpdatedAt(updatedAt string) QueueInterface
+	SetUpdatedAt(updatedAt string) TaskQueueInterface
 }
 
-type QueueQueryInterface interface {
+type TaskQueueQueryInterface interface {
 	Validate() error
 
 	Columns() []string
-	SetColumns(columns []string) QueueQueryInterface
+	SetColumns(columns []string) TaskQueueQueryInterface
 
 	HasCountOnly() bool
 	IsCountOnly() bool
-	SetCountOnly(countOnly bool) QueueQueryInterface
+	SetCountOnly(countOnly bool) TaskQueueQueryInterface
 
 	HasCreatedAtGte() bool
 	CreatedAtGte() string
-	SetCreatedAtGte(createdAtGte string) QueueQueryInterface
+	SetCreatedAtGte(createdAtGte string) TaskQueueQueryInterface
 
 	HasCreatedAtLte() bool
 	CreatedAtLte() string
-	SetCreatedAtLte(createdAtLte string) QueueQueryInterface
+	SetCreatedAtLte(createdAtLte string) TaskQueueQueryInterface
 
 	HasID() bool
 	ID() string
-	SetID(id string) QueueQueryInterface
+	SetID(id string) TaskQueueQueryInterface
 
 	HasIDIn() bool
 	IDIn() []string
-	SetIDIn(idIn []string) QueueQueryInterface
+	SetIDIn(idIn []string) TaskQueueQueryInterface
 
 	HasLimit() bool
 	Limit() int
-	SetLimit(limit int) QueueQueryInterface
+	SetLimit(limit int) TaskQueueQueryInterface
 
 	HasOffset() bool
 	Offset() int
-	SetOffset(offset int) QueueQueryInterface
+	SetOffset(offset int) TaskQueueQueryInterface
 
 	HasSortOrder() bool
 	SortOrder() string
-	SetSortOrder(sortOrder string) QueueQueryInterface
+	SetSortOrder(sortOrder string) TaskQueueQueryInterface
 
 	HasOrderBy() bool
 	OrderBy() string
-	SetOrderBy(orderBy string) QueueQueryInterface
+	SetOrderBy(orderBy string) TaskQueueQueryInterface
 
 	HasSoftDeletedIncluded() bool
 	SoftDeletedIncluded() bool
-	SetSoftDeletedIncluded(withDeleted bool) QueueQueryInterface
+	SetSoftDeletedIncluded(withDeleted bool) TaskQueueQueryInterface
 
 	HasStatus() bool
 	Status() string
-	SetStatus(status string) QueueQueryInterface
+	SetStatus(status string) TaskQueueQueryInterface
 
 	HasStatusIn() bool
 	StatusIn() []string
-	SetStatusIn(statusIn []string) QueueQueryInterface
+	SetStatusIn(statusIn []string) TaskQueueQueryInterface
 
 	HasTaskID() bool
 	TaskID() string
-	SetTaskID(taskID string) QueueQueryInterface
+	SetTaskID(taskID string) TaskQueueQueryInterface
 }
 
-type TaskInterface interface {
+type TaskDefinitionInterface interface {
 	Data() map[string]string
 	DataChanged() map[string]string
 	MarkAsNotDirty()
@@ -143,93 +143,93 @@ type TaskInterface interface {
 	IsSoftDeleted() bool
 
 	Alias() string
-	SetAlias(alias string) TaskInterface
+	SetAlias(alias string) TaskDefinitionInterface
 
 	CreatedAt() string
 	CreatedAtCarbon() *carbon.Carbon
-	SetCreatedAt(createdAt string) TaskInterface
+	SetCreatedAt(createdAt string) TaskDefinitionInterface
 
 	Description() string
-	SetDescription(description string) TaskInterface
+	SetDescription(description string) TaskDefinitionInterface
 
 	ID() string
-	SetID(id string) TaskInterface
+	SetID(id string) TaskDefinitionInterface
 
 	Memo() string
-	SetMemo(memo string) TaskInterface
+	SetMemo(memo string) TaskDefinitionInterface
 
 	SoftDeletedAt() string
 	SoftDeletedAtCarbon() *carbon.Carbon
-	SetSoftDeletedAt(deletedAt string) TaskInterface
+	SetSoftDeletedAt(deletedAt string) TaskDefinitionInterface
 
 	Status() string
-	SetStatus(status string) TaskInterface
+	SetStatus(status string) TaskDefinitionInterface
 
 	Title() string
-	SetTitle(title string) TaskInterface
+	SetTitle(title string) TaskDefinitionInterface
 
 	UpdatedAt() string
 	UpdatedAtCarbon() *carbon.Carbon
-	SetUpdatedAt(updatedAt string) TaskInterface
+	SetUpdatedAt(updatedAt string) TaskDefinitionInterface
 }
 
-type TaskQueryInterface interface {
+type TaskDefinitionQueryInterface interface {
 	Validate() error
 
 	Columns() []string
-	SetColumns(columns []string) TaskQueryInterface
+	SetColumns(columns []string) TaskDefinitionQueryInterface
 
 	HasCountOnly() bool
 	IsCountOnly() bool
-	SetCountOnly(countOnly bool) TaskQueryInterface
+	SetCountOnly(countOnly bool) TaskDefinitionQueryInterface
 
 	HasAlias() bool
 	Alias() string
-	SetAlias(alias string) TaskQueryInterface
+	SetAlias(alias string) TaskDefinitionQueryInterface
 
 	HasCreatedAtGte() bool
 	CreatedAtGte() string
-	SetCreatedAtGte(createdAtGte string) TaskQueryInterface
+	SetCreatedAtGte(createdAtGte string) TaskDefinitionQueryInterface
 
 	HasCreatedAtLte() bool
 	CreatedAtLte() string
-	SetCreatedAtLte(createdAtLte string) TaskQueryInterface
+	SetCreatedAtLte(createdAtLte string) TaskDefinitionQueryInterface
 
 	HasID() bool
 	ID() string
-	SetID(id string) TaskQueryInterface
+	SetID(id string) TaskDefinitionQueryInterface
 
 	HasIDIn() bool
 	IDIn() []string
-	SetIDIn(idIn []string) TaskQueryInterface
+	SetIDIn(idIn []string) TaskDefinitionQueryInterface
 
 	HasLimit() bool
 	Limit() int
-	SetLimit(limit int) TaskQueryInterface
+	SetLimit(limit int) TaskDefinitionQueryInterface
 
 	HasOffset() bool
 	Offset() int
-	SetOffset(offset int) TaskQueryInterface
+	SetOffset(offset int) TaskDefinitionQueryInterface
 
 	HasSortOrder() bool
 	SortOrder() string
-	SetSortOrder(sortOrder string) TaskQueryInterface
+	SetSortOrder(sortOrder string) TaskDefinitionQueryInterface
 
 	HasOrderBy() bool
 	OrderBy() string
-	SetOrderBy(orderBy string) TaskQueryInterface
+	SetOrderBy(orderBy string) TaskDefinitionQueryInterface
 
 	HasSoftDeletedIncluded() bool
 	SoftDeletedIncluded() bool
-	SetSoftDeletedIncluded(withDeleted bool) TaskQueryInterface
+	SetSoftDeletedIncluded(withDeleted bool) TaskDefinitionQueryInterface
 
 	HasStatus() bool
 	Status() string
-	SetStatus(status string) TaskQueryInterface
+	SetStatus(status string) TaskDefinitionQueryInterface
 
 	HasStatusIn() bool
 	StatusIn() []string
-	SetStatusIn(statusIn []string) TaskQueryInterface
+	SetStatusIn(statusIn []string) TaskDefinitionQueryInterface
 }
 
 type TaskHandlerInterface interface {
@@ -241,7 +241,7 @@ type TaskHandlerInterface interface {
 
 	Handle() bool
 
-	SetQueuedTask(queuedTask QueueInterface)
+	SetQueuedTask(queuedTask TaskQueueInterface)
 
 	SetOptions(options map[string]string)
 }
@@ -252,32 +252,32 @@ type StoreInterface interface {
 	// Start()
 	// Stop()
 
-	QueueCount(options QueueQueryInterface) (int64, error)
-	QueueCreate(Queue QueueInterface) error
-	QueueDelete(Queue QueueInterface) error
-	QueueDeleteByID(id string) error
-	QueueFindByID(QueueID string) (QueueInterface, error)
-	QueueList(query QueueQueryInterface) ([]QueueInterface, error)
-	QueueSoftDelete(Queue QueueInterface) error
-	QueueSoftDeleteByID(id string) error
-	QueueUpdate(Queue QueueInterface) error
+	TaskQueueCount(options TaskQueueQueryInterface) (int64, error)
+	TaskQueueCreate(TaskQueue TaskQueueInterface) error
+	TaskQueueDelete(TaskQueue TaskQueueInterface) error
+	TaskQueueDeleteByID(id string) error
+	TaskQueueFindByID(TaskQueueID string) (TaskQueueInterface, error)
+	TaskQueueList(query TaskQueueQueryInterface) ([]TaskQueueInterface, error)
+	TaskQueueSoftDelete(TaskQueue TaskQueueInterface) error
+	TaskQueueSoftDeleteByID(id string) error
+	TaskQueueUpdate(TaskQueue TaskQueueInterface) error
 
 	QueueRunGoroutine(ctx context.Context, processSeconds int, unstuckMinutes int)
-	QueuedTaskProcess(queuedTask QueueInterface) (bool, error)
+	QueuedTaskProcess(queuedTask TaskQueueInterface) (bool, error)
 
-	TaskEnqueueByAlias(alias string, parameters map[string]interface{}) (QueueInterface, error)
+	TaskEnqueueByAlias(alias string, parameters map[string]interface{}) (TaskQueueInterface, error)
 	TaskExecuteCli(alias string, args []string) bool
 
-	TaskCount(options TaskQueryInterface) (int64, error)
-	TaskCreate(Task TaskInterface) error
-	TaskDelete(Task TaskInterface) error
-	TaskDeleteByID(id string) error
-	TaskFindByAlias(alias string) (TaskInterface, error)
-	TaskFindByID(id string) (TaskInterface, error)
-	TaskList(options TaskQueryInterface) ([]TaskInterface, error)
-	TaskSoftDelete(Task TaskInterface) error
-	TaskSoftDeleteByID(id string) error
-	TaskUpdate(Task TaskInterface) error
+	TaskDefinitionCount(options TaskDefinitionQueryInterface) (int64, error)
+	TaskDefinitionCreate(TaskDefinition TaskDefinitionInterface) error
+	TaskDefinitionDelete(TaskDefinition TaskDefinitionInterface) error
+	TaskDefinitionDeleteByID(id string) error
+	TaskDefinitionFindByAlias(alias string) (TaskDefinitionInterface, error)
+	TaskDefinitionFindByID(id string) (TaskDefinitionInterface, error)
+	TaskDefinitionList(options TaskDefinitionQueryInterface) ([]TaskDefinitionInterface, error)
+	TaskDefinitionSoftDelete(TaskDefinition TaskDefinitionInterface) error
+	TaskDefinitionSoftDeleteByID(id string) error
+	TaskDefinitionUpdate(TaskDefinition TaskDefinitionInterface) error
 
 	TaskHandlerList() []TaskHandlerInterface
 	TaskHandlerAdd(taskHandler TaskHandlerInterface, createIfMissing bool) error

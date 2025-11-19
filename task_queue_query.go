@@ -2,19 +2,19 @@ package taskstore
 
 import "errors"
 
-func QueueQuery() QueueQueryInterface {
-	return &queueQuery{
+func TaskQueueQuery() TaskQueueQueryInterface {
+	return &taskQueueQuery{
 		properties: make(map[string]interface{}),
 	}
 }
 
-type queueQuery struct {
+type taskQueueQuery struct {
 	properties map[string]interface{}
 }
 
-var _ QueueQueryInterface = (*queueQuery)(nil)
+var _ TaskQueueQueryInterface = (*taskQueueQuery)(nil)
 
-func (q *queueQuery) Validate() error {
+func (q *taskQueueQuery) Validate() error {
 	if q.HasCreatedAtGte() && q.CreatedAtGte() == "" {
 		return errors.New("queue query. created_at_gte cannot be empty")
 	}
@@ -54,7 +54,7 @@ func (q *queueQuery) Validate() error {
 	return nil
 }
 
-func (q *queueQuery) Columns() []string {
+func (q *taskQueueQuery) Columns() []string {
 	if !q.hasProperty("columns") {
 		return []string{}
 	}
@@ -62,16 +62,16 @@ func (q *queueQuery) Columns() []string {
 	return q.properties["columns"].([]string)
 }
 
-func (q *queueQuery) SetColumns(columns []string) QueueQueryInterface {
+func (q *taskQueueQuery) SetColumns(columns []string) TaskQueueQueryInterface {
 	q.properties["columns"] = columns
 	return q
 }
 
-func (q *queueQuery) HasCountOnly() bool {
+func (q *taskQueueQuery) HasCountOnly() bool {
 	return q.hasProperty("count_only")
 }
 
-func (q *queueQuery) IsCountOnly() bool {
+func (q *taskQueueQuery) IsCountOnly() bool {
 	if q.HasCountOnly() {
 		return q.properties["count_only"].(bool)
 	}
@@ -79,170 +79,170 @@ func (q *queueQuery) IsCountOnly() bool {
 	return false
 }
 
-func (q *queueQuery) SetCountOnly(countOnly bool) QueueQueryInterface {
+func (q *taskQueueQuery) SetCountOnly(countOnly bool) TaskQueueQueryInterface {
 	q.properties["count_only"] = countOnly
 	return q
 }
 
-func (q *queueQuery) HasCreatedAtGte() bool {
+func (q *taskQueueQuery) HasCreatedAtGte() bool {
 	return q.hasProperty("created_at_gte")
 }
 
-func (q *queueQuery) CreatedAtGte() string {
+func (q *taskQueueQuery) CreatedAtGte() string {
 	return q.properties["created_at_gte"].(string)
 }
 
-func (q *queueQuery) SetCreatedAtGte(createdAtGte string) QueueQueryInterface {
+func (q *taskQueueQuery) SetCreatedAtGte(createdAtGte string) TaskQueueQueryInterface {
 	q.properties["created_at_gte"] = createdAtGte
 	return q
 }
 
-func (q *queueQuery) HasCreatedAtLte() bool {
+func (q *taskQueueQuery) HasCreatedAtLte() bool {
 	return q.hasProperty("created_at_lte")
 }
 
-func (q *queueQuery) CreatedAtLte() string {
+func (q *taskQueueQuery) CreatedAtLte() string {
 	return q.properties["created_at_lte"].(string)
 }
 
-func (q *queueQuery) SetCreatedAtLte(createdAtLte string) QueueQueryInterface {
+func (q *taskQueueQuery) SetCreatedAtLte(createdAtLte string) TaskQueueQueryInterface {
 	q.properties["created_at_lte"] = createdAtLte
 	return q
 }
 
-func (q *queueQuery) HasID() bool {
+func (q *taskQueueQuery) HasID() bool {
 	return q.hasProperty("id")
 }
 
-func (q *queueQuery) ID() string {
+func (q *taskQueueQuery) ID() string {
 	return q.properties["id"].(string)
 }
 
-func (q *queueQuery) SetID(id string) QueueQueryInterface {
+func (q *taskQueueQuery) SetID(id string) TaskQueueQueryInterface {
 	q.properties["id"] = id
 	return q
 }
 
-func (q *queueQuery) HasIDIn() bool {
+func (q *taskQueueQuery) HasIDIn() bool {
 	return q.hasProperty("id_in")
 }
 
-func (q *queueQuery) IDIn() []string {
+func (q *taskQueueQuery) IDIn() []string {
 	return q.properties["id_in"].([]string)
 }
 
-func (q *queueQuery) SetIDIn(idIn []string) QueueQueryInterface {
+func (q *taskQueueQuery) SetIDIn(idIn []string) TaskQueueQueryInterface {
 	q.properties["id_in"] = idIn
 	return q
 }
 
-func (q *queueQuery) HasLimit() bool {
+func (q *taskQueueQuery) HasLimit() bool {
 	return q.hasProperty("limit")
 }
 
-func (q *queueQuery) Limit() int {
+func (q *taskQueueQuery) Limit() int {
 	return q.properties["limit"].(int)
 }
 
-func (q *queueQuery) SetLimit(limit int) QueueQueryInterface {
+func (q *taskQueueQuery) SetLimit(limit int) TaskQueueQueryInterface {
 	q.properties["limit"] = limit
 	return q
 }
 
-func (q *queueQuery) HasTaskID() bool {
+func (q *taskQueueQuery) HasTaskID() bool {
 	return q.hasProperty("task_id")
 }
 
-func (q *queueQuery) TaskID() string {
+func (q *taskQueueQuery) TaskID() string {
 	return q.properties["task_id"].(string)
 }
 
-func (q *queueQuery) SetTaskID(taskID string) QueueQueryInterface {
+func (q *taskQueueQuery) SetTaskID(taskID string) TaskQueueQueryInterface {
 	q.properties["task_id"] = taskID
 	return q
 }
 
-func (q *queueQuery) HasOffset() bool {
+func (q *taskQueueQuery) HasOffset() bool {
 	return q.hasProperty("offset")
 }
 
-func (q *queueQuery) Offset() int {
+func (q *taskQueueQuery) Offset() int {
 	return q.properties["offset"].(int)
 }
 
-func (q *queueQuery) SetOffset(offset int) QueueQueryInterface {
+func (q *taskQueueQuery) SetOffset(offset int) TaskQueueQueryInterface {
 	q.properties["offset"] = offset
 	return q
 }
 
-func (q *queueQuery) HasOrderBy() bool {
+func (q *taskQueueQuery) HasOrderBy() bool {
 	return q.hasProperty("order_by")
 }
 
-func (q *queueQuery) OrderBy() string {
+func (q *taskQueueQuery) OrderBy() string {
 	return q.properties["order_by"].(string)
 }
 
-func (q *queueQuery) SetOrderBy(orderBy string) QueueQueryInterface {
+func (q *taskQueueQuery) SetOrderBy(orderBy string) TaskQueueQueryInterface {
 	q.properties["order_by"] = orderBy
 	return q
 }
 
-func (q *queueQuery) HasSoftDeletedIncluded() bool {
+func (q *taskQueueQuery) HasSoftDeletedIncluded() bool {
 	return q.hasProperty("soft_delete_included")
 }
 
-func (q *queueQuery) SoftDeletedIncluded() bool {
+func (q *taskQueueQuery) SoftDeletedIncluded() bool {
 	if !q.HasSoftDeletedIncluded() {
 		return false
 	}
 	return q.properties["soft_delete_included"].(bool)
 }
 
-func (q *queueQuery) SetSoftDeletedIncluded(softDeleteIncluded bool) QueueQueryInterface {
+func (q *taskQueueQuery) SetSoftDeletedIncluded(softDeleteIncluded bool) TaskQueueQueryInterface {
 	q.properties["soft_delete_included"] = softDeleteIncluded
 	return q
 }
 
-func (q *queueQuery) HasSortOrder() bool {
+func (q *taskQueueQuery) HasSortOrder() bool {
 	return q.hasProperty("sort_order")
 }
 
-func (q *queueQuery) SortOrder() string {
+func (q *taskQueueQuery) SortOrder() string {
 	return q.properties["sort_order"].(string)
 }
 
-func (q *queueQuery) SetSortOrder(sortOrder string) QueueQueryInterface {
+func (q *taskQueueQuery) SetSortOrder(sortOrder string) TaskQueueQueryInterface {
 	q.properties["sort_order"] = sortOrder
 	return q
 }
 
-func (q *queueQuery) HasStatus() bool {
+func (q *taskQueueQuery) HasStatus() bool {
 	return q.hasProperty("status")
 }
 
-func (q *queueQuery) Status() string {
+func (q *taskQueueQuery) Status() string {
 	return q.properties["status"].(string)
 }
 
-func (q *queueQuery) SetStatus(status string) QueueQueryInterface {
+func (q *taskQueueQuery) SetStatus(status string) TaskQueueQueryInterface {
 	q.properties["status"] = status
 	return q
 }
 
-func (q *queueQuery) HasStatusIn() bool {
+func (q *taskQueueQuery) HasStatusIn() bool {
 	return q.hasProperty("status_in")
 }
 
-func (q *queueQuery) StatusIn() []string {
+func (q *taskQueueQuery) StatusIn() []string {
 	return q.properties["status_in"].([]string)
 }
 
-func (q *queueQuery) SetStatusIn(statusIn []string) QueueQueryInterface {
+func (q *taskQueueQuery) SetStatusIn(statusIn []string) TaskQueueQueryInterface {
 	q.properties["status_in"] = statusIn
 	return q
 }
 
-func (q *queueQuery) hasProperty(key string) bool {
+func (q *taskQueueQuery) hasProperty(key string) bool {
 	return q.properties[key] != nil
 }

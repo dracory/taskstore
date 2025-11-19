@@ -4,118 +4,118 @@ import (
 	"testing"
 )
 
-func TestQueueQuery(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	if query == nil {
-		t.Fatal("QueueQuery: Expected query to be created, got nil")
+		t.Fatal("TaskQuery: Expected query to be created, got nil")
 	}
 
 	// Test that it implements the interface
-	var _ QueueQueryInterface = query
+	var _ TaskDefinitionQueryInterface = query
 }
 
-func TestQueueQuery_Validate(t *testing.T) {
+func TestTaskQuery_Validate(t *testing.T) {
 	tests := []struct {
 		name        string
-		setupQuery  func() QueueQueryInterface
+		setupQuery  func() TaskDefinitionQueryInterface
 		expectError bool
 		errorMsg    string
 	}{
 		{
 			name: "valid empty query",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery()
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery()
 			},
 			expectError: false,
 		},
 		{
 			name: "valid query with all fields",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().
+					SetAlias("test-alias").
 					SetCreatedAtGte("2023-01-01 00:00:00").
 					SetCreatedAtLte("2023-12-31 23:59:59").
 					SetID("test-id").
 					SetIDIn([]string{"id1", "id2"}).
 					SetLimit(10).
 					SetOffset(0).
-					SetStatus("queued").
-					SetStatusIn([]string{"queued", "running"}).
-					SetTaskID("task-123")
+					SetStatus("active").
+					SetStatusIn([]string{"active", "canceled"})
 			},
 			expectError: false,
 		},
 		{
-			name: "empty created_at_gte",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetCreatedAtGte("")
+			name: "empty alias",
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetAlias("")
 			},
 			expectError: true,
-			errorMsg:    "queue query. created_at_gte cannot be empty",
+			errorMsg:    "task query. alias cannot be empty",
+		},
+		{
+			name: "empty created_at_gte",
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetCreatedAtGte("")
+			},
+			expectError: true,
+			errorMsg:    "task query. created_at_gte cannot be empty",
 		},
 		{
 			name: "empty created_at_lte",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetCreatedAtLte("")
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetCreatedAtLte("")
 			},
 			expectError: true,
-			errorMsg:    "queue query. created_at_lte cannot be empty",
+			errorMsg:    "task query. created_at_lte cannot be empty",
 		},
 		{
 			name: "empty id",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetID("")
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetID("")
 			},
 			expectError: true,
-			errorMsg:    "queue query. id cannot be empty",
+			errorMsg:    "task query. id cannot be empty",
 		},
 		{
 			name: "empty id_in array",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetIDIn([]string{})
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetIDIn([]string{})
 			},
 			expectError: true,
-			errorMsg:    "queue query. id_in cannot be empty array",
+			errorMsg:    "task query. id_in cannot be empty array",
 		},
 		{
 			name: "negative limit",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetLimit(-1)
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetLimit(-1)
 			},
 			expectError: true,
-			errorMsg:    "queue query. limit cannot be negative",
+			errorMsg:    "task query. limit cannot be negative",
 		},
 		{
 			name: "negative offset",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetOffset(-1)
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetOffset(-1)
 			},
 			expectError: true,
-			errorMsg:    "queue query. offset cannot be negative",
+			errorMsg:    "task query. offset cannot be negative",
 		},
 		{
 			name: "empty status",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetStatus("")
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetStatus("")
 			},
 			expectError: true,
-			errorMsg:    "queue query. status cannot be empty",
+			errorMsg:    "task query. status cannot be empty",
 		},
 		{
 			name: "empty status_in array",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetStatusIn([]string{})
+			setupQuery: func() TaskDefinitionQueryInterface {
+				return TaskDefinitionQuery().SetStatusIn([]string{})
 			},
 			expectError: true,
-			errorMsg:    "queue query. status_in cannot be empty array",
-		},
-		{
-			name: "empty task_id",
-			setupQuery: func() QueueQueryInterface {
-				return QueueQuery().SetTaskID("")
-			},
-			expectError: true,
-			errorMsg:    "queue query. task_id cannot be empty",
+			errorMsg:    "task query. status_in cannot be empty array",
 		},
 	}
 
@@ -139,8 +139,33 @@ func TestQueueQuery_Validate(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_Columns(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_Alias(t *testing.T) {
+	query := TaskDefinitionQuery()
+
+	// Test default state
+	if query.HasAlias() {
+		t.Error("HasAlias: Expected false for new query")
+	}
+	if query.Alias() != "" {
+		t.Errorf("Alias: Expected empty string, got '%s'", query.Alias())
+	}
+
+	// Test setting alias
+	testAlias := "test-alias"
+	result := query.SetAlias(testAlias)
+	if result != query {
+		t.Error("SetAlias: Expected method to return the same query instance")
+	}
+	if !query.HasAlias() {
+		t.Error("HasAlias: Expected true after setting alias")
+	}
+	if query.Alias() != testAlias {
+		t.Errorf("Alias: Expected '%s', got '%s'", testAlias, query.Alias())
+	}
+}
+
+func TestTaskQuery_Columns(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	columns := query.Columns()
@@ -149,12 +174,12 @@ func TestQueueQuery_Columns(t *testing.T) {
 	}
 
 	// Test setting columns
-	testColumns := []string{"id", "task_id", "status"}
+	testColumns := []string{"id", "alias", "title"}
 	result := query.SetColumns(testColumns)
 	if result != query {
 		t.Error("SetColumns: Expected method to return the same query instance")
 	}
-	
+
 	retrievedColumns := query.Columns()
 	if len(retrievedColumns) != len(testColumns) {
 		t.Errorf("Columns: Expected %d columns, got %d", len(testColumns), len(retrievedColumns))
@@ -166,8 +191,8 @@ func TestQueueQuery_Columns(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_CountOnly(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_CountOnly(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasCountOnly() {
@@ -199,8 +224,8 @@ func TestQueueQuery_CountOnly(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_CreatedAtGte(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_CreatedAtGte(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasCreatedAtGte() {
@@ -221,8 +246,8 @@ func TestQueueQuery_CreatedAtGte(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_CreatedAtLte(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_CreatedAtLte(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasCreatedAtLte() {
@@ -243,8 +268,8 @@ func TestQueueQuery_CreatedAtLte(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_ID(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_ID(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasID() {
@@ -252,7 +277,7 @@ func TestQueueQuery_ID(t *testing.T) {
 	}
 
 	// Test setting ID
-	testID := "test-queue-id-123"
+	testID := "test-id-123"
 	result := query.SetID(testID)
 	if result != query {
 		t.Error("SetID: Expected method to return the same query instance")
@@ -265,8 +290,8 @@ func TestQueueQuery_ID(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_IDIn(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_IDIn(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasIDIn() {
@@ -274,7 +299,7 @@ func TestQueueQuery_IDIn(t *testing.T) {
 	}
 
 	// Test setting ID in
-	testIDs := []string{"queue1", "queue2", "queue3"}
+	testIDs := []string{"id1", "id2", "id3"}
 	result := query.SetIDIn(testIDs)
 	if result != query {
 		t.Error("SetIDIn: Expected method to return the same query instance")
@@ -282,7 +307,7 @@ func TestQueueQuery_IDIn(t *testing.T) {
 	if !query.HasIDIn() {
 		t.Error("HasIDIn: Expected true after setting ID in")
 	}
-	
+
 	retrievedIDs := query.IDIn()
 	if len(retrievedIDs) != len(testIDs) {
 		t.Errorf("IDIn: Expected %d IDs, got %d", len(testIDs), len(retrievedIDs))
@@ -294,8 +319,8 @@ func TestQueueQuery_IDIn(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_Limit(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_Limit(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasLimit() {
@@ -303,7 +328,7 @@ func TestQueueQuery_Limit(t *testing.T) {
 	}
 
 	// Test setting limit
-	testLimit := 25
+	testLimit := 50
 	result := query.SetLimit(testLimit)
 	if result != query {
 		t.Error("SetLimit: Expected method to return the same query instance")
@@ -316,30 +341,8 @@ func TestQueueQuery_Limit(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_TaskID(t *testing.T) {
-	query := QueueQuery()
-
-	// Test default state
-	if query.HasTaskID() {
-		t.Error("HasTaskID: Expected false for new query")
-	}
-
-	// Test setting task ID
-	testTaskID := "task-456"
-	result := query.SetTaskID(testTaskID)
-	if result != query {
-		t.Error("SetTaskID: Expected method to return the same query instance")
-	}
-	if !query.HasTaskID() {
-		t.Error("HasTaskID: Expected true after setting task ID")
-	}
-	if query.TaskID() != testTaskID {
-		t.Errorf("TaskID: Expected '%s', got '%s'", testTaskID, query.TaskID())
-	}
-}
-
-func TestQueueQuery_Offset(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_Offset(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasOffset() {
@@ -347,7 +350,7 @@ func TestQueueQuery_Offset(t *testing.T) {
 	}
 
 	// Test setting offset
-	testOffset := 15
+	testOffset := 25
 	result := query.SetOffset(testOffset)
 	if result != query {
 		t.Error("SetOffset: Expected method to return the same query instance")
@@ -360,8 +363,8 @@ func TestQueueQuery_Offset(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_OrderBy(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_OrderBy(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasOrderBy() {
@@ -369,7 +372,7 @@ func TestQueueQuery_OrderBy(t *testing.T) {
 	}
 
 	// Test setting order by
-	testOrderBy := "started_at"
+	testOrderBy := "created_at"
 	result := query.SetOrderBy(testOrderBy)
 	if result != query {
 		t.Error("SetOrderBy: Expected method to return the same query instance")
@@ -382,8 +385,8 @@ func TestQueueQuery_OrderBy(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_SoftDeletedIncluded(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_SoftDeletedIncluded(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasSoftDeletedIncluded() {
@@ -415,8 +418,8 @@ func TestQueueQuery_SoftDeletedIncluded(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_SortOrder(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_SortOrder(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasSortOrder() {
@@ -424,7 +427,7 @@ func TestQueueQuery_SortOrder(t *testing.T) {
 	}
 
 	// Test setting sort order
-	testSortOrder := "ASC"
+	testSortOrder := "DESC"
 	result := query.SetSortOrder(testSortOrder)
 	if result != query {
 		t.Error("SetSortOrder: Expected method to return the same query instance")
@@ -437,8 +440,8 @@ func TestQueueQuery_SortOrder(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_Status(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_Status(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasStatus() {
@@ -446,7 +449,7 @@ func TestQueueQuery_Status(t *testing.T) {
 	}
 
 	// Test setting status
-	testStatus := "running"
+	testStatus := "active"
 	result := query.SetStatus(testStatus)
 	if result != query {
 		t.Error("SetStatus: Expected method to return the same query instance")
@@ -459,8 +462,8 @@ func TestQueueQuery_Status(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_StatusIn(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_StatusIn(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test default state
 	if query.HasStatusIn() {
@@ -468,7 +471,7 @@ func TestQueueQuery_StatusIn(t *testing.T) {
 	}
 
 	// Test setting status in
-	testStatuses := []string{"queued", "running", "success"}
+	testStatuses := []string{"active", "canceled", "paused"}
 	result := query.SetStatusIn(testStatuses)
 	if result != query {
 		t.Error("SetStatusIn: Expected method to return the same query instance")
@@ -476,7 +479,7 @@ func TestQueueQuery_StatusIn(t *testing.T) {
 	if !query.HasStatusIn() {
 		t.Error("HasStatusIn: Expected true after setting status in")
 	}
-	
+
 	retrievedStatuses := query.StatusIn()
 	if len(retrievedStatuses) != len(testStatuses) {
 		t.Errorf("StatusIn: Expected %d statuses, got %d", len(testStatuses), len(retrievedStatuses))
@@ -488,31 +491,34 @@ func TestQueueQuery_StatusIn(t *testing.T) {
 	}
 }
 
-func TestQueueQuery_ChainedSetters(t *testing.T) {
-	query := QueueQuery()
+func TestTaskQuery_ChainedSetters(t *testing.T) {
+	query := TaskDefinitionQuery()
 
 	// Test that all setters can be chained
 	result := query.
-		SetColumns([]string{"id", "task_id"}).
+		SetAlias("test-alias").
+		SetColumns([]string{"id", "alias"}).
 		SetCountOnly(true).
 		SetCreatedAtGte("2023-01-01 00:00:00").
 		SetCreatedAtLte("2023-12-31 23:59:59").
 		SetID("test-id").
 		SetIDIn([]string{"id1", "id2"}).
-		SetLimit(20).
-		SetTaskID("task-789").
-		SetOffset(10).
+		SetLimit(10).
+		SetOffset(5).
 		SetOrderBy("created_at").
 		SetSoftDeletedIncluded(true).
 		SetSortOrder("DESC").
-		SetStatus("queued").
-		SetStatusIn([]string{"queued", "running"})
+		SetStatus("active").
+		SetStatusIn([]string{"active", "canceled"})
 
 	if result != query {
 		t.Error("ChainedSetters: Expected all setters to return the same query instance for chaining")
 	}
 
 	// Verify all values were set correctly
+	if query.Alias() != "test-alias" {
+		t.Error("ChainedSetters: Alias not set correctly")
+	}
 	if len(query.Columns()) != 2 {
 		t.Error("ChainedSetters: Columns not set correctly")
 	}
@@ -531,13 +537,10 @@ func TestQueueQuery_ChainedSetters(t *testing.T) {
 	if len(query.IDIn()) != 2 {
 		t.Error("ChainedSetters: IDIn not set correctly")
 	}
-	if query.Limit() != 20 {
+	if query.Limit() != 10 {
 		t.Error("ChainedSetters: Limit not set correctly")
 	}
-	if query.TaskID() != "task-789" {
-		t.Error("ChainedSetters: TaskID not set correctly")
-	}
-	if query.Offset() != 10 {
+	if query.Offset() != 5 {
 		t.Error("ChainedSetters: Offset not set correctly")
 	}
 	if query.OrderBy() != "created_at" {
@@ -549,7 +552,7 @@ func TestQueueQuery_ChainedSetters(t *testing.T) {
 	if query.SortOrder() != "DESC" {
 		t.Error("ChainedSetters: SortOrder not set correctly")
 	}
-	if query.Status() != "queued" {
+	if query.Status() != "active" {
 		t.Error("ChainedSetters: Status not set correctly")
 	}
 	if len(query.StatusIn()) != 2 {

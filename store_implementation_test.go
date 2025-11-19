@@ -23,12 +23,12 @@ func initStore() (*Store, error) {
 		return nil, err
 	}
 	return NewStore(NewStoreOptions{
-		TaskTableName:      "task",
-		QueueTableName:     "queue",
-		DB:                 db,
-		DbDriverName:       "sqlite",
-		AutomigrateEnabled: false,
-		DebugEnabled:       false,
+		TaskDefinitionTableName: "task_definition",
+		TaskQueueTableName:      "task_queue",
+		DB:                      db,
+		DbDriverName:            "sqlite",
+		AutomigrateEnabled:      false,
+		DebugEnabled:            false,
 	})
 }
 

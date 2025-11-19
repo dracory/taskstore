@@ -17,47 +17,47 @@ import (
 
 // Store defines a session store
 type Store struct {
-	taskTableName      string
-	queueTableName     string
-	taskHandlers       []TaskHandlerInterface
-	db                 *sql.DB
-	dbDriverName       string
-	automigrateEnabled bool
-	debugEnabled       bool
-	queueMu            sync.Mutex
-	queueCancel        context.CancelFunc
-	queueWG            sync.WaitGroup
+	taskDefinitionTableName string
+	taskQueueTableName      string
+	taskHandlers            []TaskHandlerInterface
+	db                      *sql.DB
+	dbDriverName            string
+	automigrateEnabled      bool
+	debugEnabled            bool
+	queueMu                 sync.Mutex
+	queueCancel             context.CancelFunc
+	queueWG                 sync.WaitGroup
 }
 
 var _ StoreInterface = (*Store)(nil)
 
 // NewStoreOptions define the options for creating a new task store
 type NewStoreOptions struct {
-	TaskTableName      string
-	QueueTableName     string
-	DB                 *sql.DB
-	DbDriverName       string
-	AutomigrateEnabled bool
-	DebugEnabled       bool
+	TaskDefinitionTableName string
+	TaskQueueTableName      string
+	DB                      *sql.DB
+	DbDriverName            string
+	AutomigrateEnabled      bool
+	DebugEnabled            bool
 }
 
 // NewStore creates a new task store
 func NewStore(opts NewStoreOptions) (*Store, error) {
 	store := &Store{
-		taskTableName:      opts.TaskTableName,
-		queueTableName:     opts.QueueTableName,
-		automigrateEnabled: opts.AutomigrateEnabled,
-		db:                 opts.DB,
-		dbDriverName:       opts.DbDriverName,
-		debugEnabled:       opts.DebugEnabled,
+		taskDefinitionTableName: opts.TaskDefinitionTableName,
+		taskQueueTableName:      opts.TaskQueueTableName,
+		automigrateEnabled:      opts.AutomigrateEnabled,
+		db:                      opts.DB,
+		dbDriverName:            opts.DbDriverName,
+		debugEnabled:            opts.DebugEnabled,
 	}
 
-	if store.taskTableName == "" {
-		return nil, errors.New("task store: taskTableName is required")
+	if store.taskDefinitionTableName == "" {
+		return nil, errors.New("task store: TaskDefinitionTableName is required")
 	}
 
-	if store.queueTableName == "" {
-		return nil, errors.New("task store: queueTableName is required")
+	if store.taskQueueTableName == "" {
+		return nil, errors.New("task store: TaskQueueTableName is required")
 	}
 
 	if store.db == nil {
@@ -77,7 +77,7 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 
 // AutoMigrate migrates the tables
 func (st *Store) AutoMigrate() error {
-	sqlTaskTable := st.SqlCreateTaskTable()
+	sqlTaskTable := st.SqlCreateTaskDefinitionTable()
 
 	if st.debugEnabled {
 		log.Println(sqlTaskTable)
@@ -89,7 +89,7 @@ func (st *Store) AutoMigrate() error {
 		return errTask
 	}
 
-	sqlQueueTable := st.SqlCreateQueueTable()
+	sqlQueueTable := st.SqlCreateTaskQueueTable()
 
 	if st.debugEnabled {
 		log.Println(sqlQueueTable)
@@ -166,14 +166,14 @@ func (store *Store) queueRunLoop(ctx context.Context, processSeconds int, unstuc
 		default:
 		}
 
-		store.QueueUnstuck(unstuckMinutes)
+		store.TaskQueueUnstuck(unstuckMinutes)
 
 		if !sleepWithContext(ctx, time.Second) {
 			return
 		}
 
-		if err := store.QueueProcessNext(); err != nil && store.debugEnabled {
-			log.Println("QueueProcessNext error:", err)
+		if err := store.TaskQueueProcessNext(); err != nil && store.debugEnabled {
+			log.Println("TaskQueueProcessNext error:", err)
 		}
 
 		if !sleepWithContext(ctx, time.Duration(processSeconds)*time.Second) {
@@ -219,7 +219,7 @@ func (store *Store) QueueStop() {
 	store.queueWG.Wait()
 }
 
-// QueueUnstuck clears the queue of tasks running for more than the
+// TaskQueueUnstuck clears the queue of tasks running for more than the
 // specified wait time as most probably these have abnormally
 // exited (panicked) and stop the rest of the queue from being
 // processed
@@ -233,8 +233,8 @@ func (store *Store) QueueStop() {
 // 1. Checks is there are running tasks in progress
 // 2. If running for more than the specified wait minutes mark as failed
 // =================================================================
-func (store *Store) QueueUnstuck(waitMinutes int) {
-	runningTasks := store.QueueFindRunning(3)
+func (store *Store) TaskQueueUnstuck(waitMinutes int) {
+	runningTasks := store.TaskQueueFindRunning(3)
 
 	if len(runningTasks) < 1 {
 		return
@@ -245,23 +245,23 @@ func (store *Store) QueueUnstuck(waitMinutes int) {
 	}
 }
 
-func (store *Store) QueuedTaskProcess(queuedTask QueueInterface) (bool, error) {
+func (store *Store) QueuedTaskProcess(queuedTask TaskQueueInterface) (bool, error) {
 	// 1. Start queued task
 	attempts := queuedTask.Attempts() + 1
 
 	queuedTask.AppendDetails("Task started")
-	queuedTask.SetStatus(QueueStatusRunning)
+	queuedTask.SetStatus(TaskQueueStatusRunning)
 	queuedTask.SetAttempts(attempts)
 	queuedTask.SetStartedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
-	err := store.QueueUpdate(queuedTask)
+	err := store.TaskQueueUpdate(queuedTask)
 
 	if err != nil {
 		return false, err
 	}
 
 	// 2. Find task definition
-	task, err := store.TaskFindByID(queuedTask.TaskID())
+	task, err := store.TaskDefinitionFindByID(queuedTask.TaskID())
 
 	if err != nil {
 		return false, err
@@ -269,9 +269,9 @@ func (store *Store) QueuedTaskProcess(queuedTask QueueInterface) (bool, error) {
 
 	if task == nil {
 		queuedTask.AppendDetails("Task DOES NOT exist")
-		queuedTask.SetStatus(QueueStatusFailed)
+		queuedTask.SetStatus(TaskQueueStatusFailed)
 		queuedTask.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
-		err = store.QueueUpdate(queuedTask)
+		err = store.TaskQueueUpdate(queuedTask)
 
 		if err != nil {
 			if store.debugEnabled {
@@ -290,7 +290,7 @@ func (store *Store) QueuedTaskProcess(queuedTask QueueInterface) (bool, error) {
 
 	if result {
 		queuedTask.AppendDetails("Task completed")
-		err = store.QueueSuccess(queuedTask)
+		err = store.TaskQueueSuccess(queuedTask)
 
 		if err != nil {
 			if store.debugEnabled {
@@ -299,7 +299,7 @@ func (store *Store) QueuedTaskProcess(queuedTask QueueInterface) (bool, error) {
 		}
 	} else {
 		queuedTask.AppendDetails("Task failed")
-		err = store.QueueFail(queuedTask)
+		err = store.TaskQueueFail(queuedTask)
 
 		if err != nil {
 			if store.debugEnabled {
@@ -351,7 +351,7 @@ func unifyName(name string) string {
 // the Handle function, if not found, a default Handle function is returned
 // which will print "No handler for alias ALIASNAME" message to notify the
 // queue admin
-func (store *Store) taskHandlerFunc(taskAlias string) func(queuedTask QueueInterface) bool {
+func (store *Store) taskHandlerFunc(taskAlias string) func(queuedTask TaskQueueInterface) bool {
 	unifyName := func(name string) string {
 		name = strings.ReplaceAll(name, "-", "")
 		name = strings.ReplaceAll(name, "_", "")
@@ -360,7 +360,7 @@ func (store *Store) taskHandlerFunc(taskAlias string) func(queuedTask QueueInter
 
 	for _, taskHandler := range store.taskHandlers {
 		if strings.EqualFold(unifyName(taskHandler.Alias()), unifyName(taskAlias)) {
-			return func(queuedTask QueueInterface) bool {
+			return func(queuedTask TaskQueueInterface) bool {
 				taskHandler.SetQueuedTask(queuedTask)
 				return taskHandler.Handle()
 			}
@@ -378,9 +378,9 @@ func (store *Store) taskHandlerFunc(taskAlias string) func(queuedTask QueueInter
 	// 	}
 	// }
 
-	return func(queuedTask QueueInterface) bool {
+	return func(queuedTask TaskQueueInterface) bool {
 		queuedTask.AppendDetails("No handler for alias: " + taskAlias)
-		store.QueueUpdate(queuedTask)
+		store.TaskQueueUpdate(queuedTask)
 		return false
 	}
 }
@@ -391,6 +391,7 @@ func argsToMap(args []string) map[string]string {
 	kv := map[string]string{}
 	for i := 0; i < len(args); i++ {
 		current := args[i]
+		current = strings.TrimSpace(current)
 
 		if strings.HasPrefix(current, "--") {
 			if strings.Contains(current, "=") {
@@ -400,6 +401,7 @@ func argsToMap(args []string) map[string]string {
 				next := ""
 				if len(args) > i+1 {
 					next = args[i+1]
+					next = strings.TrimSpace(next)
 				}
 
 				if strings.HasPrefix(next, "--") {

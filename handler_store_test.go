@@ -12,7 +12,7 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 		t.Fatal("TaskHandlerAdd: Error in Store init: received ", "[", err, "]")
 	}
 
-	query := store.SqlCreateTaskTable()
+	query := store.SqlCreateTaskDefinitionTable()
 
 	_, err = store.db.Exec(query)
 	if err != nil {
@@ -29,7 +29,7 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 		t.Fatal("TaskHandlerAdd: Error in adding handler: received ", "[", err, "]")
 	}
 
-	tasksNumber, err := store.TaskCount(TaskQuery())
+	tasksNumber, err := store.TaskDefinitionCount(TaskDefinitionQuery())
 
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in counting tasks: received ", "[", err, "]")
@@ -44,7 +44,7 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 		t.Fatal("TaskHandlerAdd: Error in adding handler: received ", "[", err, "]")
 	}
 
-	tasksNumber, err = store.TaskCount(TaskQuery())
+	tasksNumber, err = store.TaskDefinitionCount(TaskDefinitionQuery())
 
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in counting tasks: received ", "[", err, "]")

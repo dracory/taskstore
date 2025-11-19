@@ -6,7 +6,7 @@ var errTaskMissing = errors.New("task not found")
 
 func (store *Store) TaskHandlerAdd(taskHandler TaskHandlerInterface, createIfMissing bool) error {
 	alias := taskHandler.Alias()
-	task, err := store.TaskFindByAlias(alias)
+	task, err := store.TaskDefinitionFindByAlias(alias)
 
 	if err != nil {
 		return err
@@ -21,13 +21,13 @@ func (store *Store) TaskHandlerAdd(taskHandler TaskHandlerInterface, createIfMis
 		title := taskHandler.Title()
 		description := taskHandler.Description()
 
-		task := NewTask().
-			SetStatus(TaskStatusActive).
+		task := NewTaskDefinition().
+			SetStatus(TaskDefinitionStatusActive).
 			SetAlias(alias).
 			SetTitle(title).
 			SetDescription(description)
 
-		err := store.TaskCreate(task)
+		err := store.TaskDefinitionCreate(task)
 
 		if err != nil {
 			return err

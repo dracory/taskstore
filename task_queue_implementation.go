@@ -12,19 +12,19 @@ import (
 
 // == CLASS ===================================================================
 
-type queue struct {
+type taskQueue struct {
 	dataobject.DataObject
 }
 
-var _ QueueInterface = (*queue)(nil)
+var _ TaskQueueInterface = (*taskQueue)(nil)
 
 // == CONSTRUCTORS ============================================================
 
-func NewQueue() QueueInterface {
-	o := &queue{}
+func NewTaskQueue() TaskQueueInterface {
+	o := &taskQueue{}
 
 	o.SetID(uid.HumanUid()).
-		SetStatus(QueueStatusQueued).
+		SetStatus(TaskQueueStatusQueued).
 		// SetMemo("").
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
@@ -39,91 +39,91 @@ func NewQueue() QueueInterface {
 	return o
 }
 
-func NewQueueFromExistingData(data map[string]string) QueueInterface {
-	o := &queue{}
+func NewTaskQueueFromExistingData(data map[string]string) TaskQueueInterface {
+	o := &taskQueue{}
 	o.Hydrate(data)
 	return o
 }
 
 // == METHODS =================================================================
 
-func (o *queue) IsCanceled() bool {
-	return o.Status() == QueueStatusCanceled
+func (o *taskQueue) IsCanceled() bool {
+	return o.Status() == TaskQueueStatusCanceled
 }
 
-func (o *queue) IsDeleted() bool {
-	return o.Status() == QueueStatusDeleted
+func (o *taskQueue) IsDeleted() bool {
+	return o.Status() == TaskQueueStatusDeleted
 }
 
-func (o *queue) IsFailed() bool {
-	return o.Status() == QueueStatusFailed
+func (o *taskQueue) IsFailed() bool {
+	return o.Status() == TaskQueueStatusFailed
 }
 
-func (o *queue) IsQueued() bool {
-	return o.Status() == QueueStatusQueued
+func (o *taskQueue) IsQueued() bool {
+	return o.Status() == TaskQueueStatusQueued
 }
 
-func (o *queue) IsPaused() bool {
-	return o.Status() == QueueStatusPaused
+func (o *taskQueue) IsPaused() bool {
+	return o.Status() == TaskQueueStatusPaused
 }
 
-func (o *queue) IsRunning() bool {
-	return o.Status() == QueueStatusRunning
+func (o *taskQueue) IsRunning() bool {
+	return o.Status() == TaskQueueStatusRunning
 }
 
-func (o *queue) IsSuccess() bool {
-	return o.Status() == QueueStatusSuccess
+func (o *taskQueue) IsSuccess() bool {
+	return o.Status() == TaskQueueStatusSuccess
 }
 
-func (o *queue) IsSoftDeleted() bool {
+func (o *taskQueue) IsSoftDeleted() bool {
 	return o.SoftDeletedAtCarbon().Compare("<", carbon.Now(carbon.UTC))
 }
 
 // == SETTERS AND GETTERS =====================================================
 
-func (o *queue) Attempts() int {
+func (o *taskQueue) Attempts() int {
 	attempts := o.Get(COLUMN_ATTEMPTS)
 	return cast.ToInt(attempts)
 }
 
-func (o *queue) SetAttempts(attempts int) QueueInterface {
+func (o *taskQueue) SetAttempts(attempts int) TaskQueueInterface {
 	o.Set(COLUMN_ATTEMPTS, cast.ToString(attempts))
 	return o
 }
 
-func (o *queue) CompletedAt() string {
+func (o *taskQueue) CompletedAt() string {
 	return o.Get(COLUMN_COMPLETED_AT)
 }
 
-func (o *queue) CompletedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) CompletedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.CompletedAt(), carbon.UTC)
 }
 
-func (o *queue) SetCompletedAt(completedAt string) QueueInterface {
+func (o *taskQueue) SetCompletedAt(completedAt string) TaskQueueInterface {
 	o.Set(COLUMN_COMPLETED_AT, completedAt)
 	return o
 }
 
-func (o *queue) CreatedAt() string {
+func (o *taskQueue) CreatedAt() string {
 	return o.Get(COLUMN_CREATED_AT)
 }
 
-func (o *queue) CreatedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) CreatedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.CreatedAt(), carbon.UTC)
 }
 
-func (o *queue) SetCreatedAt(createdAt string) QueueInterface {
+func (o *taskQueue) SetCreatedAt(createdAt string) TaskQueueInterface {
 	o.Set(COLUMN_CREATED_AT, createdAt)
 	return o
 }
 
-func (o *queue) ID() string {
+func (o *taskQueue) ID() string {
 	return o.Get(COLUMN_ID)
 }
 
 // AppendDetails appends details to the queued task
 // !!! warning does not auto-save it for performance reasons
-func (o *queue) AppendDetails(details string) QueueInterface {
+func (o *taskQueue) AppendDetails(details string) TaskQueueInterface {
 	ts := carbon.Now().Format("Y-m-d H:i:s")
 	text := o.Details()
 	if text != "" {
@@ -133,30 +133,30 @@ func (o *queue) AppendDetails(details string) QueueInterface {
 	return o.SetDetails(text)
 }
 
-func (o *queue) Details() string {
+func (o *taskQueue) Details() string {
 	return o.Get(COLUMN_DETAILS)
 }
 
-func (o *queue) SetDetails(details string) QueueInterface {
+func (o *taskQueue) SetDetails(details string) TaskQueueInterface {
 	o.Set(COLUMN_DETAILS, details)
 	return o
 }
 
-func (o *queue) SetID(id string) QueueInterface {
+func (o *taskQueue) SetID(id string) TaskQueueInterface {
 	o.Set(COLUMN_ID, id)
 	return o
 }
 
-// func (o *queue) Memo() string {
+// func (o *taskQueue) Memo() string {
 // 	return o.Get(COLUMN_MEMO)
 // }
 
-// func (o *queue) SetMemo(memo string) QueueInterface {
+// func (o *taskQueue) SetMemo(memo string) TaskQueueInterface {
 // 	o.Set(COLUMN_MEMO, memo)
 // 	return o
 // }
 
-// func (o *queue) Metas() (map[string]string, error) {
+// func (o *taskQueue) Metas() (map[string]string, error) {
 // 	metasStr := o.Get(COLUMN_METAS)
 
 // 	if metasStr == "" {
@@ -171,7 +171,7 @@ func (o *queue) SetID(id string) QueueInterface {
 // 	return maputils.MapStringAnyToMapStringString(metasJson.(map[string]any)), nil
 // }
 
-// func (o *queue) Meta(name string) string {
+// func (o *taskQueue) Meta(name string) string {
 // 	metas, err := o.Metas()
 
 // 	if err != nil {
@@ -185,13 +185,13 @@ func (o *queue) SetID(id string) QueueInterface {
 // 	return ""
 // }
 
-// func (o *queue) SetMeta(name string, value string) error {
+// func (o *taskQueue) SetMeta(name string, value string) error {
 // 	return o.UpsertMetas(map[string]string{name: value})
 // }
 
 // // SetMetas stores metas as json string
 // // Warning: it overwrites any existing metas
-// func (o *queue) SetMetas(metas map[string]string) error {
+// func (o *taskQueue) SetMetas(metas map[string]string) error {
 // 	mapString, err := utils.ToJSON(metas)
 // 	if err != nil {
 // 		return err
@@ -200,7 +200,7 @@ func (o *queue) SetID(id string) QueueInterface {
 // 	return nil
 // }
 
-// func (o *queue) UpsertMetas(metas map[string]string) error {
+// func (o *taskQueue) UpsertMetas(metas map[string]string) error {
 // 	currentMetas, err := o.Metas()
 
 // 	if err != nil {
@@ -214,25 +214,25 @@ func (o *queue) SetID(id string) QueueInterface {
 // 	return o.SetMetas(currentMetas)
 // }
 
-func (o *queue) Output() string {
+func (o *taskQueue) Output() string {
 	return o.Get(COLUMN_OUTPUT)
 }
 
-func (o *queue) SetOutput(output string) QueueInterface {
+func (o *taskQueue) SetOutput(output string) TaskQueueInterface {
 	o.Set(COLUMN_OUTPUT, output)
 	return o
 }
 
-func (o *queue) Parameters() string {
+func (o *taskQueue) Parameters() string {
 	return o.Get(COLUMN_PARAMETERS)
 }
 
-func (o *queue) SetParameters(parameters string) QueueInterface {
+func (o *taskQueue) SetParameters(parameters string) TaskQueueInterface {
 	o.Set(COLUMN_PARAMETERS, parameters)
 	return o
 }
 
-func (o *queue) ParametersMap() (map[string]string, error) {
+func (o *taskQueue) ParametersMap() (map[string]string, error) {
 	var parameters map[string]string
 	jsonErr := json.Unmarshal([]byte(o.Parameters()), &parameters)
 	if jsonErr != nil {
@@ -241,7 +241,7 @@ func (o *queue) ParametersMap() (map[string]string, error) {
 	return parameters, nil
 }
 
-func (o *queue) SetParametersMap(parameters map[string]string) (QueueInterface, error) {
+func (o *taskQueue) SetParametersMap(parameters map[string]string) (TaskQueueInterface, error) {
 	parametersJsonBytes, jsonErr := json.Marshal(parameters)
 	if jsonErr != nil {
 		return o, jsonErr
@@ -250,59 +250,59 @@ func (o *queue) SetParametersMap(parameters map[string]string) (QueueInterface, 
 	return o.SetParameters(parametersJson), nil
 }
 
-func (o *queue) StartedAt() string {
+func (o *taskQueue) StartedAt() string {
 	return o.Get(COLUMN_STARTED_AT)
 }
 
-func (o *queue) StartedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) StartedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.StartedAt(), carbon.UTC)
 }
 
-func (o *queue) SetStartedAt(startedAt string) QueueInterface {
+func (o *taskQueue) SetStartedAt(startedAt string) TaskQueueInterface {
 	o.Set(COLUMN_STARTED_AT, startedAt)
 	return o
 }
 
-func (o *queue) Status() string {
+func (o *taskQueue) Status() string {
 	return o.Get(COLUMN_STATUS)
 }
 
-func (o *queue) SoftDeletedAt() string {
+func (o *taskQueue) SoftDeletedAt() string {
 	return o.Get(COLUMN_DELETED_AT)
 }
 
-func (o *queue) SoftDeletedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) SoftDeletedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.SoftDeletedAt(), carbon.UTC)
 }
 
-func (o *queue) SetSoftDeletedAt(deletedAt string) QueueInterface {
+func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
 	o.Set(COLUMN_DELETED_AT, deletedAt)
 	return o
 }
 
-func (o *queue) SetStatus(status string) QueueInterface {
+func (o *taskQueue) SetStatus(status string) TaskQueueInterface {
 	o.Set(COLUMN_STATUS, status)
 	return o
 }
 
-func (o *queue) TaskID() string {
+func (o *taskQueue) TaskID() string {
 	return o.Get(COLUMN_TASK_ID)
 }
 
-func (o *queue) SetTaskID(taskID string) QueueInterface {
+func (o *taskQueue) SetTaskID(taskID string) TaskQueueInterface {
 	o.Set(COLUMN_TASK_ID, taskID)
 	return o
 }
 
-func (o *queue) UpdatedAt() string {
+func (o *taskQueue) UpdatedAt() string {
 	return o.Get(COLUMN_UPDATED_AT)
 }
 
-func (o *queue) UpdatedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) UpdatedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.Get(COLUMN_UPDATED_AT), carbon.UTC)
 }
 
-func (o *queue) SetUpdatedAt(updatedAt string) QueueInterface {
+func (o *taskQueue) SetUpdatedAt(updatedAt string) TaskQueueInterface {
 	o.Set(COLUMN_UPDATED_AT, updatedAt)
 	return o
 }

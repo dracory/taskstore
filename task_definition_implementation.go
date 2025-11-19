@@ -9,19 +9,19 @@ import (
 
 // == CLASS ===================================================================
 
-type task struct {
+type taskDefinition struct {
 	dataobject.DataObject
 }
 
-var _ TaskInterface = (*task)(nil)
+var _ TaskDefinitionInterface = (*taskDefinition)(nil)
 
 // == CONSTRUCTORS ============================================================
 
-func NewTask() TaskInterface {
-	o := &task{}
+func NewTaskDefinition() TaskDefinitionInterface {
+	o := &taskDefinition{}
 
 	o.SetID(uid.HumanUid()).
-		SetStatus(TaskStatusActive).
+		SetStatus(TaskDefinitionStatusActive).
 		SetMemo("").
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
@@ -36,77 +36,77 @@ func NewTask() TaskInterface {
 	return o
 }
 
-func NewTaskFromExistingData(data map[string]string) TaskInterface {
-	o := &task{}
+func NewTaskDefinitionFromExistingData(data map[string]string) TaskDefinitionInterface {
+	o := &taskDefinition{}
 	o.Hydrate(data)
 	return o
 }
 
 // == METHODS =================================================================
-func (o *task) IsActive() bool {
-	return o.Status() == TaskStatusActive
+func (o *taskDefinition) IsActive() bool {
+	return o.Status() == TaskDefinitionStatusActive
 }
 
-func (o *task) IsCanceled() bool {
-	return o.Status() == TaskStatusCanceled
+func (o *taskDefinition) IsCanceled() bool {
+	return o.Status() == TaskDefinitionStatusCanceled
 }
 
-func (o *task) IsSoftDeleted() bool {
+func (o *taskDefinition) IsSoftDeleted() bool {
 	return o.SoftDeletedAtCarbon().Compare("<", carbon.Now(carbon.UTC))
 }
 
 // == SETTERS AND GETTERS =====================================================
 
-func (o *task) Alias() string {
+func (o *taskDefinition) Alias() string {
 	return o.Get(COLUMN_ALIAS)
 }
 
-func (o *task) SetAlias(alias string) TaskInterface {
+func (o *taskDefinition) SetAlias(alias string) TaskDefinitionInterface {
 	o.Set(COLUMN_ALIAS, alias)
 	return o
 }
 
-func (o *task) CreatedAt() string {
+func (o *taskDefinition) CreatedAt() string {
 	return o.Get(COLUMN_CREATED_AT)
 }
 
-func (o *task) CreatedAtCarbon() *carbon.Carbon {
+func (o *taskDefinition) CreatedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.CreatedAt(), carbon.UTC)
 }
 
-func (o *task) SetCreatedAt(createdAt string) TaskInterface {
+func (o *taskDefinition) SetCreatedAt(createdAt string) TaskDefinitionInterface {
 	o.Set(COLUMN_CREATED_AT, createdAt)
 	return o
 }
 
-func (o *task) Description() string {
+func (o *taskDefinition) Description() string {
 	return o.Get(COLUMN_DESCRIPTION)
 }
 
-func (o *task) SetDescription(description string) TaskInterface {
+func (o *taskDefinition) SetDescription(description string) TaskDefinitionInterface {
 	o.Set(COLUMN_DESCRIPTION, description)
 	return o
 }
 
-func (o *task) ID() string {
+func (o *taskDefinition) ID() string {
 	return o.Get(COLUMN_ID)
 }
 
-func (o *task) SetID(id string) TaskInterface {
+func (o *taskDefinition) SetID(id string) TaskDefinitionInterface {
 	o.Set(COLUMN_ID, id)
 	return o
 }
 
-func (o *task) Memo() string {
+func (o *taskDefinition) Memo() string {
 	return o.Get(COLUMN_MEMO)
 }
 
-func (o *task) SetMemo(memo string) TaskInterface {
+func (o *taskDefinition) SetMemo(memo string) TaskDefinitionInterface {
 	o.Set(COLUMN_MEMO, memo)
 	return o
 }
 
-// func (o *task) Metas() (map[string]string, error) {
+// func (o *taskDefinition) Metas() (map[string]string, error) {
 // 	metasStr := o.Get(COLUMN_METAS)
 
 // 	if metasStr == "" {
@@ -121,7 +121,7 @@ func (o *task) SetMemo(memo string) TaskInterface {
 // 	return maputils.MapStringAnyToMapStringString(metasJson.(map[string]any)), nil
 // }
 
-// func (o *task) Meta(name string) string {
+// func (o *taskDefinition) Meta(name string) string {
 // 	metas, err := o.Metas()
 
 // 	if err != nil {
@@ -135,13 +135,13 @@ func (o *task) SetMemo(memo string) TaskInterface {
 // 	return ""
 // }
 
-// func (o *task) SetMeta(name string, value string) error {
+// func (o *taskDefinition) SetMeta(name string, value string) error {
 // 	return o.UpsertMetas(map[string]string{name: value})
 // }
 
 // // SetMetas stores metas as json string
 // // Warning: it overwrites any existing metas
-// func (o *task) SetMetas(metas map[string]string) error {
+// func (o *taskDefinition) SetMetas(metas map[string]string) error {
 // 	mapString, err := utils.ToJSON(metas)
 // 	if err != nil {
 // 		return err
@@ -150,7 +150,7 @@ func (o *task) SetMemo(memo string) TaskInterface {
 // 	return nil
 // }
 
-// func (o *task) UpsertMetas(metas map[string]string) error {
+// func (o *taskDefinition) UpsertMetas(metas map[string]string) error {
 // 	currentMetas, err := o.Metas()
 
 // 	if err != nil {
@@ -164,46 +164,46 @@ func (o *task) SetMemo(memo string) TaskInterface {
 // 	return o.SetMetas(currentMetas)
 // }
 
-func (o *task) Status() string {
+func (o *taskDefinition) Status() string {
 	return o.Get(COLUMN_STATUS)
 }
 
-func (o *task) SoftDeletedAt() string {
+func (o *taskDefinition) SoftDeletedAt() string {
 	return o.Get(COLUMN_DELETED_AT)
 }
 
-func (o *task) SoftDeletedAtCarbon() *carbon.Carbon {
+func (o *taskDefinition) SoftDeletedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.SoftDeletedAt(), carbon.UTC)
 }
 
-func (o *task) SetSoftDeletedAt(deletedAt string) TaskInterface {
+func (o *taskDefinition) SetSoftDeletedAt(deletedAt string) TaskDefinitionInterface {
 	o.Set(COLUMN_DELETED_AT, deletedAt)
 	return o
 }
 
-func (o *task) SetStatus(status string) TaskInterface {
+func (o *taskDefinition) SetStatus(status string) TaskDefinitionInterface {
 	o.Set(COLUMN_STATUS, status)
 	return o
 }
 
-func (o *task) Title() string {
+func (o *taskDefinition) Title() string {
 	return o.Get(COLUMN_TITLE)
 }
 
-func (o *task) SetTitle(title string) TaskInterface {
+func (o *taskDefinition) SetTitle(title string) TaskDefinitionInterface {
 	o.Set(COLUMN_TITLE, title)
 	return o
 }
 
-func (o *task) UpdatedAt() string {
+func (o *taskDefinition) UpdatedAt() string {
 	return o.Get(COLUMN_UPDATED_AT)
 }
 
-func (o *task) UpdatedAtCarbon() *carbon.Carbon {
+func (o *taskDefinition) UpdatedAtCarbon() *carbon.Carbon {
 	return carbon.Parse(o.Get(COLUMN_UPDATED_AT), carbon.UTC)
 }
 
-func (o *task) SetUpdatedAt(updatedAt string) TaskInterface {
+func (o *taskDefinition) SetUpdatedAt(updatedAt string) TaskDefinitionInterface {
 	o.Set(COLUMN_UPDATED_AT, updatedAt)
 	return o
 }

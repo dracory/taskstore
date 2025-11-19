@@ -65,7 +65,7 @@ func Test_TaskHandlerBase_GetParamArray(t *testing.T) {
 	}
 
 	// // Test case 3: Valid input (queuedTask)
-	queuedTask, err := NewQueue().SetParametersMap(map[string]string{"paramArray": "value4;value5;value6"})
+	queuedTask, err := NewTaskQueue().SetParametersMap(map[string]string{"paramArray": "value4;value5;value6"})
 	if err != nil {
 		t.Errorf("Test Case 3 Failed: %v", err)
 	}
@@ -83,7 +83,7 @@ func Test_TaskHandlerBase_GetParamArray(t *testing.T) {
 	}
 
 	// Test case 4: Valid input (queuedTask)
-	queuedTask, err = NewQueue().SetParametersMap(map[string]string{"paramArray": "singleValue"})
+	queuedTask, err = NewTaskQueue().SetParametersMap(map[string]string{"paramArray": "singleValue"})
 	if err != nil {
 		t.Errorf("Test Case 4 Failed: %v", err)
 	}

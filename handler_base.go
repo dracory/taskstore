@@ -7,7 +7,7 @@ import (
 )
 
 type TaskHandlerBase struct {
-	queuedTask     QueueInterface // dynamic
+	queuedTask     TaskQueueInterface // dynamic
 	options        map[string]string
 	errorMessage   string
 	infoMessage    string
@@ -26,11 +26,11 @@ func (handler *TaskHandlerBase) SuccessMessage() string {
 	return handler.successMessage
 }
 
-func (handler *TaskHandlerBase) QueuedTask() QueueInterface {
+func (handler *TaskHandlerBase) QueuedTask() TaskQueueInterface {
 	return handler.queuedTask
 }
 
-func (handler *TaskHandlerBase) SetQueuedTask(queuedTask QueueInterface) {
+func (handler *TaskHandlerBase) SetQueuedTask(queuedTask TaskQueueInterface) {
 	handler.queuedTask = queuedTask
 }
 

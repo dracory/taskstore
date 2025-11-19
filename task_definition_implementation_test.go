@@ -7,112 +7,112 @@ import (
 	"github.com/dromara/carbon/v2"
 )
 
-func TestNewTask(t *testing.T) {
-	task := NewTask()
+func TestNewTaskDefinition(t *testing.T) {
+	task := NewTaskDefinition()
 
 	if task == nil {
-		t.Fatal("NewTask: Expected task to be created, got nil")
+		t.Fatal("NewTaskDefinition: Expected task to be created, got nil")
 	}
 
 	if task.ID() == "" {
-		t.Error("NewTask: Expected ID to be set")
+		t.Error("NewTaskDefinition: Expected ID to be set")
 	}
 
-	if task.Status() != TaskStatusActive {
-		t.Errorf("NewTask: Expected status to be %s, got %s", TaskStatusActive, task.Status())
+	if task.Status() != TaskDefinitionStatusActive {
+		t.Errorf("NewTaskDefinition: Expected status to be %s, got %s", TaskDefinitionStatusActive, task.Status())
 	}
 
 	if task.Memo() != "" {
-		t.Errorf("NewTask: Expected memo to be empty, got %s", task.Memo())
+		t.Errorf("NewTaskDefinition: Expected memo to be empty, got %s", task.Memo())
 	}
 
 	if task.CreatedAt() == "" {
-		t.Error("NewTask: Expected CreatedAt to be set")
+		t.Error("NewTaskDefinition: Expected CreatedAt to be set")
 	}
 
 	if task.UpdatedAt() == "" {
-		t.Error("NewTask: Expected UpdatedAt to be set")
+		t.Error("NewTaskDefinition: Expected UpdatedAt to be set")
 	}
 
 	if task.SoftDeletedAt() != sb.MAX_DATETIME {
-		t.Errorf("NewTask: Expected SoftDeletedAt to be %s, got %s", sb.MAX_DATETIME, task.SoftDeletedAt())
+		t.Errorf("NewTaskDefinition: Expected SoftDeletedAt to be %s, got %s", sb.MAX_DATETIME, task.SoftDeletedAt())
 	}
 }
 
-func TestNewTaskFromExistingData(t *testing.T) {
+func TestNewTaskDefinitionFromExistingData(t *testing.T) {
 	data := map[string]string{
 		COLUMN_ID:          "test-id",
 		COLUMN_ALIAS:       "test-alias",
 		COLUMN_TITLE:       "Test Title",
 		COLUMN_DESCRIPTION: "Test Description",
-		COLUMN_STATUS:      TaskStatusCanceled,
+		COLUMN_STATUS:      TaskDefinitionStatusCanceled,
 		COLUMN_MEMO:        "Test Memo",
 		COLUMN_CREATED_AT:  "2023-01-01 12:00:00",
 		COLUMN_UPDATED_AT:  "2023-01-02 12:00:00",
 		COLUMN_DELETED_AT:  "2023-01-03 12:00:00",
 	}
 
-	task := NewTaskFromExistingData(data)
+	task := NewTaskDefinitionFromExistingData(data)
 
 	if task.ID() != "test-id" {
-		t.Errorf("NewTaskFromExistingData: Expected ID to be 'test-id', got %s", task.ID())
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected ID to be 'test-id', got %s", task.ID())
 	}
 
 	if task.Alias() != "test-alias" {
-		t.Errorf("NewTaskFromExistingData: Expected Alias to be 'test-alias', got %s", task.Alias())
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Alias to be 'test-alias', got %s", task.Alias())
 	}
 
 	if task.Title() != "Test Title" {
-		t.Errorf("NewTaskFromExistingData: Expected Title to be 'Test Title', got %s", task.Title())
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Title to be 'Test Title', got %s", task.Title())
 	}
 
 	if task.Description() != "Test Description" {
-		t.Errorf("NewTaskFromExistingData: Expected Description to be 'Test Description', got %s", task.Description())
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Description to be 'Test Description', got %s", task.Description())
 	}
 
-	if task.Status() != TaskStatusCanceled {
-		t.Errorf("NewTaskFromExistingData: Expected Status to be %s, got %s", TaskStatusCanceled, task.Status())
+	if task.Status() != TaskDefinitionStatusCanceled {
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Status to be %s, got %s", TaskDefinitionStatusCanceled, task.Status())
 	}
 
 	if task.Memo() != "Test Memo" {
-		t.Errorf("NewTaskFromExistingData: Expected Memo to be 'Test Memo', got %s", task.Memo())
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Memo to be 'Test Memo', got %s", task.Memo())
 	}
 }
 
-func TestTask_IsActive(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_IsActive(t *testing.T) {
+	task := NewTaskDefinition()
 
 	// Test active status
-	task.SetStatus(TaskStatusActive)
+	task.SetStatus(TaskDefinitionStatusActive)
 	if !task.IsActive() {
-		t.Error("IsActive: Expected task to be active when status is TaskStatusActive")
+		t.Error("IsActive: Expected task to be active when status is TaskDefinitionStatusActive")
 	}
 
 	// Test non-active status
-	task.SetStatus(TaskStatusCanceled)
+	task.SetStatus(TaskDefinitionStatusCanceled)
 	if task.IsActive() {
-		t.Error("IsActive: Expected task to not be active when status is TaskStatusCanceled")
+		t.Error("IsActive: Expected task to not be active when status is TaskDefinitionStatusCanceled")
 	}
 }
 
-func TestTask_IsCanceled(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_IsCanceled(t *testing.T) {
+	task := NewTaskDefinition()
 
 	// Test canceled status
-	task.SetStatus(TaskStatusCanceled)
+	task.SetStatus(TaskDefinitionStatusCanceled)
 	if !task.IsCanceled() {
-		t.Error("IsCanceled: Expected task to be canceled when status is TaskStatusCanceled")
+		t.Error("IsCanceled: Expected task to be canceled when status is TaskDefinitionStatusCanceled")
 	}
 
 	// Test non-canceled status
-	task.SetStatus(TaskStatusActive)
+	task.SetStatus(TaskDefinitionStatusActive)
 	if task.IsCanceled() {
-		t.Error("IsCanceled: Expected task to not be canceled when status is TaskStatusActive")
+		t.Error("IsCanceled: Expected task to not be canceled when status is TaskDefinitionStatusActive")
 	}
 }
 
-func TestTask_IsSoftDeleted(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_IsSoftDeleted(t *testing.T) {
+	task := NewTaskDefinition()
 
 	// Test not soft deleted (default state)
 	if task.IsSoftDeleted() {
@@ -134,8 +134,8 @@ func TestTask_IsSoftDeleted(t *testing.T) {
 	}
 }
 
-func TestTask_CreatedAtCarbon(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_CreatedAtCarbon(t *testing.T) {
+	task := NewTaskDefinition()
 	createdAtStr := "2023-01-01 12:00:00"
 	task.SetCreatedAt(createdAtStr)
 
@@ -149,8 +149,8 @@ func TestTask_CreatedAtCarbon(t *testing.T) {
 	}
 }
 
-func TestTask_UpdatedAtCarbon(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_UpdatedAtCarbon(t *testing.T) {
+	task := NewTaskDefinition()
 	updatedAtStr := "2023-01-02 15:30:45"
 	task.SetUpdatedAt(updatedAtStr)
 
@@ -164,8 +164,8 @@ func TestTask_UpdatedAtCarbon(t *testing.T) {
 	}
 }
 
-func TestTask_SoftDeletedAtCarbon(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_SoftDeletedAtCarbon(t *testing.T) {
+	task := NewTaskDefinition()
 	deletedAtStr := "2023-01-03 09:15:30"
 	task.SetSoftDeletedAt(deletedAtStr)
 
@@ -179,8 +179,8 @@ func TestTask_SoftDeletedAtCarbon(t *testing.T) {
 	}
 }
 
-func TestTask_SettersAndGetters(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_SettersAndGetters(t *testing.T) {
+	task := NewTaskDefinition()
 
 	// Test ID
 	testID := "test-task-id"
@@ -218,9 +218,9 @@ func TestTask_SettersAndGetters(t *testing.T) {
 	}
 
 	// Test Status
-	task.SetStatus(TaskStatusCanceled)
-	if task.Status() != TaskStatusCanceled {
-		t.Errorf("Status: Expected %s, got %s", TaskStatusCanceled, task.Status())
+	task.SetStatus(TaskDefinitionStatusCanceled)
+	if task.Status() != TaskDefinitionStatusCanceled {
+		t.Errorf("Status: Expected %s, got %s", TaskDefinitionStatusCanceled, task.Status())
 	}
 
 	// Test CreatedAt
@@ -245,8 +245,8 @@ func TestTask_SettersAndGetters(t *testing.T) {
 	}
 }
 
-func TestTask_ChainedSetters(t *testing.T) {
-	task := NewTask()
+func TestTaskDefinition_ChainedSetters(t *testing.T) {
+	task := NewTaskDefinition()
 
 	// Test that setters return the task instance for chaining
 	result := task.SetID("test-id").
@@ -254,7 +254,7 @@ func TestTask_ChainedSetters(t *testing.T) {
 		SetTitle("Test Title").
 		SetDescription("Test Description").
 		SetMemo("Test Memo").
-		SetStatus(TaskStatusCanceled).
+		SetStatus(TaskDefinitionStatusCanceled).
 		SetCreatedAt("2023-01-01 10:00:00").
 		SetUpdatedAt("2023-01-02 11:00:00").
 		SetSoftDeletedAt("2023-01-03 12:00:00")
@@ -279,7 +279,7 @@ func TestTask_ChainedSetters(t *testing.T) {
 	if task.Memo() != "Test Memo" {
 		t.Error("ChainedSetters: Memo not set correctly")
 	}
-	if task.Status() != TaskStatusCanceled {
+	if task.Status() != TaskDefinitionStatusCanceled {
 		t.Error("ChainedSetters: Status not set correctly")
 	}
 }

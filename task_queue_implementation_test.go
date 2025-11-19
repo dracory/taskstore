@@ -9,39 +9,39 @@ import (
 	"github.com/dromara/carbon/v2"
 )
 
-func TestNewQueue(t *testing.T) {
-	queue := NewQueue()
+func TestNewTaskQueue(t *testing.T) {
+	queue := NewTaskQueue()
 
 	if queue == nil {
-		t.Fatal("NewQueue: Expected queue to be created, got nil")
+		t.Fatal("NewTaskQueue: Expected queue to be created, got nil")
 	}
 
 	if queue.ID() == "" {
-		t.Error("NewQueue: Expected ID to be set")
+		t.Error("NewTaskQueue: Expected ID to be set")
 	}
 
-	if queue.Status() != QueueStatusQueued {
-		t.Errorf("NewQueue: Expected status to be %s, got %s", QueueStatusQueued, queue.Status())
+	if queue.Status() != TaskQueueStatusQueued {
+		t.Errorf("NewTaskQueue: Expected status to be %s, got %s", TaskQueueStatusQueued, queue.Status())
 	}
 
 	if queue.CreatedAt() == "" {
-		t.Error("NewQueue: Expected CreatedAt to be set")
+		t.Error("NewTaskQueue: Expected CreatedAt to be set")
 	}
 
 	if queue.UpdatedAt() == "" {
-		t.Error("NewQueue: Expected UpdatedAt to be set")
+		t.Error("NewTaskQueue: Expected UpdatedAt to be set")
 	}
 
 	if queue.SoftDeletedAt() != sb.MAX_DATETIME {
-		t.Errorf("NewQueue: Expected SoftDeletedAt to be %s, got %s", sb.MAX_DATETIME, queue.SoftDeletedAt())
+		t.Errorf("NewTaskQueue: Expected SoftDeletedAt to be %s, got %s", sb.MAX_DATETIME, queue.SoftDeletedAt())
 	}
 }
 
-func TestNewQueueFromExistingData(t *testing.T) {
+func TestNewTaskQueueFromExistingData(t *testing.T) {
 	data := map[string]string{
 		COLUMN_ID:           "test-queue-id",
 		COLUMN_TASK_ID:      "test-task-id",
-		COLUMN_STATUS:       QueueStatusRunning,
+		COLUMN_STATUS:       TaskQueueStatusRunning,
 		COLUMN_ATTEMPTS:     "3",
 		COLUMN_PARAMETERS:   `{"key":"value"}`,
 		COLUMN_OUTPUT:       "test output",
@@ -53,129 +53,129 @@ func TestNewQueueFromExistingData(t *testing.T) {
 		COLUMN_DELETED_AT:   "2023-01-03 12:00:00",
 	}
 
-	queue := NewQueueFromExistingData(data)
+	queue := NewTaskQueueFromExistingData(data)
 
 	if queue.ID() != "test-queue-id" {
-		t.Errorf("NewQueueFromExistingData: Expected ID to be 'test-queue-id', got %s", queue.ID())
+		t.Errorf("NewTaskQueueFromExistingData: Expected ID to be 'test-queue-id', got %s", queue.ID())
 	}
 
 	if queue.TaskID() != "test-task-id" {
-		t.Errorf("NewQueueFromExistingData: Expected TaskID to be 'test-task-id', got %s", queue.TaskID())
+		t.Errorf("NewTaskQueueFromExistingData: Expected TaskID to be 'test-task-id', got %s", queue.TaskID())
 	}
 
-	if queue.Status() != QueueStatusRunning {
-		t.Errorf("NewQueueFromExistingData: Expected Status to be %s, got %s", QueueStatusRunning, queue.Status())
+	if queue.Status() != TaskQueueStatusRunning {
+		t.Errorf("NewTaskQueueFromExistingData: Expected Status to be %s, got %s", TaskQueueStatusRunning, queue.Status())
 	}
 
 	if queue.Attempts() != 3 {
-		t.Errorf("NewQueueFromExistingData: Expected Attempts to be 3, got %d", queue.Attempts())
+		t.Errorf("NewTaskQueueFromExistingData: Expected Attempts to be 3, got %d", queue.Attempts())
 	}
 
 	if queue.Parameters() != `{"key":"value"}` {
-		t.Errorf("NewQueueFromExistingData: Expected Parameters to be '{\"key\":\"value\"}', got %s", queue.Parameters())
+		t.Errorf("NewTaskQueueFromExistingData: Expected Parameters to be '{\"key\":\"value\"}', got %s", queue.Parameters())
 	}
 
 	if queue.Output() != "test output" {
-		t.Errorf("NewQueueFromExistingData: Expected Output to be 'test output', got %s", queue.Output())
+		t.Errorf("NewTaskQueueFromExistingData: Expected Output to be 'test output', got %s", queue.Output())
 	}
 
 	if queue.Details() != "test details" {
-		t.Errorf("NewQueueFromExistingData: Expected Details to be 'test details', got %s", queue.Details())
+		t.Errorf("NewTaskQueueFromExistingData: Expected Details to be 'test details', got %s", queue.Details())
 	}
 }
 
-func TestQueue_StatusCheckers(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_StatusCheckers(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test IsCanceled
-	queue.SetStatus(QueueStatusCanceled)
+	queue.SetStatus(TaskQueueStatusCanceled)
 	if !queue.IsCanceled() {
-		t.Error("IsCanceled: Expected queue to be canceled when status is QueueStatusCanceled")
+		t.Error("IsCanceled: Expected TaskQueue to be canceled when status is TaskQueueStatusCanceled")
 	}
 	if queue.IsDeleted() || queue.IsFailed() || queue.IsQueued() || queue.IsPaused() || queue.IsRunning() || queue.IsSuccess() {
 		t.Error("IsCanceled: Expected other status checkers to return false")
 	}
 
 	// Test IsDeleted
-	queue.SetStatus(QueueStatusDeleted)
+	queue.SetStatus(TaskQueueStatusDeleted)
 	if !queue.IsDeleted() {
-		t.Error("IsDeleted: Expected queue to be deleted when status is QueueStatusDeleted")
+		t.Error("IsDeleted: Expected TaskQueue to be deleted when status is TaskQueueStatusDeleted")
 	}
 	if queue.IsCanceled() || queue.IsFailed() || queue.IsQueued() || queue.IsPaused() || queue.IsRunning() || queue.IsSuccess() {
 		t.Error("IsDeleted: Expected other status checkers to return false")
 	}
 
 	// Test IsFailed
-	queue.SetStatus(QueueStatusFailed)
+	queue.SetStatus(TaskQueueStatusFailed)
 	if !queue.IsFailed() {
-		t.Error("IsFailed: Expected queue to be failed when status is QueueStatusFailed")
+		t.Error("IsFailed: Expected TaskQueue to be failed when status is TaskQueueStatusFailed")
 	}
 	if queue.IsCanceled() || queue.IsDeleted() || queue.IsQueued() || queue.IsPaused() || queue.IsRunning() || queue.IsSuccess() {
 		t.Error("IsFailed: Expected other status checkers to return false")
 	}
 
 	// Test IsQueued
-	queue.SetStatus(QueueStatusQueued)
+	queue.SetStatus(TaskQueueStatusQueued)
 	if !queue.IsQueued() {
-		t.Error("IsQueued: Expected queue to be queued when status is QueueStatusQueued")
+		t.Error("IsQueued: Expected TaskQueue to be queued when status is TaskQueueStatusQueued")
 	}
 	if queue.IsCanceled() || queue.IsDeleted() || queue.IsFailed() || queue.IsPaused() || queue.IsRunning() || queue.IsSuccess() {
 		t.Error("IsQueued: Expected other status checkers to return false")
 	}
 
 	// Test IsPaused
-	queue.SetStatus(QueueStatusPaused)
+	queue.SetStatus(TaskQueueStatusPaused)
 	if !queue.IsPaused() {
-		t.Error("IsPaused: Expected queue to be paused when status is QueueStatusPaused")
+		t.Error("IsPaused: Expected TaskQueue to be paused when status is TaskQueueStatusPaused")
 	}
 	if queue.IsCanceled() || queue.IsDeleted() || queue.IsFailed() || queue.IsQueued() || queue.IsRunning() || queue.IsSuccess() {
 		t.Error("IsPaused: Expected other status checkers to return false")
 	}
 
 	// Test IsRunning
-	queue.SetStatus(QueueStatusRunning)
+	queue.SetStatus(TaskQueueStatusRunning)
 	if !queue.IsRunning() {
-		t.Error("IsRunning: Expected queue to be running when status is QueueStatusRunning")
+		t.Error("IsRunning: Expected TaskQueue to be running when status is TaskQueueStatusRunning")
 	}
 	if queue.IsCanceled() || queue.IsDeleted() || queue.IsFailed() || queue.IsQueued() || queue.IsPaused() || queue.IsSuccess() {
 		t.Error("IsRunning: Expected other status checkers to return false")
 	}
 
 	// Test IsSuccess
-	queue.SetStatus(QueueStatusSuccess)
+	queue.SetStatus(TaskQueueStatusSuccess)
 	if !queue.IsSuccess() {
-		t.Error("IsSuccess: Expected queue to be success when status is QueueStatusSuccess")
+		t.Error("IsSuccess: Expected TaskQueue to be success when status is TaskQueueStatusSuccess")
 	}
 	if queue.IsCanceled() || queue.IsDeleted() || queue.IsFailed() || queue.IsQueued() || queue.IsPaused() || queue.IsRunning() {
 		t.Error("IsSuccess: Expected other status checkers to return false")
 	}
 }
 
-func TestQueue_IsSoftDeleted(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_IsSoftDeleted(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test not soft deleted (default state)
 	if queue.IsSoftDeleted() {
-		t.Error("IsSoftDeleted: Expected new queue to not be soft deleted")
+		t.Error("IsSoftDeleted: Expected new TaskQueue to not be soft deleted")
 	}
 
 	// Test soft deleted
 	pastTime := carbon.Now(carbon.UTC).SubHours(1).ToDateTimeString(carbon.UTC)
 	queue.SetSoftDeletedAt(pastTime)
 	if !queue.IsSoftDeleted() {
-		t.Error("IsSoftDeleted: Expected queue to be soft deleted when deleted_at is in the past")
+		t.Error("IsSoftDeleted: Expected TaskQueue to be soft deleted when deleted_at is in the past")
 	}
 
 	// Test future deletion time (not yet deleted)
 	futureTime := carbon.Now(carbon.UTC).AddHours(1).ToDateTimeString(carbon.UTC)
 	queue.SetSoftDeletedAt(futureTime)
 	if queue.IsSoftDeleted() {
-		t.Error("IsSoftDeleted: Expected queue to not be soft deleted when deleted_at is in the future")
+		t.Error("IsSoftDeleted: Expected TaskQueue to not be soft deleted when deleted_at is in the future")
 	}
 }
 
-func TestQueue_AppendDetails(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_AppendDetails(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test appending to empty details
 	queue.AppendDetails("First detail")
@@ -212,8 +212,8 @@ func TestQueue_AppendDetails(t *testing.T) {
 	}
 }
 
-func TestQueue_ParametersMap(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_ParametersMap(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test with valid JSON parameters
 	testParams := map[string]string{
@@ -256,8 +256,8 @@ func TestQueue_ParametersMap(t *testing.T) {
 	}
 }
 
-func TestQueue_SetParametersMap(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_SetParametersMap(t *testing.T) {
+	queue := NewTaskQueue()
 
 	testParams := map[string]string{
 		"param1": "value1",
@@ -301,8 +301,8 @@ func TestQueue_SetParametersMap(t *testing.T) {
 	}
 }
 
-func TestQueue_CarbonMethods(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_CarbonMethods(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test CreatedAtCarbon
 	createdAtStr := "2023-01-01 12:00:00"
@@ -360,8 +360,8 @@ func TestQueue_CarbonMethods(t *testing.T) {
 	}
 }
 
-func TestQueue_AttemptsHandling(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_AttemptsHandling(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test setting and getting attempts
 	queue.SetAttempts(5)
@@ -382,8 +382,8 @@ func TestQueue_AttemptsHandling(t *testing.T) {
 	}
 }
 
-func TestQueue_SettersAndGetters(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_SettersAndGetters(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test ID
 	testID := "test-queue-id"
@@ -400,9 +400,9 @@ func TestQueue_SettersAndGetters(t *testing.T) {
 	}
 
 	// Test Status
-	queue.SetStatus(QueueStatusRunning)
-	if queue.Status() != QueueStatusRunning {
-		t.Errorf("Status: Expected %s, got %s", QueueStatusRunning, queue.Status())
+	queue.SetStatus(TaskQueueStatusRunning)
+	if queue.Status() != TaskQueueStatusRunning {
+		t.Errorf("Status: Expected %s, got %s", TaskQueueStatusRunning, queue.Status())
 	}
 
 	// Test Output
@@ -458,13 +458,13 @@ func TestQueue_SettersAndGetters(t *testing.T) {
 	}
 }
 
-func TestQueue_ChainedSetters(t *testing.T) {
-	queue := NewQueue()
+func TestTaskQueue_ChainedSetters(t *testing.T) {
+	queue := NewTaskQueue()
 
 	// Test that setters return the queue instance for chaining
 	result := queue.SetID("test-id").
 		SetTaskID("test-task-id").
-		SetStatus(QueueStatusRunning).
+		SetStatus(TaskQueueStatusRunning).
 		SetAttempts(3).
 		SetOutput("test output").
 		SetDetails("test details").
@@ -486,7 +486,7 @@ func TestQueue_ChainedSetters(t *testing.T) {
 	if queue.TaskID() != "test-task-id" {
 		t.Error("ChainedSetters: TaskID not set correctly")
 	}
-	if queue.Status() != QueueStatusRunning {
+	if queue.Status() != TaskQueueStatusRunning {
 		t.Error("ChainedSetters: Status not set correctly")
 	}
 	if queue.Attempts() != 3 {
