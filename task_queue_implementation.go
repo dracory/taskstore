@@ -20,12 +20,24 @@ var _ TaskQueueInterface = (*taskQueue)(nil)
 
 // == CONSTRUCTORS ============================================================
 
-func NewTaskQueue() TaskQueueInterface {
+// NewTaskQueue creates a new task queue
+// If a queue name is provided, it will be used; otherwise DefaultQueueName is used.
+func NewTaskQueue(queueName ...string) TaskQueueInterface {
+	name := DefaultQueueName
+	if len(queueName) > 0 && queueName[0] != "" {
+		name = queueName[0]
+	}
+
 	o := &taskQueue{}
 
 	o.SetID(uid.HumanUid()).
 		SetStatus(TaskQueueStatusQueued).
-		// SetMemo("").
+		SetQueueName(name).
+		SetAttempts(0).
+		SetStartedAt("").
+		SetCompletedAt("").
+		SetOutput("").
+		SetDetails("").
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetSoftDeletedAt(sb.MAX_DATETIME)
