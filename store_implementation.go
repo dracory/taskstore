@@ -26,11 +26,16 @@ type Store struct {
 	debugEnabled            bool
 	queueMu                 sync.Mutex
 	queueRunners            map[string]*queueRunner
+	maxConcurrency          int // Max concurrent tasks in async mode (default: 10)
+	errorHandler            func(queueName, taskID string, err error)
 }
 
 type queueRunner struct {
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	cancel         context.CancelFunc
+	wg             sync.WaitGroup // Tracks the main queue loop goroutine
+	taskWg         sync.WaitGroup // Tracks child task goroutines
+	maxConcurrency int            // Maximum number of concurrent tasks (0 = unlimited)
+	semaphore      chan struct{}  // Semaphore for concurrency control
 }
 
 var _ StoreInterface = (*Store)(nil)
@@ -43,6 +48,8 @@ type NewStoreOptions struct {
 	DbDriverName            string
 	AutomigrateEnabled      bool
 	DebugEnabled            bool
+	MaxConcurrency          int                                       // Max concurrent tasks (default: 10, 0 = unlimited)
+	ErrorHandler            func(queueName, taskID string, err error) // Optional error callback
 }
 
 // NewStore creates a new task store
@@ -55,6 +62,13 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 		dbDriverName:            opts.DbDriverName,
 		debugEnabled:            opts.DebugEnabled,
 		queueRunners:            map[string]*queueRunner{},
+		maxConcurrency:          opts.MaxConcurrency,
+		errorHandler:            opts.ErrorHandler,
+	}
+
+	// Set default max concurrency if not specified
+	if store.maxConcurrency == 0 {
+		store.maxConcurrency = 10
 	}
 
 	if store.taskDefinitionTableName == "" {
@@ -112,6 +126,12 @@ func (st *Store) AutoMigrate() error {
 // EnableDebug - enables the debug option
 func (st *Store) EnableDebug(debugEnabled bool) StoreInterface {
 	st.debugEnabled = debugEnabled
+	return st
+}
+
+// SetErrorHandler - sets a custom error handler for queue processing errors
+func (st *Store) SetErrorHandler(handler func(queueName, taskID string, err error)) StoreInterface {
+	st.errorHandler = handler
 	return st
 }
 
@@ -180,7 +200,11 @@ func (store *Store) QueueRunAsync(ctx context.Context, queueName string, process
 	}
 
 	runCtx, cancel := context.WithCancel(ctx)
-	runner := &queueRunner{cancel: cancel}
+	runner := &queueRunner{
+		cancel:         cancel,
+		maxConcurrency: store.maxConcurrency,
+		semaphore:      make(chan struct{}, store.maxConcurrency),
+	}
 	runner.wg.Add(1)
 	store.queueRunners[queueName] = runner
 	store.queueMu.Unlock()
@@ -193,7 +217,7 @@ func (store *Store) QueueRunAsync(ctx context.Context, queueName string, process
 			runner.wg.Done()
 		}()
 
-		store.queueRunLoopAsync(runCtx, queueName, processSeconds, unstuckMinutes)
+		store.queueRunLoopAsync(runCtx, queueName, processSeconds, unstuckMinutes, runner)
 	}()
 }
 
@@ -228,13 +252,18 @@ func (store *Store) queueRunLoopSync(ctx context.Context, queueName string, proc
 	}
 }
 
-func (store *Store) queueRunLoopAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+func (store *Store) queueRunLoopAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int, runner *queueRunner) {
 	if processSeconds <= 0 {
 		processSeconds = 10
 	}
 	if unstuckMinutes <= 0 {
 		unstuckMinutes = 1
 	}
+
+	// When context is done, wait for all tasks to complete
+	defer func() {
+		runner.taskWg.Wait() // Wait for all child goroutines to finish
+	}()
 
 	for {
 		select {
@@ -249,9 +278,55 @@ func (store *Store) queueRunLoopAsync(ctx context.Context, queueName string, pro
 			return
 		}
 
-		if err := store.TaskQueueProcessNextAsyncByQueue(queueName); err != nil && store.debugEnabled {
-			log.Println("TaskQueueProcessNextAsync error:", err)
+		// Acquire semaphore slot (blocks if at max concurrency)
+		select {
+		case runner.semaphore <- struct{}{}:
+			// Got a slot, proceed
+		case <-ctx.Done():
+			return
 		}
+
+		// Get the next task
+		nextTask, err := store.TaskQueueClaimNext(ctx, queueName)
+		if err != nil {
+			<-runner.semaphore // Release slot on error
+			if store.debugEnabled {
+				log.Println("TaskQueueClaimNext error:", err)
+			}
+			if !sleepWithContext(ctx, time.Duration(processSeconds)*time.Second) {
+				return
+			}
+			continue
+		}
+
+		if nextTask == nil {
+			<-runner.semaphore // Release slot when no task available
+			if !sleepWithContext(ctx, time.Duration(processSeconds)*time.Second) {
+				return
+			}
+			continue
+		}
+
+		// Track the goroutine
+		runner.taskWg.Add(1)
+
+		// Spawn goroutine to process the task
+		go func(task TaskQueueInterface) {
+			defer func() {
+				<-runner.semaphore   // Release semaphore slot
+				runner.taskWg.Done() // Mark goroutine as complete
+			}()
+
+			_, processErr := store.QueuedTaskProcess(task)
+			if processErr != nil {
+				// Call error handler if configured
+				if store.errorHandler != nil {
+					store.errorHandler(queueName, task.ID(), processErr)
+				} else if store.debugEnabled {
+					log.Println("QueuedTaskProcess error:", processErr)
+				}
+			}
+		}(nextTask)
 
 		if !sleepWithContext(ctx, time.Duration(processSeconds)*time.Second) {
 			return
@@ -280,20 +355,36 @@ func sleepWithContext(ctx context.Context, d time.Duration) bool {
 	}
 }
 
-// QueueStop stops the queue processor that was started via QueueRunWithContext or QueueRunGoroutine.
-// It blocks until the worker goroutine has fully drained and exited.
+// QueueStop stops the default queue processor.
+// It blocks until the worker goroutine and all tasks have fully completed.
 func (store *Store) QueueStop() {
+	store.QueueStopByName(DefaultQueueName)
+}
+
+// QueueStopByName stops the specified queue processor.
+// It cancels the context, waits for the queue loop to exit,
+// and waits for all in-flight tasks to complete.
+func (store *Store) QueueStopByName(queueName string) {
+	queueName = normalizeQueueName(queueName)
+
 	store.queueMu.Lock()
-	runner, exists := store.queueRunners[DefaultQueueName]
+	runner, exists := store.queueRunners[queueName]
 	if !exists {
 		store.queueMu.Unlock()
 		return
 	}
-	delete(store.queueRunners, DefaultQueueName)
+	delete(store.queueRunners, queueName)
 	store.queueMu.Unlock()
 
+	// Cancel the context to stop the queue loop
 	runner.cancel()
+
+	// Wait for the main queue loop to exit
 	runner.wg.Wait()
+
+	// Wait for all child task goroutines to complete
+	// Note: This is important for async queues
+	runner.taskWg.Wait()
 }
 
 // TaskQueueUnstuck clears the queue of tasks running for more than the

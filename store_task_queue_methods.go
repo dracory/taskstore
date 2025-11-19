@@ -1,6 +1,8 @@
 package taskstore
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"log"
 	"strconv"
@@ -259,27 +261,149 @@ func (store *Store) TaskQueueFindNextQueuedTaskByQueue(queueName string) (TaskQu
 	return queuedTasks[0], nil
 }
 
+// TaskQueueClaimNext atomically claims the next queued task for processing.
+// It uses SELECT FOR UPDATE within a transaction to prevent race conditions
+// where multiple workers might try to process the same task.
+//
+// Returns:
+//   - TaskQueueInterface: The claimed task (status updated to "running")
+//   - error: Any error that occurred during the operation
+//
+// Returns (nil, nil) if no tasks are available to claim.
+func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (TaskQueueInterface, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	queueName = normalizeQueueName(queueName)
+
+	// Start a database transaction
+	tx, err := store.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() // Will be a no-op if committed
+
+	// SELECT FOR UPDATE query to lock the row
+	// Note: This works across SQLite (3.35+), MySQL, and PostgreSQL
+	var selectSQL string
+	var params []interface{}
+
+	if store.dbDriverName == "sqlite" {
+		// SQLite doesn't support FOR UPDATE, but it has implicit row-level locking in transactions
+		// We'll use a WHERE clause to ensure atomicity
+		selectSQL = `
+			SELECT ` + COLUMN_ID + `, ` + COLUMN_TASK_ID + `, ` + COLUMN_STATUS + `, ` + COLUMN_QUEUE_NAME + `, 
+			       ` + COLUMN_PARAMETERS + `, ` + COLUMN_OUTPUT + `, ` + COLUMN_DETAILS + `, ` + COLUMN_ATTEMPTS + `,
+			       ` + COLUMN_CREATED_AT + `, ` + COLUMN_UPDATED_AT + `, ` + COLUMN_STARTED_AT + `, 
+			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_DELETED_AT + `
+			FROM ` + store.taskQueueTableName + `
+			WHERE ` + COLUMN_STATUS + ` = ? 
+			  AND ` + COLUMN_QUEUE_NAME + ` = ?
+			ORDER BY ` + COLUMN_CREATED_AT + ` ASC
+			LIMIT 1`
+		params = []interface{}{TaskQueueStatusQueued, queueName}
+	} else {
+		// MySQL and PostgreSQL support FOR UPDATE
+		selectSQL = `
+			SELECT ` + COLUMN_ID + `, ` + COLUMN_TASK_ID + `, ` + COLUMN_STATUS + `, ` + COLUMN_QUEUE_NAME + `, 
+			       ` + COLUMN_PARAMETERS + `, ` + COLUMN_OUTPUT + `, ` + COLUMN_DETAILS + `, ` + COLUMN_ATTEMPTS + `,
+			       ` + COLUMN_CREATED_AT + `, ` + COLUMN_UPDATED_AT + `, ` + COLUMN_STARTED_AT + `, 
+			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_DELETED_AT + `
+			FROM ` + store.taskQueueTableName + `
+			WHERE ` + COLUMN_STATUS + ` = ? 
+			  AND ` + COLUMN_QUEUE_NAME + ` = ?
+			ORDER BY ` + COLUMN_CREATED_AT + ` ASC
+			LIMIT 1
+			FOR UPDATE SKIP LOCKED`
+		params = []interface{}{TaskQueueStatusQueued, queueName}
+	}
+
+	if store.debugEnabled {
+		log.Println("TaskQueueClaimNext SELECT:", selectSQL)
+	}
+
+	// Execute SELECT query
+	row := tx.QueryRowContext(ctx, selectSQL, params...)
+
+	var taskData = make(map[string]string)
+	var id, taskID, status, queueNameCol, parameters, output, details, attempts string
+	var createdAt, updatedAt, startedAt, completedAt, deletedAt string
+
+	err = row.Scan(&id, &taskID, &status, &queueNameCol, &parameters, &output, &details, &attempts,
+		&createdAt, &updatedAt, &startedAt, &completedAt, &deletedAt)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No tasks available - this is normal
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	// Populate the task data map
+	taskData[COLUMN_ID] = id
+	taskData[COLUMN_TASK_ID] = taskID
+	taskData[COLUMN_STATUS] = status
+	taskData[COLUMN_QUEUE_NAME] = queueNameCol
+	taskData[COLUMN_PARAMETERS] = parameters
+	taskData[COLUMN_OUTPUT] = output
+	taskData[COLUMN_DETAILS] = details
+	taskData[COLUMN_ATTEMPTS] = attempts
+	taskData[COLUMN_CREATED_AT] = createdAt
+	taskData[COLUMN_UPDATED_AT] = updatedAt
+	taskData[COLUMN_STARTED_AT] = startedAt
+	taskData[COLUMN_COMPLETED_AT] = completedAt
+	taskData[COLUMN_DELETED_AT] = deletedAt
+
+	// Update status to "running" within the same transaction
+	updateSQL := `
+		UPDATE ` + store.taskQueueTableName + `
+		SET ` + COLUMN_STATUS + ` = ?, 
+		    ` + COLUMN_STARTED_AT + ` = ?,
+		    ` + COLUMN_UPDATED_AT + ` = ?
+		WHERE ` + COLUMN_ID + ` = ?`
+
+	now := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
+	_, err = tx.ExecContext(ctx, updateSQL, TaskQueueStatusRunning, now, now, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Commit the transaction
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	// Create task object from data
+	task := NewTaskQueueFromExistingData(taskData)
+	// Update the task object to reflect the new status
+	task.SetStatus(TaskQueueStatusRunning)
+	task.SetStartedAt(now)
+	task.SetUpdatedAt(now)
+	task.MarkAsNotDirty() // Since we just updated it in DB
+
+	return task, nil
+}
+
 func (store *Store) TaskQueueProcessNextByQueue(queueName string) error {
 	queueName = normalizeQueueName(queueName)
 
-	runningTasks := store.TaskQueueFindRunningByQueue(queueName, 1)
-
-	if len(runningTasks) > 0 {
-		log.Println("There is already a running task " + runningTasks[0].ID() + " (#" + runningTasks[0].ID() + "). Queue stopped while completed'")
-		return nil
-	}
-
-	nextQueuedTask, err := store.TaskQueueFindNextQueuedTaskByQueue(queueName)
+	// Atomically claim the next task
+	// Note: Old implementation checked for running tasks which was too restrictive
+	// The atomic claim handles concurrency properly
+	nextQueuedTask, err := store.TaskQueueClaimNext(context.Background(), queueName)
 
 	if err != nil {
 		return err
 	}
 
 	if nextQueuedTask == nil {
-		// DEBUG log.Println("No queued tasks")
+		// No tasks available
 		return nil
 	}
 
+	// Process the claimed task synchronously
 	_, err = store.QueuedTaskProcess(nextQueuedTask)
 
 	return err
@@ -288,17 +412,19 @@ func (store *Store) TaskQueueProcessNextByQueue(queueName string) error {
 func (store *Store) TaskQueueProcessNextAsyncByQueue(queueName string) error {
 	queueName = normalizeQueueName(queueName)
 
-	nextQueuedTask, err := store.TaskQueueFindNextQueuedTaskByQueue(queueName)
+	// Atomically claim the next task (fixes race condition)
+	nextQueuedTask, err := store.TaskQueueClaimNext(context.Background(), queueName)
 
 	if err != nil {
 		return err
 	}
 
 	if nextQueuedTask == nil {
-		// DEBUG log.Println("No queued tasks")
+		// No tasks available - this is normal
 		return nil
 	}
 
+	// Spawn goroutine to process the claimed task
 	go func(q TaskQueueInterface) {
 		_, err := store.QueuedTaskProcess(q)
 		if err != nil && store.debugEnabled {
@@ -435,6 +561,10 @@ func (store *Store) taskQueueSelectQuery(options TaskQueueQueryInterface) (selec
 
 	if options.HasTaskID() {
 		q = q.Where(goqu.C(COLUMN_TASK_ID).Eq(options.TaskID()))
+	}
+
+	if options.HasQueueName() {
+		q = q.Where(goqu.C(COLUMN_QUEUE_NAME).Eq(options.QueueName()))
 	}
 
 	if !options.IsCountOnly() {

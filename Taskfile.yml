@@ -145,7 +145,8 @@ tasks:
   test:
     cmds:
       - echo "Running tests..."
-      - go test ./...
+      # - go test ./...
+      - go test -race -v ./...
       - echo "Done!"
     silent: true
 

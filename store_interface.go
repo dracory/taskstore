@@ -5,6 +5,7 @@ import "context"
 type StoreInterface interface {
 	AutoMigrate() error
 	EnableDebug(debug bool) StoreInterface
+	SetErrorHandler(handler func(queueName, taskID string, err error)) StoreInterface
 	// Start()
 	// Stop()
 
@@ -21,6 +22,8 @@ type StoreInterface interface {
 	QueueRunGoroutine(ctx context.Context, processSeconds int, unstuckMinutes int)
 	QueueRunSync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
 	QueueRunAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
+	QueueStop()
+	QueueStopByName(queueName string)
 	QueuedTaskProcess(queuedTask TaskQueueInterface) (bool, error)
 
 	TaskEnqueueByAlias(alias string, parameters map[string]interface{}) (TaskQueueInterface, error)
