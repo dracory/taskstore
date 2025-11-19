@@ -19,9 +19,9 @@ type StoreInterface interface {
 	TaskQueueSoftDeleteByID(id string) error
 	TaskQueueUpdate(TaskQueue TaskQueueInterface) error
 
-	QueueRunGoroutine(ctx context.Context, processSeconds int, unstuckMinutes int)
-	QueueRunSync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
-	QueueRunAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
+	QueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int)
+	QueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
+	QueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
 	QueueStop()
 	QueueStopByName(queueName string)
 	QueuedTaskProcess(queuedTask TaskQueueInterface) (bool, error)

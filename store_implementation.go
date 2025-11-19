@@ -135,21 +135,16 @@ func (st *Store) SetErrorHandler(handler func(queueName, taskID string, err erro
 	return st
 }
 
-// QueueRunGoroutine starts the queue processor and binds it to the provided context.
-// The processor will exit once the context is canceled.
-//
-// Example:
-//
-//	go myTaskStore.QueueRunGoroutine(10, 2)
-//
-// Params:
-//   - processSeconds int - time to wait until processing the next task (i.e. 10s)
-//   - unstuckMinutes int - time to wait before mark running tasks as failed
-func (store *Store) QueueRunGoroutine(ctx context.Context, processSeconds int, unstuckMinutes int) {
-	store.QueueRunSync(ctx, DefaultQueueName, processSeconds, unstuckMinutes)
+// QueueRunDefault starts the queue processor for the default queue.
+// Equivalent to calling QueueRunSerial with DefaultQueueName.
+func (store *Store) QueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int) {
+	store.QueueRunSerial(ctx, DefaultQueueName, processSeconds, unstuckMinutes)
 }
 
-func (store *Store) QueueRunSync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+// QueueRunSerial starts a queue processor that handles tasks one at a time (serially).
+// Each task must complete before the next one starts.
+// The processor runs in a background goroutine and can be stopped via QueueStopByName.
+func (store *Store) QueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -183,7 +178,10 @@ func (store *Store) QueueRunSync(ctx context.Context, queueName string, processS
 	}()
 }
 
-func (store *Store) QueueRunAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+// QueueRunConcurrent starts a queue processor that handles multiple tasks concurrently.
+// Tasks are processed in parallel up to the configured MaxConcurrency limit.
+// The processor runs in a background goroutine and can be stopped via QueueStopByName.
+func (store *Store) QueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
