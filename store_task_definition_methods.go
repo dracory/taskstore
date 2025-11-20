@@ -292,7 +292,7 @@ func (st *Store) TaskEnqueueByAlias(taskAlias string, parameters map[string]inte
 
 	queuedTask := NewTaskQueue().
 		SetTaskID(task.ID()).
-		SetAttempts(1).
+		SetAttempts(0).
 		SetParameters(parametersStr).
 		SetStatus(TaskQueueStatusQueued)
 
