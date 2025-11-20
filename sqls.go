@@ -13,6 +13,12 @@ func (st *Store) SqlCreateTaskQueueTable() string {
 			Length:     50,
 		}).
 		Column(sb.Column{
+			Name:     COLUMN_QUEUE_NAME,
+			Type:     sb.COLUMN_TYPE_STRING,
+			Length:   100,
+			Nullable: true,
+		}).
+		Column(sb.Column{
 			Name:   COLUMN_TASK_ID,
 			Type:   sb.COLUMN_TYPE_STRING,
 			Length: 50,
@@ -66,12 +72,6 @@ func (st *Store) SqlCreateTaskQueueTable() string {
 		Column(sb.Column{
 			Name:     COLUMN_DELETED_AT,
 			Type:     sb.COLUMN_TYPE_DATETIME,
-			Nullable: true,
-		}).
-		Column(sb.Column{
-			Name:     COLUMN_QUEUE_NAME,
-			Type:     sb.COLUMN_TYPE_STRING,
-			Length:   100,
 			Nullable: true,
 		}).
 		CreateIfNotExists()

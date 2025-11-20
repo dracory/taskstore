@@ -525,44 +525,6 @@ func unifyName(name string) string {
 	return name
 }
 
-// taskHandlerFunc finds the TaskHandler for the queued task and returns
-// the Handle function, if not found, a default Handle function is returned
-// which will print "No handler for alias ALIASNAME" message to notify the
-// queue admin
-func (store *Store) taskHandlerFunc(taskAlias string) func(queuedTask TaskQueueInterface) bool {
-	unifyName := func(name string) string {
-		name = strings.ReplaceAll(name, "-", "")
-		name = strings.ReplaceAll(name, "_", "")
-		return name
-	}
-
-	for _, taskHandler := range store.taskHandlers {
-		if strings.EqualFold(unifyName(taskHandler.Alias()), unifyName(taskAlias)) {
-			return func(queuedTask TaskQueueInterface) bool {
-				taskHandler.SetQueuedTask(queuedTask)
-				return taskHandler.Handle()
-			}
-		}
-	}
-
-	// for i := 0; i < len(store.taskHandlers); i++ {
-	// 	if strings.EqualFold(unifyName(store.taskHandlers[i].Alias()), unifyName(taskAlias)) {
-	// 		return func(queuedTask *Queue) bool {
-
-	// 			return store.taskHandlers[i].Handle(TaskHandlerOptions{
-	// 				QueuedTask: queuedTask,
-	// 			})
-	// 		}
-	// 	}
-	// }
-
-	return func(queuedTask TaskQueueInterface) bool {
-		queuedTask.AppendDetails("No handler for alias: " + taskAlias)
-		store.TaskQueueUpdate(queuedTask)
-		return false
-	}
-}
-
 // taskHandlerFuncWithContext finds the TaskHandler and returns a function that
 // checks if the handler implements TaskHandlerWithContext. If it does, it calls
 // HandleWithContext(ctx), otherwise it falls back to Handle() for backward compatibility.
