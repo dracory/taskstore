@@ -74,7 +74,7 @@ func (st *Store) SqlCreateTaskQueueTable() string {
 			Length:   100,
 			Nullable: true,
 		}).
-		Create()
+		CreateIfNotExists()
 }
 
 // SqlCreateTaskDefinitionTable - creates the task definition table
@@ -141,5 +141,5 @@ func (st *Store) SqlCreateTaskDefinitionTable() string {
 			Length:   50,
 			Nullable: true,
 		}).
-		Create()
+		CreateIfNotExists()
 }

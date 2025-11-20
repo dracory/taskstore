@@ -6,8 +6,6 @@ type StoreInterface interface {
 	AutoMigrate() error
 	EnableDebug(debug bool) StoreInterface
 	SetErrorHandler(handler func(queueName, taskID string, err error)) StoreInterface
-	// Start()
-	// Stop()
 
 	TaskQueueCount(options TaskQueueQueryInterface) (int64, error)
 	TaskQueueCreate(TaskQueue TaskQueueInterface) error
