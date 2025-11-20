@@ -36,7 +36,7 @@ func NewTaskQueue(queueName ...string) TaskQueueInterface {
 		SetAttempts(0).
 		SetOutput("").
 		SetDetails("").
-		SetParameters("").
+		SetParameters("{}").
 		SetStartedAt(sb.NULL_DATETIME).
 		SetCompletedAt(sb.NULL_DATETIME).
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
@@ -255,6 +255,11 @@ func (o *taskQueue) SetParameters(parameters string) TaskQueueInterface {
 }
 
 func (o *taskQueue) ParametersMap() (map[string]string, error) {
+	// Handle empty string parameters
+	if o.Parameters() == "" {
+		return map[string]string{}, nil
+	}
+
 	var parameters map[string]string
 	jsonErr := json.Unmarshal([]byte(o.Parameters()), &parameters)
 	if jsonErr != nil {

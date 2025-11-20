@@ -253,11 +253,14 @@ func TestTaskQueue_ParametersMap(t *testing.T) {
 		t.Error("ParametersMap: Expected error for invalid JSON, got nil")
 	}
 
-	// Test with empty parameters
+	// Test with empty parameters - should return empty map, not error
 	queue.SetParameters("")
-	_, err = queue.ParametersMap()
-	if err == nil {
-		t.Error("ParametersMap: Expected error for empty parameters, got nil")
+	emptyParams, err := queue.ParametersMap()
+	if err != nil {
+		t.Errorf("ParametersMap: Expected no error for empty parameters, got: %v", err)
+	}
+	if len(emptyParams) != 0 {
+		t.Errorf("ParametersMap: Expected empty map for empty parameters, got map with %d items", len(emptyParams))
 	}
 }
 
@@ -516,5 +519,28 @@ func TestTaskQueue_ChainedSetters(t *testing.T) {
 	}
 	if queue.QueueName() != "chained-queue" {
 		t.Error("ChainedSetters: QueueName not set correctly")
+	}
+}
+
+func TestTaskQueue_StartedAt_WithNullDateTime(t *testing.T) {
+	queue := NewTaskQueue()
+	// NewTaskQueue sets StartedAt to sb.NULL_DATETIME
+
+	startedAt := queue.StartedAt()
+	t.Logf("StartedAt: %s", startedAt)
+
+	if startedAt != sb.NULL_DATETIME {
+		t.Errorf("StartedAt: Expected %s, got %s", sb.NULL_DATETIME, startedAt)
+	}
+
+	// Check if carbon parse handles it without panicking
+	c := queue.StartedAtCarbon()
+	t.Logf("Carbon: %v, IsZero: %v", c, c.IsZero())
+
+	// Verify that Carbon handles NULL_DATETIME gracefully
+	// If sb.NULL_DATETIME is "0000-00-00...", Carbon might parse it as year 0 or invalid.
+	// We want to ensure it doesn't panic and behaves reasonably (e.g. IsZero or IsInvalid).
+	if c == nil {
+		t.Error("StartedAtCarbon: Expected carbon instance, got nil")
 	}
 }
