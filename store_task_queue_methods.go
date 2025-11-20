@@ -465,7 +465,9 @@ func (st *Store) TaskQueueSuccess(queue TaskQueueInterface) error {
 func (store *Store) QueuedTaskForceFail(queuedTask TaskQueueInterface, waitMinutes int) error {
 	startedAt := queuedTask.StartedAt()
 
-	if startedAt == "" {
+	// Skip tasks that haven't actually started yet
+	// This includes empty strings and NULL_DATETIME values
+	if startedAt == "" || startedAt == sb.NULL_DATETIME {
 		return nil
 	}
 

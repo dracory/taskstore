@@ -412,3 +412,65 @@ func Test_TaskQueue_ParametersMap(t *testing.T) {
 		t.Fatalf("GetParameters: Error[%v]", err)
 	}
 }
+
+// TestQueuedTaskForceFail_WithNullDateTime verifies that tasks with
+// started_at set to sb.NULL_DATETIME are not incorrectly marked as failed
+func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
+	// Setup: Create a test store
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("Failed to create test store: %v", err)
+	}
+
+	query := store.SqlCreateTaskQueueTable()
+	if strings.Contains(query, "unsupported driver") {
+		t.Fatalf("UnExpected Query, received [%v]", query)
+	}
+
+	_, err = store.db.Exec(query)
+	if err != nil {
+		t.Fatalf("Table creation error: [%v]", err)
+	}
+
+	// Test Case 1: Task with NULL_DATETIME should NOT be force-failed
+	t.Run("TaskWithNullDateTime_ShouldNotBeFailed", func(t *testing.T) {
+		queue := NewTaskQueue()
+		queue.SetTaskID("test-task-1")
+		queue.SetStatus(TaskQueueStatusQueued)
+		// started_at and completed_at are already set to sb.NULL_DATETIME by NewTaskQueue
+
+		err := store.TaskQueueCreate(queue)
+		if err != nil {
+			t.Fatalf("Failed to create queue: %v", err)
+		}
+
+		// Try to force fail with 1 minute timeout
+		err = store.QueuedTaskForceFail(queue, 1)
+		if err != nil {
+			t.Errorf("QueuedTaskForceFail returned error: %v", err)
+		}
+
+		// Verify status is still queued (not failed)
+		if queue.Status() != TaskQueueStatusQueued {
+			t.Errorf("Expected status to remain 'queued', got '%s'", queue.Status())
+		}
+	})
+
+	// Test Case 2: Task with empty started_at should NOT be force-failed
+	t.Run("TaskWithEmptyStartedAt_ShouldNotBeFailed", func(t *testing.T) {
+		queue := NewTaskQueue()
+		queue.SetTaskID("test-task-2")
+		queue.SetStatus(TaskQueueStatusQueued)
+		queue.SetStartedAt("") // Empty string
+
+		err := store.QueuedTaskForceFail(queue, 1)
+		if err != nil {
+			t.Errorf("QueuedTaskForceFail returned error: %v", err)
+		}
+
+		// Verify status is still queued (not failed)
+		if queue.Status() != TaskQueueStatusQueued {
+			t.Errorf("Expected status to remain 'queued', got '%s'", queue.Status())
+		}
+	})
+}
