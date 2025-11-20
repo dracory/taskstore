@@ -27,6 +27,12 @@ type TaskDefinitionInterface interface {
 	Memo() string
 	SetMemo(memo string) TaskDefinitionInterface
 
+	IsRecurring() int
+	SetIsRecurring(isRecurring int) TaskDefinitionInterface
+
+	RecurrenceRule() string
+	SetRecurrenceRule(recurrenceRule string) TaskDefinitionInterface
+
 	SoftDeletedAt() string
 	SoftDeletedAtCarbon() *carbon.Carbon
 	SetSoftDeletedAt(deletedAt string) TaskDefinitionInterface

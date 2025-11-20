@@ -5,6 +5,7 @@ import (
 	"github.com/dracory/sb"
 	"github.com/dracory/uid"
 	"github.com/dromara/carbon/v2"
+	"github.com/spf13/cast"
 )
 
 // == CLASS ===================================================================
@@ -22,6 +23,11 @@ func NewTaskDefinition() TaskDefinitionInterface {
 
 	o.SetID(uid.HumanUid()).
 		SetStatus(TaskDefinitionStatusActive).
+		SetAlias("").
+		SetTitle("").
+		SetDescription("").
+		SetIsRecurring(0).
+		SetRecurrenceRule("").
 		SetMemo("").
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
@@ -103,6 +109,24 @@ func (o *taskDefinition) Memo() string {
 
 func (o *taskDefinition) SetMemo(memo string) TaskDefinitionInterface {
 	o.Set(COLUMN_MEMO, memo)
+	return o
+}
+
+func (o *taskDefinition) IsRecurring() int {
+	return cast.ToInt(o.Get(COLUMN_IS_RECURRING))
+}
+
+func (o *taskDefinition) SetIsRecurring(isRecurring int) TaskDefinitionInterface {
+	o.Set(COLUMN_IS_RECURRING, cast.ToString(isRecurring))
+	return o
+}
+
+func (o *taskDefinition) RecurrenceRule() string {
+	return o.Get(COLUMN_RECURRENCE_RULE)
+}
+
+func (o *taskDefinition) SetRecurrenceRule(recurrenceRule string) TaskDefinitionInterface {
+	o.Set(COLUMN_RECURRENCE_RULE, recurrenceRule)
 	return o
 }
 

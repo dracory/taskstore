@@ -34,10 +34,11 @@ func NewTaskQueue(queueName ...string) TaskQueueInterface {
 		SetStatus(TaskQueueStatusQueued).
 		SetQueueName(name).
 		SetAttempts(0).
-		SetStartedAt("").
-		SetCompletedAt("").
 		SetOutput("").
 		SetDetails("").
+		SetParameters("").
+		SetStartedAt(sb.NULL_DATETIME).
+		SetCompletedAt(sb.NULL_DATETIME).
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetSoftDeletedAt(sb.MAX_DATETIME)
