@@ -361,10 +361,6 @@ func (controller *taskDefinitionManagerController) fetchRecordList(data *taskDef
 		taskIDs = append(taskIDs, data.formTaskID)
 	}
 
-	// if data.formCreatedTo != "" {
-	// 	query.CreatedAtLte = data.formCreatedTo + " 23:59:59"
-	// }
-
 	query := taskstore.TaskDefinitionQuery().
 		SetLimit(data.perPage).
 		SetOffset(data.pageInt * data.perPage).
@@ -378,10 +374,6 @@ func (controller *taskDefinitionManagerController) fetchRecordList(data *taskDef
 	if data.formStatus != "" {
 		query = query.SetStatus(data.formStatus)
 	}
-
-	// if data.formName != "" {
-	// 	query = query.SetNameLike(data.formName)
-	// }
 
 	recordList, err := controller.store.TaskDefinitionList(context.Background(), query)
 

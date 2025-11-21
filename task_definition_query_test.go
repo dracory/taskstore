@@ -23,10 +23,8 @@ func TestTaskQuery_Validate(t *testing.T) {
 		errorMsg    string
 	}{
 		{
-			name: "valid empty query",
-			setupQuery: func() TaskDefinitionQueryInterface {
-				return TaskDefinitionQuery()
-			},
+			name:        "valid empty query",
+			setupQuery:  TaskDefinitionQuery,
 			expectError: false,
 		},
 		{

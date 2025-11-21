@@ -336,7 +336,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	}
 
 	// Commit the transaction
-	if err = tx.Commit(); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 

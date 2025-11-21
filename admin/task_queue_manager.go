@@ -51,10 +51,6 @@ func (c *taskQueueManagerController) ToTag(w http.ResponseWriter, r *http.Reques
 		return c.onModalRecordFilterShow(&data)
 	}
 
-	if data.action == actionModalQueuedTaskFilterShow {
-		// return c.onModalQueuedTaskFilterShow(data)
-	}
-
 	htmxScript := `setTimeout(() => {
 		if (!window.htmx) {
 			let script = document.createElement('script');
@@ -625,10 +621,6 @@ func (controller *taskQueueManagerController) fetchRecordList(data *taskQueueMan
 	if data.formStatus != "" {
 		query = query.SetStatus(data.formStatus)
 	}
-
-	// if data.formName != "" {
-	// 	query = query.SetNameLike(data.formName)
-	// }
 
 	recordList, err := controller.store.TaskQueueList(context.Background(), query)
 

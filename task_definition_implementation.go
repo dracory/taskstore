@@ -33,12 +33,6 @@ func NewTaskDefinition() TaskDefinitionInterface {
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetSoftDeletedAt(sb.MAX_DATETIME)
 
-	// err := o.SetMetas(map[string]string{})
-
-	// if err != nil {
-	// 	return o
-	// }
-
 	return o
 }
 

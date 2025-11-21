@@ -139,14 +139,23 @@ func (st *Store) SetErrorHandler(handler func(queueName, taskID string, err erro
 
 // TaskQueueRunDefault starts the queue processor for the default queue.
 // Equivalent to calling TaskQueueRunSerial with DefaultQueueName.
-func (store *Store) TaskQueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int) {
+func (store *Store) TaskQueueRunDefault(
+	ctx context.Context,
+	processSeconds int,
+	unstuckMinutes int,
+) {
 	store.TaskQueueRunSerial(ctx, DefaultQueueName, processSeconds, unstuckMinutes)
 }
 
 // TaskQueueRunSerial starts a queue processor that handles tasks one at a time (serially).
 // Each task must complete before the next one starts.
 // The processor runs in a background goroutine and can be stopped via TaskQueueStopByName.
-func (store *Store) TaskQueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+func (store *Store) TaskQueueRunSerial(
+	ctx context.Context,
+	queueName string,
+	processSeconds int,
+	unstuckMinutes int,
+) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -183,7 +192,12 @@ func (store *Store) TaskQueueRunSerial(ctx context.Context, queueName string, pr
 // TaskQueueRunConcurrent starts a queue processor that handles multiple tasks concurrently.
 // Tasks are processed in parallel up to the configured MaxConcurrency limit.
 // The processor runs in a background goroutine and can be stopped via TaskQueueStopByName.
-func (store *Store) TaskQueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+func (store *Store) TaskQueueRunConcurrent(
+	ctx context.Context,
+	queueName string,
+	processSeconds int,
+	unstuckMinutes int,
+) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -221,7 +235,12 @@ func (store *Store) TaskQueueRunConcurrent(ctx context.Context, queueName string
 	}()
 }
 
-func (store *Store) queueRunLoopSync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+func (store *Store) queueRunLoopSync(
+	ctx context.Context,
+	queueName string,
+	processSeconds int,
+	unstuckMinutes int,
+) {
 	if processSeconds <= 0 {
 		processSeconds = 10
 	}
@@ -252,7 +271,13 @@ func (store *Store) queueRunLoopSync(ctx context.Context, queueName string, proc
 	}
 }
 
-func (store *Store) queueRunLoopAsync(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int, runner *queueRunner) {
+func (store *Store) queueRunLoopAsync(
+	ctx context.Context,
+	queueName string,
+	processSeconds int,
+	unstuckMinutes int,
+	runner *queueRunner,
+) {
 	if processSeconds <= 0 {
 		processSeconds = 10
 	}
