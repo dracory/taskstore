@@ -278,7 +278,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback() // Will be a no-op if committed
+	defer func() { _ = tx.Rollback() }() // Will be a no-op if committed
 
 	// SELECT FOR UPDATE query to lock the row
 	selectSQL := `

@@ -88,7 +88,9 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 	}
 
 	if store.automigrateEnabled {
-		store.AutoMigrate()
+		if err := store.AutoMigrate(); err != nil {
+			return nil, err
+		}
 	}
 
 	return store, nil
@@ -411,7 +413,7 @@ func (store *Store) TaskQueueUnstuckByQueue(ctx context.Context, queueName strin
 	}
 
 	for _, runningTask := range runningTasks {
-		store.QueuedTaskForceFail(ctx, runningTask, waitMinutes)
+		_ = store.QueuedTaskForceFail(ctx, runningTask, waitMinutes)
 	}
 }
 
@@ -493,14 +495,14 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 // - alias "list" is reserved. it lists all the available commands
 func (store *Store) TaskDefinitionExecuteCli(alias string, args []string) bool {
 	argumentsMap := argsToMap(args)
-	cfmt.Infoln("Executing task: ", alias, " with arguments: ", argumentsMap)
+	_, _ = cfmt.Infoln("Executing task: ", alias, " with arguments: ", argumentsMap)
 
 	// Lists the available tasks
 	if alias == "list" {
 		for index, taskHandler := range store.TaskHandlerList() {
-			cfmt.Warningln(cast.ToString(index+1) + ". Task Alias: " + taskHandler.Alias())
-			cfmt.Infoln("    - Task Title: " + taskHandler.Title())
-			cfmt.Infoln("    - Task Description: " + taskHandler.Description())
+			_, _ = cfmt.Warningln(cast.ToString(index+1) + ". Task Alias: " + taskHandler.Alias())
+			_, _ = cfmt.Infoln("    - Task Title: " + taskHandler.Title())
+			_, _ = cfmt.Infoln("    - Task Description: " + taskHandler.Description())
 		}
 
 		return true
@@ -515,7 +517,7 @@ func (store *Store) TaskDefinitionExecuteCli(alias string, args []string) bool {
 		}
 	}
 
-	cfmt.Errorln("Unrecognized task alias: ", alias)
+	_, _ = cfmt.Errorln("Unrecognized task alias: ", alias)
 	return false
 }
 
@@ -553,7 +555,7 @@ func (store *Store) taskHandlerFuncWithContext(taskAlias string, ctx context.Con
 
 	return func(queuedTask TaskQueueInterface) bool {
 		queuedTask.AppendDetails("No handler for alias: " + taskAlias)
-		store.TaskQueueUpdate(ctx, queuedTask)
+		_ = store.TaskQueueUpdate(ctx, queuedTask)
 		return false
 	}
 }

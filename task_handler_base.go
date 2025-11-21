@@ -51,7 +51,7 @@ func (handler *TaskHandlerBase) LogError(message string) {
 	if handler.HasQueuedTask() {
 		handler.queuedTask.AppendDetails(message)
 	} else {
-		cfmt.Errorln(message)
+		_, _ = cfmt.Errorln(message)
 	}
 }
 
@@ -60,7 +60,7 @@ func (handler *TaskHandlerBase) LogInfo(message string) {
 	if handler.HasQueuedTask() {
 		handler.queuedTask.AppendDetails(message)
 	} else {
-		cfmt.Infoln(message)
+		_, _ = cfmt.Infoln(message)
 	}
 }
 
@@ -69,7 +69,7 @@ func (handler *TaskHandlerBase) LogSuccess(message string) {
 	if handler.HasQueuedTask() {
 		handler.queuedTask.AppendDetails(message)
 	} else {
-		cfmt.Successln(message)
+		_, _ = cfmt.Successln(message)
 	}
 }
 
