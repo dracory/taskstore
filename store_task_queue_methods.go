@@ -305,6 +305,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 		params = []interface{}{TaskQueueStatusQueued, queueName}
 	} else {
 		// MySQL and PostgreSQL support FOR UPDATE
+		// Note: SKIP LOCKED removed for MySQL 5.7 compatibility (only available in MySQL 8.0+)
 		selectSQL = `
 			SELECT ` + COLUMN_ID + `, ` + COLUMN_TASK_ID + `, ` + COLUMN_STATUS + `, ` + COLUMN_QUEUE_NAME + `, 
 			       ` + COLUMN_PARAMETERS + `, ` + COLUMN_OUTPUT + `, ` + COLUMN_DETAILS + `, ` + COLUMN_ATTEMPTS + `,
@@ -315,7 +316,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 			  AND ` + COLUMN_QUEUE_NAME + ` = ?
 			ORDER BY ` + COLUMN_CREATED_AT + ` ASC
 			LIMIT 1
-			FOR UPDATE SKIP LOCKED`
+			FOR UPDATE`
 		params = []interface{}{TaskQueueStatusQueued, queueName}
 	}
 
