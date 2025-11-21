@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/dracory/database"
 	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
 	"github.com/samber/lo"
@@ -36,8 +37,8 @@ func (store *Store) TaskDefinitionCount(ctx context.Context, options TaskDefinit
 		log.Println(sqlStr)
 	}
 
-	db := sb.NewDatabase(store.db, store.dbDriverName)
-	mapped, err := db.SelectToMapString(ctx, sqlStr, params...)
+	queryable := database.NewQueryableContext(ctx, store.db)
+	mapped, err := database.SelectToMapString(queryable, sqlStr, params...)
 	if err != nil {
 		return -1, err
 	}
@@ -186,13 +187,8 @@ func (store *Store) TaskDefinitionList(ctx context.Context, query TaskDefinition
 		return []TaskDefinitionInterface{}, errors.New("taskstore: database is nil")
 	}
 
-	db := sb.NewDatabase(store.db, store.dbDriverName)
-
-	if db == nil {
-		return []TaskDefinitionInterface{}, errors.New("taskstore: database is nil")
-	}
-
-	modelMaps, err := db.SelectToMapString(ctx, sqlStr, sqlParams...)
+	queryable := database.NewQueryableContext(ctx, store.db)
+	modelMaps, err := database.SelectToMapString(queryable, sqlStr, sqlParams...)
 
 	if err != nil {
 		return []TaskDefinitionInterface{}, err

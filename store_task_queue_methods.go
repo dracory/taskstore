@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/dracory/database"
 	"github.com/dracory/sb"
 	"github.com/dracory/uid"
 	"github.com/dromara/carbon/v2"
@@ -38,8 +39,8 @@ func (store *Store) TaskQueueCount(ctx context.Context, options TaskQueueQueryIn
 		log.Println(sqlStr)
 	}
 
-	db := sb.NewDatabase(store.db, store.dbDriverName)
-	mapped, err := db.SelectToMapString(ctx, sqlStr, params...)
+	queryable := database.NewQueryableContext(ctx, store.db)
+	mapped, err := database.SelectToMapString(queryable, sqlStr, params...)
 	if err != nil {
 		return -1, err
 	}
@@ -190,13 +191,9 @@ func (store *Store) TaskQueueList(ctx context.Context, query TaskQueueQueryInter
 		return []TaskQueueInterface{}, errSql
 	}
 
-	db := sb.NewDatabase(store.db, store.dbDriverName)
-
-	if db == nil {
-		return []TaskQueueInterface{}, errors.New("queuestore: database is nil")
-	}
-
-	modelMaps, err := db.SelectToMapString(ctx, sqlStr)
+	// Use database.SelectToMapString for consistency
+	queryable := database.NewQueryableContext(ctx, store.db)
+	modelMaps, err := database.SelectToMapString(queryable, sqlStr)
 
 	if err != nil {
 		return []TaskQueueInterface{}, err
@@ -284,9 +281,6 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	defer tx.Rollback() // Will be a no-op if committed
 
 	// SELECT FOR UPDATE query to lock the row
-	// Note: This works across SQLite (3.35+), MySQL, and PostgreSQL
-	// SELECT FOR UPDATE query to lock the row
-	// Note: This works across SQLite (3.35+), MySQL, and PostgreSQL
 	selectSQL := `
 		SELECT *
 		FROM ` + store.taskQueueTableName + `
@@ -307,37 +301,22 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 		log.Println("TaskQueueClaimNext SELECT:", selectSQL)
 	}
 
-	// Execute SELECT query
-	rows, err := tx.QueryContext(ctx, selectSQL, params...)
+	queryable := database.NewQueryableContext(ctx, tx)
+	taskMaps, err := database.SelectToMapAny(queryable, selectSQL, params...)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	if !rows.Next() {
+	if len(taskMaps) == 0 {
 		// No tasks available - this is normal
 		return nil, nil
 	}
 
-	columns, err := rows.Columns()
-	if err != nil {
-		return nil, err
-	}
-
-	values := make([]interface{}, len(columns))
-	valuePtrs := make([]interface{}, len(columns))
-	for i := range values {
-		valuePtrs[i] = &values[i]
-	}
-
-	if err := rows.Scan(valuePtrs...); err != nil {
-		return nil, err
-	}
-
+	// Convert map[string]any to map[string]string
+	taskDataAny := taskMaps[0]
 	taskData := make(map[string]string)
-	for i, col := range columns {
-		val := values[i]
-		taskData[col] = cast.ToString(val)
+	for k, v := range taskDataAny {
+		taskData[k] = cast.ToString(v)
 	}
 
 	id := taskData[COLUMN_ID]
