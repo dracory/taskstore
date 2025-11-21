@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cast"
 )
 
-func (store *Store) TaskQueueCount(options TaskQueueQueryInterface) (int64, error) {
+func (store *Store) TaskQueueCount(ctx context.Context, options TaskQueueQueryInterface) (int64, error) {
 	options.SetCountOnly(true)
 
 	q, _, err := store.taskQueueSelectQuery(options)
@@ -39,7 +39,7 @@ func (store *Store) TaskQueueCount(options TaskQueueQueryInterface) (int64, erro
 	}
 
 	db := sb.NewDatabase(store.db, store.dbDriverName)
-	mapped, err := db.SelectToMapString(sqlStr, params...)
+	mapped, err := db.SelectToMapString(ctx, sqlStr, params...)
 	if err != nil {
 		return -1, err
 	}
@@ -61,7 +61,7 @@ func (store *Store) TaskQueueCount(options TaskQueueQueryInterface) (int64, erro
 }
 
 // TaskQueueCreate creates a queued task
-func (store *Store) TaskQueueCreate(queue TaskQueueInterface) error {
+func (store *Store) TaskQueueCreate(ctx context.Context, queue TaskQueueInterface) error {
 	if queue.ID() == "" {
 		time.Sleep(1 * time.Millisecond) // !!! important
 		queue.SetID(uid.MicroUid())
@@ -93,7 +93,7 @@ func (store *Store) TaskQueueCreate(queue TaskQueueInterface) error {
 		return errors.New("taskstore: database is nil")
 	}
 
-	_, err := store.db.Exec(sqlStr, params...)
+	_, err := store.db.ExecContext(ctx, sqlStr, params...)
 
 	if err != nil {
 		return err
@@ -104,15 +104,15 @@ func (store *Store) TaskQueueCreate(queue TaskQueueInterface) error {
 	return nil
 }
 
-func (store *Store) TaskQueueDelete(queue TaskQueueInterface) error {
+func (store *Store) TaskQueueDelete(ctx context.Context, queue TaskQueueInterface) error {
 	if queue == nil {
 		return errors.New("queue is nil")
 	}
 
-	return store.TaskQueueDeleteByID(queue.ID())
+	return store.TaskQueueDeleteByID(ctx, queue.ID())
 }
 
-func (st *Store) TaskQueueDeleteByID(id string) error {
+func (st *Store) TaskQueueDeleteByID(ctx context.Context, id string) error {
 	if id == "" {
 		return errors.New("queue id is empty")
 	}
@@ -132,27 +132,27 @@ func (st *Store) TaskQueueDeleteByID(id string) error {
 		log.Println(sqlStr)
 	}
 
-	_, err = st.db.Exec(sqlStr, preparedArgs...)
+	_, err = st.db.ExecContext(ctx, sqlStr, preparedArgs...)
 
 	return err
 }
 
 // TaskQueueFail fails a queued task
-func (st *Store) TaskQueueFail(queue TaskQueueInterface) error {
+func (st *Store) TaskQueueFail(ctx context.Context, queue TaskQueueInterface) error {
 	queue.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	queue.SetStatus(TaskQueueStatusFailed)
-	return st.TaskQueueUpdate(queue)
+	return st.TaskQueueUpdate(ctx, queue)
 }
 
 // TaskQueueFindByID finds a Queue by ID
-func (store *Store) TaskQueueFindByID(id string) (TaskQueueInterface, error) {
+func (store *Store) TaskQueueFindByID(ctx context.Context, id string) (TaskQueueInterface, error) {
 	if id == "" {
 		return nil, errors.New("queue id is empty")
 	}
 
 	query := TaskQueueQuery().SetID(id).SetLimit(1)
 
-	list, err := store.TaskQueueList(query)
+	list, err := store.TaskQueueList(ctx, query)
 
 	if err != nil {
 		return nil, err
@@ -165,15 +165,15 @@ func (store *Store) TaskQueueFindByID(id string) (TaskQueueInterface, error) {
 	return nil, nil
 }
 
-func (store *Store) TaskQueueFindRunning(limit int) []TaskQueueInterface {
-	return store.TaskQueueFindRunningByQueue("", limit)
+func (store *Store) TaskQueueFindRunning(ctx context.Context, limit int) []TaskQueueInterface {
+	return store.TaskQueueFindRunningByQueue(ctx, DefaultQueueName, limit)
 }
 
-func (store *Store) TaskQueueFindNextQueuedTask() (TaskQueueInterface, error) {
-	return store.TaskQueueFindNextQueuedTaskByQueue("")
+func (store *Store) TaskQueueFindNextQueuedTask(ctx context.Context) (TaskQueueInterface, error) {
+	return store.TaskQueueFindNextQueuedTaskByQueue(ctx, DefaultQueueName)
 }
 
-func (store *Store) TaskQueueList(query TaskQueueQueryInterface) ([]TaskQueueInterface, error) {
+func (store *Store) TaskQueueList(ctx context.Context, query TaskQueueQueryInterface) ([]TaskQueueInterface, error) {
 	q, columns, err := store.taskQueueSelectQuery(query)
 
 	if err != nil {
@@ -196,7 +196,7 @@ func (store *Store) TaskQueueList(query TaskQueueQueryInterface) ([]TaskQueueInt
 		return []TaskQueueInterface{}, errors.New("queuestore: database is nil")
 	}
 
-	modelMaps, err := db.SelectToMapString(sqlStr)
+	modelMaps, err := db.SelectToMapString(ctx, sqlStr)
 
 	if err != nil {
 		return []TaskQueueInterface{}, err
@@ -212,8 +212,8 @@ func (store *Store) TaskQueueList(query TaskQueueQueryInterface) ([]TaskQueueInt
 	return list, nil
 }
 
-func (store *Store) TaskQueueProcessNext() error {
-	return store.TaskQueueProcessNextByQueue("")
+func (store *Store) TaskQueueProcessNext(ctx context.Context) error {
+	return store.TaskQueueProcessNextByQueue(ctx, DefaultQueueName)
 }
 
 func normalizeQueueName(queueName string) string {
@@ -223,10 +223,10 @@ func normalizeQueueName(queueName string) string {
 	return queueName
 }
 
-func (store *Store) TaskQueueFindRunningByQueue(queueName string, limit int) []TaskQueueInterface {
+func (store *Store) TaskQueueFindRunningByQueue(ctx context.Context, queueName string, limit int) []TaskQueueInterface {
 	queueName = normalizeQueueName(queueName)
 
-	runningTasks, errList := store.TaskQueueList(TaskQueueQuery().
+	runningTasks, errList := store.TaskQueueList(ctx, TaskQueueQuery().
 		SetStatus(TaskQueueStatusRunning).
 		SetQueueName(queueName).
 		SetLimit(limit).
@@ -240,10 +240,10 @@ func (store *Store) TaskQueueFindRunningByQueue(queueName string, limit int) []T
 	return runningTasks
 }
 
-func (store *Store) TaskQueueFindNextQueuedTaskByQueue(queueName string) (TaskQueueInterface, error) {
+func (store *Store) TaskQueueFindNextQueuedTaskByQueue(ctx context.Context, queueName string) (TaskQueueInterface, error) {
 	queueName = normalizeQueueName(queueName)
 
-	queuedTasks, errList := store.TaskQueueList(TaskQueueQuery().SetStatus(TaskQueueStatusQueued).
+	queuedTasks, errList := store.TaskQueueList(ctx, TaskQueueQuery().SetStatus(TaskQueueStatusQueued).
 		SetQueueName(queueName).
 		SetLimit(1).
 		SetOrderBy(COLUMN_CREATED_AT).
@@ -372,13 +372,13 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	return task, nil
 }
 
-func (store *Store) TaskQueueProcessNextByQueue(queueName string) error {
+func (store *Store) TaskQueueProcessNextByQueue(ctx context.Context, queueName string) error {
 	queueName = normalizeQueueName(queueName)
 
 	// Atomically claim the next task
 	// Note: Old implementation checked for running tasks which was too restrictive
 	// The atomic claim handles concurrency properly
-	nextQueuedTask, err := store.TaskQueueClaimNext(context.Background(), queueName)
+	nextQueuedTask, err := store.TaskQueueClaimNext(ctx, queueName)
 
 	if err != nil {
 		return err
@@ -390,16 +390,16 @@ func (store *Store) TaskQueueProcessNextByQueue(queueName string) error {
 	}
 
 	// Process the claimed task synchronously
-	_, err = store.QueuedTaskProcess(nextQueuedTask)
+	_, err = store.QueuedTaskProcess(ctx, nextQueuedTask)
 
 	return err
 }
 
-func (store *Store) TaskQueueProcessNextAsyncByQueue(queueName string) error {
+func (store *Store) TaskQueueProcessNextAsyncByQueue(ctx context.Context, queueName string) error {
 	queueName = normalizeQueueName(queueName)
 
 	// Atomically claim the next task (fixes race condition)
-	nextQueuedTask, err := store.TaskQueueClaimNext(context.Background(), queueName)
+	nextQueuedTask, err := store.TaskQueueClaimNext(ctx, queueName)
 
 	if err != nil {
 		return err
@@ -412,7 +412,7 @@ func (store *Store) TaskQueueProcessNextAsyncByQueue(queueName string) error {
 
 	// Spawn goroutine to process the claimed task
 	go func(q TaskQueueInterface) {
-		_, err := store.QueuedTaskProcess(q)
+		_, err := store.QueuedTaskProcess(ctx, q)
 		if err != nil && store.debugEnabled {
 			log.Println("QueuedTaskProcess error:", err)
 		}
@@ -421,34 +421,34 @@ func (store *Store) TaskQueueProcessNextAsyncByQueue(queueName string) error {
 	return nil
 }
 
-func (store *Store) TaskQueueSoftDelete(queue TaskQueueInterface) error {
+func (store *Store) TaskQueueSoftDelete(ctx context.Context, queue TaskQueueInterface) error {
 	if queue == nil {
 		return errors.New("queue is nil")
 	}
 
 	queue.SetSoftDeletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
-	return store.TaskQueueUpdate(queue)
+	return store.TaskQueueUpdate(ctx, queue)
 }
 
-func (store *Store) TaskQueueSoftDeleteByID(id string) error {
-	queue, err := store.TaskQueueFindByID(id)
+func (store *Store) TaskQueueSoftDeleteByID(ctx context.Context, id string) error {
+	queue, err := store.TaskQueueFindByID(ctx, id)
 
 	if err != nil {
 		return err
 	}
 
-	return store.TaskQueueSoftDelete(queue)
+	return store.TaskQueueSoftDelete(ctx, queue)
 }
 
 // TaskQueueSuccess completes a queued task  successfully
-func (st *Store) TaskQueueSuccess(queue TaskQueueInterface) error {
+func (st *Store) TaskQueueSuccess(ctx context.Context, queue TaskQueueInterface) error {
 	queue.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	queue.SetStatus(TaskQueueStatusSuccess)
-	return st.TaskQueueUpdate(queue)
+	return st.TaskQueueUpdate(ctx, queue)
 }
 
-func (store *Store) QueuedTaskForceFail(queuedTask TaskQueueInterface, waitMinutes int) error {
+func (store *Store) QueuedTaskForceFail(ctx context.Context, queuedTask TaskQueueInterface, waitMinutes int) error {
 	startedAt := queuedTask.StartedAt()
 
 	// Skip tasks that haven't actually started yet
@@ -465,14 +465,14 @@ func (store *Store) QueuedTaskForceFail(queuedTask TaskQueueInterface, waitMinut
 
 	if isOvertime {
 		queuedTask.AppendDetails("Failed forcefully after " + cast.ToString(waitMinutes) + " minutes timeout")
-		return store.TaskQueueFail(queuedTask)
+		return store.TaskQueueFail(ctx, queuedTask)
 	}
 
 	return nil
 }
 
 // TaskQueueUpdate creates a Queue
-func (store *Store) TaskQueueUpdate(queue TaskQueueInterface) error {
+func (store *Store) TaskQueueUpdate(ctx context.Context, queue TaskQueueInterface) error {
 	queue.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
 	dataChanged := queue.DataChanged()
@@ -502,7 +502,7 @@ func (store *Store) TaskQueueUpdate(queue TaskQueueInterface) error {
 		return errors.New("taskstore: database is nil")
 	}
 
-	_, err := store.db.Exec(sqlStr, params...)
+	_, err := store.db.ExecContext(ctx, sqlStr, params...)
 
 	queue.MarkAsNotDirty()
 

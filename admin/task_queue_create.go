@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -54,7 +55,7 @@ func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateController
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task Parameters is not valid JSON", Position: "top-right"})
 	}
 
-	task, err := c.store.TaskDefinitionFindByID(data.formTaskID)
+	task, err := c.store.TaskDefinitionFindByID(context.Background(), data.formTaskID)
 
 	if err != nil {
 		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())
@@ -73,7 +74,7 @@ func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateController
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskEnqueueByAlias(task.Alias(), taskParametersMap)
+	_, err = c.store.TaskEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())
@@ -198,7 +199,7 @@ func (c *taskQueueCreateController) prepareData(r *http.Request) (data taskQueue
 	data.formStatus = req.GetStringTrimmed(r, "status")
 	data.formTaskID = req.GetStringTrimmed(r, "task_id")
 
-	if data.taskList, err = c.store.TaskDefinitionList(taskstore.TaskDefinitionQuery().
+	if data.taskList, err = c.store.TaskDefinitionList(context.Background(), taskstore.TaskDefinitionQuery().
 		SetOrderBy(taskstore.COLUMN_TITLE).
 		SetSortOrder(sb.ASC).
 		SetOffset(0).

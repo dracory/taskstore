@@ -1,12 +1,15 @@
 package taskstore
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 var errTaskMissing = errors.New("task not found")
 
-func (store *Store) TaskHandlerAdd(taskHandler TaskHandlerInterface, createIfMissing bool) error {
+func (store *Store) TaskHandlerAdd(ctx context.Context, taskHandler TaskHandlerInterface, createIfMissing bool) error {
 	alias := taskHandler.Alias()
-	task, err := store.TaskDefinitionFindByAlias(alias)
+	task, err := store.TaskDefinitionFindByAlias(ctx, alias)
 
 	if err != nil {
 		return err
@@ -27,7 +30,7 @@ func (store *Store) TaskHandlerAdd(taskHandler TaskHandlerInterface, createIfMis
 			SetTitle(title).
 			SetDescription(description)
 
-		err := store.TaskDefinitionCreate(task)
+		err := store.TaskDefinitionCreate(ctx, task)
 
 		if err != nil {
 			return err

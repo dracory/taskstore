@@ -41,7 +41,7 @@ func Test_Store_TaskQueueCreate(t *testing.T) {
 		t.Fatalf("TaskQueueCreate: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(task)
+	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueCreate: Error in Creating TaskQueue: received [%v]", err)
 	}
@@ -68,13 +68,13 @@ func Test_Store_TaskQueueDeleteByID(t *testing.T) {
 		SetAttempts(1).
 		SetStatus(TaskQueueStatusQueued)
 
-	err = store.TaskQueueCreate(queuedTask)
+	err = store.TaskQueueCreate(context.Background(), queuedTask)
 
 	if err != nil {
 		t.Fatal("TaskQueueList: Error in creating queued task:", err.Error())
 	}
 
-	foundQueuedTask, err := store.TaskQueueFindByID(queuedTask.ID())
+	foundQueuedTask, err := store.TaskQueueFindByID(context.Background(), queuedTask.ID())
 
 	if err != nil {
 		t.Fatal("TaskQueueDeletedByID: Error in creating queued task:", err.Error())
@@ -84,7 +84,7 @@ func Test_Store_TaskQueueDeleteByID(t *testing.T) {
 		t.Fatal("TaskQueueDeletedByID: queued task not found:")
 	}
 
-	err = store.TaskQueueDeleteByID(queuedTask.ID())
+	err = store.TaskQueueDeleteByID(context.Background(), queuedTask.ID())
 
 	if err != nil {
 		t.Error("TaskQueueDeletedByID: Error deleting queued task:", err.Error())
@@ -112,12 +112,12 @@ func Test_Store_TaskQueueFail(t *testing.T) {
 		t.Fatalf("TaskQueueFail: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(queuedTask)
+	err = store.TaskQueueCreate(context.Background(), queuedTask)
 	if err != nil {
 		t.Fatalf("TaskQueueFail: Error in Creating TaskQueue: received [%v]", err)
 	}
 
-	err = store.TaskQueueFail(queuedTask)
+	err = store.TaskQueueFail(context.Background(), queuedTask)
 	if err != nil {
 		t.Fatalf("TaskQueueFail: Error in Fail TaskQueue: received [%v]", err)
 	}
@@ -142,13 +142,13 @@ func Test_Store_TaskQueueFindByID(t *testing.T) {
 		t.Fatalf("TaskQueueFindByID: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(task)
+	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueFindByID: Error in Creating TaskQueue: received [%v]", err)
 	}
 
 	id := task.ID()
-	queue, err := store.TaskQueueFindByID(id)
+	queue, err := store.TaskQueueFindByID(context.Background(), id)
 	if err != nil {
 		t.Fatalf("TaskQueueFindByID: Error in TaskQueueFindByID: received [%v]", err)
 	}
@@ -184,13 +184,13 @@ func Test_Store_TaskQueueList(t *testing.T) {
 		t.Fatalf("TaskQueueList: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(task)
+	err = store.TaskQueueCreate(context.Background(), task)
 
 	if err != nil {
 		t.Fatalf("TaskQueueList: Error in Creating TaskQueue: received [%v]", err)
 	}
 
-	list, err := store.TaskQueueList(TaskQueueQuery().
+	list, err := store.TaskQueueList(context.Background(), TaskQueueQuery().
 		SetStatus(TaskQueueStatusQueued).
 		SetLimit(1).
 		SetOrderBy(COLUMN_CREATED_AT).
@@ -234,15 +234,15 @@ func Test_Store_TaskQueueFindNextQueuedTaskByQueue(t *testing.T) {
 		SetStatus(TaskQueueStatusQueued).
 		SetQueueName("emails")
 
-	if err := store.TaskQueueCreate(defaultTask); err != nil {
+	if err := store.TaskQueueCreate(context.Background(), defaultTask); err != nil {
 		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error creating default task: [%v]", err)
 	}
 
-	if err := store.TaskQueueCreate(namedTask); err != nil {
+	if err := store.TaskQueueCreate(context.Background(), namedTask); err != nil {
 		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error creating named task: [%v]", err)
 	}
 
-	q, err := store.TaskQueueFindNextQueuedTaskByQueue("emails")
+	q, err := store.TaskQueueFindNextQueuedTaskByQueue(context.Background(), "emails")
 	if err != nil {
 		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error[%v]", err)
 	}
@@ -276,17 +276,17 @@ func Test_Store_TaskQueueSoftDeleteByID(t *testing.T) {
 		t.Fatalf("TaskQueueSoftDeleteByID: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(queuedTask)
+	err = store.TaskQueueCreate(context.Background(), queuedTask)
 	if err != nil {
 		t.Fatalf("TaskQueueSoftDeleteByID: Error in Creating TaskQueue: received [%v]", err)
 	}
 
-	err = store.TaskQueueSoftDeleteByID(queuedTask.ID())
+	err = store.TaskQueueSoftDeleteByID(context.Background(), queuedTask.ID())
 	if err != nil {
 		t.Fatalf("TaskQueueSoftDeleteByID: Error in Fail TaskQueue: received [%v]", err)
 	}
 
-	queueFound, err := store.TaskQueueFindByID(queuedTask.ID())
+	queueFound, err := store.TaskQueueFindByID(context.Background(), queuedTask.ID())
 
 	if err != nil {
 		t.Fatal("TaskQueueSoftDeleteByID: Error in TaskQueueFindByID: received:", err)
@@ -316,12 +316,12 @@ func Test_Store_TaskQueueSuccess(t *testing.T) {
 		t.Fatalf("TaskQueueSuccess: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(task)
+	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueSuccess: Error in Creating TaskQueue: received [%v]", err)
 	}
 
-	err = store.TaskQueueSuccess(task)
+	err = store.TaskQueueSuccess(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueSuccess: Error in Success TaskQueue: received [%v]", err)
 	}
@@ -346,12 +346,12 @@ func Test_Store_TaskQueueUpdate(t *testing.T) {
 		t.Fatalf("TaskQueueUpdate: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(task)
+	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueUpdate: Error in Creating TaskQueue: received [%v]", err)
 	}
 
-	err = store.TaskQueueUpdate(task)
+	err = store.TaskQueueUpdate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueUpdate: Error in Updating TaskQueue: received [%v]", err)
 	}
@@ -397,7 +397,7 @@ func Test_TaskQueue_ParametersMap(t *testing.T) {
 		t.Fatalf("GetParameters: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskQueueCreate(task)
+	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("GetParameters: Error in Creating TaskQueue: received [%v]", err)
 	}
@@ -442,13 +442,13 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 		queue.SetStatus(TaskQueueStatusQueued)
 		// started_at and completed_at are already set to sb.NULL_DATETIME by NewTaskQueue
 
-		err := store.TaskQueueCreate(queue)
+		err := store.TaskQueueCreate(context.Background(), queue)
 		if err != nil {
 			t.Fatalf("Failed to create queue: %v", err)
 		}
 
 		// Try to force fail with 1 minute timeout
-		err = store.QueuedTaskForceFail(queue, 1)
+		err = store.QueuedTaskForceFail(context.Background(), queue, 1)
 		if err != nil {
 			t.Errorf("QueuedTaskForceFail returned error: %v", err)
 		}
@@ -466,7 +466,7 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 		queue.SetStatus(TaskQueueStatusQueued)
 		queue.SetStartedAt("") // Empty string
 
-		err := store.QueuedTaskForceFail(queue, 1)
+		err := store.QueuedTaskForceFail(context.Background(), queue, 1)
 		if err != nil {
 			t.Errorf("QueuedTaskForceFail returned error: %v", err)
 		}
@@ -502,7 +502,7 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 		SetStatus(TaskQueueStatusQueued).
 		SetAttempts(0)
 
-	err = store.TaskQueueCreate(task)
+	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueClaimNext: Error in Creating TaskQueue: received [%v]", err)
 	}
@@ -531,7 +531,7 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 	}
 
 	// Verify database state
-	dbTask, err := store.TaskQueueFindByID(task.ID())
+	dbTask, err := store.TaskQueueFindByID(context.Background(), task.ID())
 	if err != nil {
 		t.Fatalf("TaskQueueClaimNext: Error finding task: [%v]", err)
 	}

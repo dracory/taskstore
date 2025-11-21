@@ -234,13 +234,13 @@ func (store *Store) queueRunLoopSync(ctx context.Context, queueName string, proc
 		default:
 		}
 
-		store.TaskQueueUnstuckByQueue(queueName, unstuckMinutes)
+		store.TaskQueueUnstuckByQueue(ctx, queueName, unstuckMinutes)
 
 		if !sleepWithContext(ctx, time.Second) {
 			return
 		}
 
-		if err := store.TaskQueueProcessNextByQueue(queueName); err != nil && store.debugEnabled {
+		if err := store.TaskQueueProcessNextByQueue(ctx, queueName); err != nil && store.debugEnabled {
 			log.Println("TaskQueueProcessNext error:", err)
 		}
 
@@ -270,7 +270,7 @@ func (store *Store) queueRunLoopAsync(ctx context.Context, queueName string, pro
 		default:
 		}
 
-		store.TaskQueueUnstuckByQueue(queueName, unstuckMinutes)
+		store.TaskQueueUnstuckByQueue(ctx, queueName, unstuckMinutes)
 
 		if !sleepWithContext(ctx, time.Second) {
 			return
@@ -399,24 +399,24 @@ func (store *Store) QueueStopByName(queueName string) {
 // 1. Checks is there are running tasks in progress
 // 2. If running for more than the specified wait minutes mark as failed
 // =================================================================
-func (store *Store) TaskQueueUnstuck(waitMinutes int) {
-	store.TaskQueueUnstuckByQueue("", waitMinutes)
+func (store *Store) TaskQueueUnstuck(ctx context.Context, waitMinutes int) {
+	store.TaskQueueUnstuckByQueue(ctx, "", waitMinutes)
 }
 
-func (store *Store) TaskQueueUnstuckByQueue(queueName string, waitMinutes int) {
-	runningTasks := store.TaskQueueFindRunningByQueue(queueName, 3)
+func (store *Store) TaskQueueUnstuckByQueue(ctx context.Context, queueName string, waitMinutes int) {
+	runningTasks := store.TaskQueueFindRunningByQueue(ctx, queueName, 3)
 
 	if len(runningTasks) < 1 {
 		return
 	}
 
 	for _, runningTask := range runningTasks {
-		store.QueuedTaskForceFail(runningTask, waitMinutes)
+		store.QueuedTaskForceFail(ctx, runningTask, waitMinutes)
 	}
 }
 
-func (store *Store) QueuedTaskProcess(queuedTask TaskQueueInterface) (bool, error) {
-	return store.QueuedTaskProcessWithContext(context.Background(), queuedTask)
+func (store *Store) QueuedTaskProcess(ctx context.Context, queuedTask TaskQueueInterface) (bool, error) {
+	return store.QueuedTaskProcessWithContext(ctx, queuedTask)
 }
 
 // QueuedTaskProcessWithContext processes a queued task with context support.
@@ -431,14 +431,14 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 	queuedTask.SetAttempts(attempts)
 	queuedTask.SetStartedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
-	err := store.TaskQueueUpdate(queuedTask)
+	err := store.TaskQueueUpdate(ctx, queuedTask)
 
 	if err != nil {
 		return false, err
 	}
 
 	// 2. Find task definition
-	task, err := store.TaskDefinitionFindByID(queuedTask.TaskID())
+	task, err := store.TaskDefinitionFindByID(ctx, queuedTask.TaskID())
 
 	if err != nil {
 		return false, err
@@ -448,7 +448,7 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 		queuedTask.AppendDetails("Task DOES NOT exist")
 		queuedTask.SetStatus(TaskQueueStatusFailed)
 		queuedTask.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
-		err = store.TaskQueueUpdate(queuedTask)
+		err = store.TaskQueueUpdate(ctx, queuedTask)
 
 		if err != nil {
 			if store.debugEnabled {
@@ -468,7 +468,7 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 
 	if result {
 		queuedTask.AppendDetails("Task completed")
-		err = store.TaskQueueSuccess(queuedTask)
+		err = store.TaskQueueSuccess(ctx, queuedTask)
 
 		if err != nil {
 			if store.debugEnabled {
@@ -477,7 +477,7 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 		}
 	} else {
 		queuedTask.AppendDetails("Task failed")
-		err = store.TaskQueueFail(queuedTask)
+		err = store.TaskQueueFail(ctx, queuedTask)
 
 		if err != nil {
 			if store.debugEnabled {
@@ -553,7 +553,7 @@ func (store *Store) taskHandlerFuncWithContext(taskAlias string, ctx context.Con
 
 	return func(queuedTask TaskQueueInterface) bool {
 		queuedTask.AppendDetails("No handler for alias: " + taskAlias)
-		store.TaskQueueUpdate(queuedTask)
+		store.TaskQueueUpdate(ctx, queuedTask)
 		return false
 	}
 }

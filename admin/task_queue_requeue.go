@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -49,7 +50,7 @@ func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControll
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task Parameters is not valid JSON", Position: "top-right"})
 	}
 
-	task, err := c.store.TaskDefinitionFindByID(data.queue.TaskID())
+	task, err := c.store.TaskDefinitionFindByID(context.Background(), data.queue.TaskID())
 
 	if err != nil {
 		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
@@ -68,7 +69,7 @@ func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControll
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskEnqueueByAlias(task.Alias(), taskParametersMap)
+	_, err = c.store.TaskEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
@@ -193,7 +194,7 @@ func (c *taskQueueRequeueController) prepareData(r *http.Request) (data taskQueu
 		return data, errors.New("queue_id is required")
 	}
 
-	if data.queue, err = c.store.TaskQueueFindByID(data.queueID); err != nil {
+	if data.queue, err = c.store.TaskQueueFindByID(context.Background(), data.queueID); err != nil {
 		return data, err
 	}
 

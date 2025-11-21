@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -48,7 +49,7 @@ func (c *taskDefinitionDeleteController) ToTag(w http.ResponseWriter, r *http.Re
 
 func (c *taskDefinitionDeleteController) formSubmitted(data taskDefinitionDeleteControllerData) hb.TagInterface {
 	for _, queuedTask := range data.relatedQueuesToDelete {
-		if err := c.store.TaskQueueSoftDeleteByID(queuedTask.ID()); err != nil {
+		if err := c.store.TaskQueueSoftDeleteByID(context.Background(), queuedTask.ID()); err != nil {
 			return hb.Swal(hb.SwalOptions{
 				Icon:              "error",
 				Title:             "Error",
@@ -60,7 +61,7 @@ func (c *taskDefinitionDeleteController) formSubmitted(data taskDefinitionDelete
 		}
 	}
 
-	if err := c.store.TaskDefinitionSoftDelete(data.task); err != nil {
+	if err := c.store.TaskDefinitionSoftDelete(context.Background(), data.task); err != nil {
 		return hb.Swal(hb.SwalOptions{
 			Icon:              "error",
 			Title:             "Error",
@@ -185,7 +186,7 @@ func (c *taskDefinitionDeleteController) prepareData(r *http.Request) (data task
 		return data, errors.New("task_id is required")
 	}
 
-	data.task, err = c.store.TaskDefinitionFindByID(data.taskID)
+	data.task, err = c.store.TaskDefinitionFindByID(context.Background(), data.taskID)
 
 	if err != nil {
 		return data, err
@@ -196,7 +197,7 @@ func (c *taskDefinitionDeleteController) prepareData(r *http.Request) (data task
 	}
 
 	if r.Method == http.MethodPost {
-		data.relatedQueuesToDelete, err = c.store.TaskQueueList(taskstore.TaskQueueQuery().
+		data.relatedQueuesToDelete, err = c.store.TaskQueueList(context.Background(), taskstore.TaskQueueQuery().
 			SetTaskID(data.task.ID()).
 			SetColumns([]string{taskstore.COLUMN_ID}))
 
@@ -206,7 +207,7 @@ func (c *taskDefinitionDeleteController) prepareData(r *http.Request) (data task
 	}
 
 	if r.Method == http.MethodGet {
-		data.relatedQueuedQueuesCount, err = c.store.TaskQueueCount(taskstore.TaskQueueQuery().
+		data.relatedQueuedQueuesCount, err = c.store.TaskQueueCount(context.Background(), taskstore.TaskQueueQuery().
 			SetTaskID(data.task.ID()).
 			SetColumns([]string{taskstore.COLUMN_ID}))
 

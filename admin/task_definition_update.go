@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -85,7 +86,7 @@ func (c *taskDefinitionUpdateController) formSubmitted(data taskDefinitionUpdate
 		SetStatus(data.formStatus).
 		SetDescription(data.formDescription)
 
-	err := c.store.TaskDefinitionUpdate(data.task)
+	err := c.store.TaskDefinitionUpdate(context.Background(), data.task)
 
 	if err != nil {
 		return hb.Swal(hb.SwalOptions{
@@ -246,7 +247,7 @@ func (c *taskDefinitionUpdateController) prepareData(r *http.Request) (data task
 		return data, errors.New("task_id is required")
 	}
 
-	data.task, err = c.store.TaskDefinitionFindByID(data.taskID)
+	data.task, err = c.store.TaskDefinitionFindByID(context.Background(), data.taskID)
 
 	if err != nil {
 		return data, err

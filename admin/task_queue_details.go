@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -138,7 +139,7 @@ func (c *taskQueueDetailsController) prepareData(r *http.Request) (data taskQueu
 		return data, errors.New("queue_id is required")
 	}
 
-	data.queue, err = c.store.TaskQueueFindByID(data.queueID)
+	data.queue, err = c.store.TaskQueueFindByID(context.Background(), data.queueID)
 
 	if err != nil {
 		return data, err

@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -381,13 +382,13 @@ func (controller *taskDefinitionManagerController) fetchRecordList(data taskDefi
 	// 	query = query.SetNameLike(data.formName)
 	// }
 
-	recordList, err := controller.store.TaskDefinitionList(query)
+	recordList, err := controller.store.TaskDefinitionList(context.Background(), query)
 
 	if err != nil {
 		return records, 0, err
 	}
 
-	recordCount, err = controller.store.TaskDefinitionCount(query)
+	recordCount, err = controller.store.TaskDefinitionCount(context.Background(), query)
 
 	if err != nil {
 		return []taskstore.TaskDefinitionInterface{}, 0, err

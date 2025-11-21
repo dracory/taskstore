@@ -14,7 +14,7 @@ require (
 	github.com/dracory/form v0.19.0
 	github.com/dracory/hb v1.88.0
 	github.com/dracory/req v0.1.0
-	github.com/dracory/sb v0.12.0
+	github.com/dracory/sb v0.13.0
 	github.com/dracory/uid v1.8.0
 	github.com/dromara/carbon/v2 v2.6.15
 	github.com/mingrammer/cfmt v1.1.0

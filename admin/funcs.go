@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -27,14 +28,14 @@ func adminHeader(store taskstore.StoreInterface, logger *slog.Logger, r *http.Re
 		Href(url(r, pathTaskDefinitionManager, nil)).
 		Class("nav-link")
 
-	queueCount, err := store.TaskQueueCount(taskstore.TaskQueueQuery())
+	queueCount, err := store.TaskQueueCount(context.Background(), taskstore.TaskQueueQuery())
 
 	if err != nil {
 		logger.Error(err.Error())
 		queueCount = -1
 	}
 
-	taskCount, err := store.TaskDefinitionCount(taskstore.TaskDefinitionQuery())
+	taskCount, err := store.TaskDefinitionCount(context.Background(), taskstore.TaskDefinitionQuery())
 
 	if err != nil {
 		logger.Error(err.Error())

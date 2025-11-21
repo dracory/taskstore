@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -46,7 +47,7 @@ func (c *taskQueueDeleteController) ToTag(w http.ResponseWriter, r *http.Request
 }
 
 func (c *taskQueueDeleteController) formSubmitted(data taskQueueDeleteControllerData) hb.TagInterface {
-	if err := c.store.TaskQueueSoftDelete(data.queue); err != nil {
+	if err := c.store.TaskQueueSoftDelete(context.Background(), data.queue); err != nil {
 		return hb.Swal(hb.SwalOptions{
 			Icon:              "error",
 			Title:             "Error",
@@ -169,7 +170,7 @@ func (c *taskQueueDeleteController) prepareData(r *http.Request) (data taskQueue
 		return data, errors.New("queue_id is required")
 	}
 
-	data.queue, err = c.store.TaskQueueFindByID(data.queueID)
+	data.queue, err = c.store.TaskQueueFindByID(context.Background(), data.queueID)
 
 	if err != nil {
 		return data, err

@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -56,7 +57,7 @@ func (c *taskDefinitionCreateController) formSubmitted(data taskDefinitionCreate
 		SetStatus(data.formStatus).
 		SetDescription(data.formDescription)
 
-	err := c.store.TaskDefinitionCreate(task)
+	err := c.store.TaskDefinitionCreate(context.Background(), task)
 
 	if err != nil {
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})

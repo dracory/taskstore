@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -586,7 +587,7 @@ func (controller *taskQueueManagerController) prepareData(r *http.Request) (data
 		return data, "error retrieving web queues"
 	}
 
-	data.taskList, err = controller.store.TaskDefinitionList(taskstore.TaskDefinitionQuery().
+	data.taskList, err = controller.store.TaskDefinitionList(context.Background(), taskstore.TaskDefinitionQuery().
 		SetOrderBy(taskstore.COLUMN_ALIAS).
 		SetSortOrder(sb.ASC).
 		SetOffset(0).
@@ -633,13 +634,13 @@ func (controller *taskQueueManagerController) fetchRecordList(data taskQueueMana
 	// 	query = query.SetNameLike(data.formName)
 	// }
 
-	recordList, err := controller.store.TaskQueueList(query)
+	recordList, err := controller.store.TaskQueueList(context.Background(), query)
 
 	if err != nil {
 		return records, 0, err
 	}
 
-	recordCount, err = controller.store.TaskQueueCount(query)
+	recordCount, err = controller.store.TaskQueueCount(context.Background(), query)
 
 	if err != nil {
 		return []taskstore.TaskQueueInterface{}, 0, err

@@ -1,6 +1,9 @@
 package taskstore
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func Test_Store_TaskHandlerAdd(t *testing.T) {
 
@@ -19,17 +22,17 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 		t.Fatal("TaskHandlerAdd: Table creation error: ", "[", err, "]")
 	}
 
-	err = store.TaskHandlerAdd(handler, true)
+	err = store.TaskHandlerAdd(context.Background(), handler, true)
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in adding handler: received ", "[", err, "]")
 	}
 
-	err = store.TaskHandlerAdd(handler, true)
+	err = store.TaskHandlerAdd(context.Background(), handler, true)
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in adding handler: received ", "[", err, "]")
 	}
 
-	tasksNumber, err := store.TaskDefinitionCount(TaskDefinitionQuery())
+	tasksNumber, err := store.TaskDefinitionCount(context.Background(), TaskDefinitionQuery())
 
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in counting tasks: received ", "[", err, "]")
@@ -39,12 +42,12 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 		t.Fatal("TaskHandlerAdd: Error in counting tasks: expected ", "[", 1, "], received ", "[", tasksNumber, "]")
 	}
 
-	err = store.TaskHandlerAdd(handler2, true)
+	err = store.TaskHandlerAdd(context.Background(), handler2, true)
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in adding handler: received ", "[", err, "]")
 	}
 
-	tasksNumber, err = store.TaskDefinitionCount(TaskDefinitionQuery())
+	tasksNumber, err = store.TaskDefinitionCount(context.Background(), TaskDefinitionQuery())
 
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in counting tasks: received ", "[", err, "]")

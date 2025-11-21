@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -39,7 +40,7 @@ func (c *taskQueueTaskRestartController) ToTag(w http.ResponseWriter, r *http.Re
 }
 
 func (c *taskQueueTaskRestartController) formSubmitted(data taskQueueTaskRestartControllerData) hb.TagInterface {
-	task, err := c.store.TaskDefinitionFindByID(data.queue.TaskID())
+	task, err := c.store.TaskDefinitionFindByID(context.Background(), data.queue.TaskID())
 
 	if err != nil {
 		c.logger.Error("At taskQueueTaskRestartController > formSubmitted", "error", err.Error())
@@ -52,7 +53,7 @@ func (c *taskQueueTaskRestartController) formSubmitted(data taskQueueTaskRestart
 
 	task.SetStatus(taskstore.TaskQueueStatusQueued)
 
-	if err := c.store.TaskDefinitionUpdate(task); err != nil {
+	if err := c.store.TaskDefinitionUpdate(context.Background(), task); err != nil {
 		c.logger.Error("At queueTaskRestartController > formSubmitted", "error", err.Error())
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: err.Error(), Position: "top-right"})
 	}
@@ -161,7 +162,7 @@ func (c *taskQueueTaskRestartController) prepareData(r *http.Request) (data task
 		return data, errors.New("queue_id is required")
 	}
 
-	if data.queue, err = c.store.TaskQueueFindByID(data.queueID); err != nil {
+	if data.queue, err = c.store.TaskQueueFindByID(context.Background(), data.queueID); err != nil {
 		return data, err
 	}
 

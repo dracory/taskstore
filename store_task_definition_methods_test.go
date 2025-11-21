@@ -1,6 +1,7 @@
 package taskstore
 
 import (
+	"context"
 	"strings"
 	"testing"
 )
@@ -26,7 +27,7 @@ func Test_Store_TaskDefinitionCreate(t *testing.T) {
 		t.Fatalf("TaskDefinitionCreate: Table creation error: [%v]", err)
 	}
 
-	err = store.TaskDefinitionCreate(task)
+	err = store.TaskDefinitionCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskDefinitionCreate: Error in Creating TaskDefinition: received [%v]", err)
 	}

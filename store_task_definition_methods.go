@@ -1,6 +1,7 @@
 package taskstore
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -13,7 +14,7 @@ import (
 	"github.com/samber/lo"
 )
 
-func (store *Store) TaskDefinitionCount(options TaskDefinitionQueryInterface) (int64, error) {
+func (store *Store) TaskDefinitionCount(ctx context.Context, options TaskDefinitionQueryInterface) (int64, error) {
 	options.SetCountOnly(true)
 
 	q, _, err := store.taskDefinitionSelectQuery(options)
@@ -36,7 +37,7 @@ func (store *Store) TaskDefinitionCount(options TaskDefinitionQueryInterface) (i
 	}
 
 	db := sb.NewDatabase(store.db, store.dbDriverName)
-	mapped, err := db.SelectToMapString(sqlStr, params...)
+	mapped, err := db.SelectToMapString(ctx, sqlStr, params...)
 	if err != nil {
 		return -1, err
 	}
@@ -57,7 +58,7 @@ func (store *Store) TaskDefinitionCount(options TaskDefinitionQueryInterface) (i
 	return i, nil
 }
 
-func (store *Store) TaskDefinitionCreate(task TaskDefinitionInterface) error {
+func (store *Store) TaskDefinitionCreate(ctx context.Context, task TaskDefinitionInterface) error {
 	task.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	task.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
@@ -81,7 +82,7 @@ func (store *Store) TaskDefinitionCreate(task TaskDefinitionInterface) error {
 		return errors.New("taskstore: database is nil")
 	}
 
-	_, err := store.db.Exec(sqlStr, params...)
+	_, err := store.db.ExecContext(ctx, sqlStr, params...)
 
 	if err != nil {
 		return err
@@ -92,15 +93,15 @@ func (store *Store) TaskDefinitionCreate(task TaskDefinitionInterface) error {
 	return nil
 }
 
-func (store *Store) TaskDefinitionDelete(task TaskDefinitionInterface) error {
+func (store *Store) TaskDefinitionDelete(ctx context.Context, task TaskDefinitionInterface) error {
 	if task == nil {
 		return errors.New("task is nil")
 	}
 
-	return store.TaskDefinitionDeleteByID(task.ID())
+	return store.TaskDefinitionDeleteByID(ctx, task.ID())
 }
 
-func (store *Store) TaskDefinitionDeleteByID(id string) error {
+func (store *Store) TaskDefinitionDeleteByID(ctx context.Context, id string) error {
 	if id == "" {
 		return errors.New("task id is empty")
 	}
@@ -119,19 +120,19 @@ func (store *Store) TaskDefinitionDeleteByID(id string) error {
 		log.Println(sqlStr)
 	}
 
-	_, err := store.db.Exec(sqlStr, params...)
+	_, err := store.db.ExecContext(ctx, sqlStr, params...)
 
 	return err
 }
 
-func (store *Store) TaskDefinitionFindByAlias(alias string) (task TaskDefinitionInterface, err error) {
+func (store *Store) TaskDefinitionFindByAlias(ctx context.Context, alias string) (task TaskDefinitionInterface, err error) {
 	if alias == "" {
 		return nil, errors.New("task id is empty")
 	}
 
 	query := TaskDefinitionQuery().SetAlias(alias).SetLimit(1)
 
-	list, err := store.TaskDefinitionList(query)
+	list, err := store.TaskDefinitionList(ctx, query)
 
 	if err != nil {
 		return nil, err
@@ -144,14 +145,14 @@ func (store *Store) TaskDefinitionFindByAlias(alias string) (task TaskDefinition
 	return nil, nil
 }
 
-func (store *Store) TaskDefinitionFindByID(id string) (task TaskDefinitionInterface, err error) {
+func (store *Store) TaskDefinitionFindByID(ctx context.Context, id string) (task TaskDefinitionInterface, err error) {
 	if id == "" {
 		return nil, errors.New("task id is empty")
 	}
 
 	query := TaskDefinitionQuery().SetID(id).SetLimit(1)
 
-	list, err := store.TaskDefinitionList(query)
+	list, err := store.TaskDefinitionList(ctx, query)
 
 	if err != nil {
 		return nil, err
@@ -164,7 +165,7 @@ func (store *Store) TaskDefinitionFindByID(id string) (task TaskDefinitionInterf
 	return nil, nil
 }
 
-func (store *Store) TaskDefinitionList(query TaskDefinitionQueryInterface) ([]TaskDefinitionInterface, error) {
+func (store *Store) TaskDefinitionList(ctx context.Context, query TaskDefinitionQueryInterface) ([]TaskDefinitionInterface, error) {
 	q, columns, err := store.taskDefinitionSelectQuery(query)
 
 	if err != nil {
@@ -191,7 +192,7 @@ func (store *Store) TaskDefinitionList(query TaskDefinitionQueryInterface) ([]Ta
 		return []TaskDefinitionInterface{}, errors.New("taskstore: database is nil")
 	}
 
-	modelMaps, err := db.SelectToMapString(sqlStr, sqlParams...)
+	modelMaps, err := db.SelectToMapString(ctx, sqlStr, sqlParams...)
 
 	if err != nil {
 		return []TaskDefinitionInterface{}, err
@@ -207,27 +208,27 @@ func (store *Store) TaskDefinitionList(query TaskDefinitionQueryInterface) ([]Ta
 	return list, nil
 }
 
-func (store *Store) TaskDefinitionSoftDelete(task TaskDefinitionInterface) error {
+func (store *Store) TaskDefinitionSoftDelete(ctx context.Context, task TaskDefinitionInterface) error {
 	if task == nil {
 		return errors.New("task is nil")
 	}
 
 	task.SetSoftDeletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
-	return store.TaskDefinitionUpdate(task)
+	return store.TaskDefinitionUpdate(ctx, task)
 }
 
-func (store *Store) TaskDefinitionSoftDeleteByID(id string) error {
-	task, err := store.TaskDefinitionFindByID(id)
+func (store *Store) TaskDefinitionSoftDeleteByID(ctx context.Context, id string) error {
+	task, err := store.TaskDefinitionFindByID(ctx, id)
 
 	if err != nil {
 		return err
 	}
 
-	return store.TaskDefinitionSoftDelete(task)
+	return store.TaskDefinitionSoftDelete(ctx, task)
 }
 
-func (store *Store) TaskDefinitionUpdate(task TaskDefinitionInterface) error {
+func (store *Store) TaskDefinitionUpdate(ctx context.Context, task TaskDefinitionInterface) error {
 	if task == nil {
 		return errors.New("task is nil")
 	}
@@ -261,7 +262,7 @@ func (store *Store) TaskDefinitionUpdate(task TaskDefinitionInterface) error {
 		return errors.New("taskstore: database is nil")
 	}
 
-	_, err := store.db.Exec(sqlStr, params...)
+	_, err := store.db.ExecContext(ctx, sqlStr, params...)
 
 	task.MarkAsNotDirty()
 
@@ -269,8 +270,8 @@ func (store *Store) TaskDefinitionUpdate(task TaskDefinitionInterface) error {
 }
 
 // TaskEnqueueByAlias finds a task by its alias and appends it to the queue
-func (st *Store) TaskEnqueueByAlias(taskAlias string, parameters map[string]interface{}) (TaskQueueInterface, error) {
-	task, err := st.TaskDefinitionFindByAlias(taskAlias)
+func (st *Store) TaskEnqueueByAlias(ctx context.Context, taskAlias string, parameters map[string]interface{}) (TaskQueueInterface, error) {
+	task, err := st.TaskDefinitionFindByAlias(ctx, taskAlias)
 
 	if err != nil {
 		return nil, err
@@ -296,7 +297,7 @@ func (st *Store) TaskEnqueueByAlias(taskAlias string, parameters map[string]inte
 		SetParameters(parametersStr).
 		SetStatus(TaskQueueStatusQueued)
 
-	err = st.TaskQueueCreate(queuedTask)
+	err = st.TaskQueueCreate(ctx, queuedTask)
 
 	if err != nil {
 		return queuedTask, err
