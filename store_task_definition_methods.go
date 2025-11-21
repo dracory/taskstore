@@ -389,10 +389,10 @@ func (store *Store) taskDefinitionSelectQuery(options TaskDefinitionQueryInterfa
 	}
 
 	if options.SoftDeletedIncluded() {
-		return q, columns, nil // soft deleted sites requested specifically
+		return q, columns, nil // soft deleted records requested specifically
 	}
 
-	softDeleted := goqu.C(COLUMN_DELETED_AT).
+	softDeleted := goqu.C(COLUMN_SOFT_DELETED_AT).
 		Gt(carbon.Now(carbon.UTC).ToDateTimeString())
 
 	return q.Where(softDeleted), columns, nil

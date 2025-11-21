@@ -44,14 +44,6 @@ func (st *Store) SqlCreateTaskQueueTable() string {
 			Type: sb.COLUMN_TYPE_INTEGER,
 		}).
 		Column(sb.Column{
-			Name: COLUMN_CREATED_AT,
-			Type: sb.COLUMN_TYPE_DATETIME,
-		}).
-		Column(sb.Column{
-			Name: COLUMN_UPDATED_AT,
-			Type: sb.COLUMN_TYPE_DATETIME,
-		}).
-		Column(sb.Column{
 			Name: COLUMN_STARTED_AT,
 			Type: sb.COLUMN_TYPE_DATETIME,
 		}).
@@ -60,7 +52,15 @@ func (st *Store) SqlCreateTaskQueueTable() string {
 			Type: sb.COLUMN_TYPE_DATETIME,
 		}).
 		Column(sb.Column{
-			Name: COLUMN_DELETED_AT,
+			Name: COLUMN_CREATED_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_UPDATED_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_SOFT_DELETED_AT,
 			Type: sb.COLUMN_TYPE_DATETIME,
 		}).
 		CreateIfNotExists()
@@ -75,6 +75,11 @@ func (st *Store) SqlCreateTaskDefinitionTable() string {
 			Type:       sb.COLUMN_TYPE_STRING,
 			PrimaryKey: true,
 			Length:     50,
+		}).
+		Column(sb.Column{
+			Name:   COLUMN_STATUS,
+			Type:   sb.COLUMN_TYPE_STRING,
+			Length: 50,
 		}).
 		Column(sb.Column{
 			Name:   COLUMN_ALIAS,
@@ -114,13 +119,8 @@ func (st *Store) SqlCreateTaskDefinitionTable() string {
 			Type: sb.COLUMN_TYPE_DATETIME,
 		}).
 		Column(sb.Column{
-			Name: COLUMN_DELETED_AT,
+			Name: COLUMN_SOFT_DELETED_AT,
 			Type: sb.COLUMN_TYPE_DATETIME,
-		}).
-		Column(sb.Column{
-			Name:   COLUMN_STATUS,
-			Type:   sb.COLUMN_TYPE_STRING,
-			Length: 50,
 		}).
 		CreateIfNotExists()
 }

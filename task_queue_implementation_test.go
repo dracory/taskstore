@@ -39,19 +39,19 @@ func TestNewTaskQueue(t *testing.T) {
 
 func TestNewTaskQueueFromExistingData(t *testing.T) {
 	data := map[string]string{
-		COLUMN_ID:           "test-queue-id",
-		COLUMN_TASK_ID:      "test-task-id",
-		COLUMN_STATUS:       TaskQueueStatusRunning,
-		COLUMN_ATTEMPTS:     "3",
-		COLUMN_PARAMETERS:   `{"key":"value"}`,
-		COLUMN_OUTPUT:       "test output",
-		COLUMN_DETAILS:      "test details",
-		COLUMN_CREATED_AT:   "2023-01-01 12:00:00",
-		COLUMN_UPDATED_AT:   "2023-01-02 12:00:00",
-		COLUMN_STARTED_AT:   "2023-01-01 12:30:00",
-		COLUMN_COMPLETED_AT: "2023-01-01 13:00:00",
-		COLUMN_DELETED_AT:   "2023-01-03 12:00:00",
-		COLUMN_QUEUE_NAME:   "test-queue",
+		COLUMN_ID:              "test-queue-id",
+		COLUMN_QUEUE_NAME:      "test-queue",
+		COLUMN_TASK_ID:         "test-task-id",
+		COLUMN_STATUS:          TaskQueueStatusRunning,
+		COLUMN_ATTEMPTS:        "3",
+		COLUMN_PARAMETERS:      `{"key":"value"}`,
+		COLUMN_OUTPUT:          "test output",
+		COLUMN_DETAILS:         "test details",
+		COLUMN_STARTED_AT:      "2023-01-01 12:30:00",
+		COLUMN_COMPLETED_AT:    "2023-01-01 13:00:00",
+		COLUMN_CREATED_AT:      "2023-01-01 12:00:00",
+		COLUMN_UPDATED_AT:      "2023-01-02 12:00:00",
+		COLUMN_SOFT_DELETED_AT: "2023-01-03 12:00:00",
 	}
 
 	queue := NewTaskQueueFromExistingData(data)

@@ -296,7 +296,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 			SELECT ` + COLUMN_ID + `, ` + COLUMN_TASK_ID + `, ` + COLUMN_STATUS + `, ` + COLUMN_QUEUE_NAME + `, 
 			       ` + COLUMN_PARAMETERS + `, ` + COLUMN_OUTPUT + `, ` + COLUMN_DETAILS + `, ` + COLUMN_ATTEMPTS + `,
 			       ` + COLUMN_CREATED_AT + `, ` + COLUMN_UPDATED_AT + `, ` + COLUMN_STARTED_AT + `, 
-			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_DELETED_AT + `
+			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_SOFT_DELETED_AT + `
 			FROM ` + store.taskQueueTableName + `
 			WHERE ` + COLUMN_STATUS + ` = ? 
 			  AND ` + COLUMN_QUEUE_NAME + ` = ?
@@ -310,7 +310,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 			SELECT ` + COLUMN_ID + `, ` + COLUMN_TASK_ID + `, ` + COLUMN_STATUS + `, ` + COLUMN_QUEUE_NAME + `, 
 			       ` + COLUMN_PARAMETERS + `, ` + COLUMN_OUTPUT + `, ` + COLUMN_DETAILS + `, ` + COLUMN_ATTEMPTS + `,
 			       ` + COLUMN_CREATED_AT + `, ` + COLUMN_UPDATED_AT + `, ` + COLUMN_STARTED_AT + `, 
-			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_DELETED_AT + `
+			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_SOFT_DELETED_AT + `
 			FROM ` + store.taskQueueTableName + `
 			WHERE ` + COLUMN_STATUS + ` = ? 
 			  AND ` + COLUMN_QUEUE_NAME + ` = ?
@@ -355,7 +355,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	taskData[COLUMN_UPDATED_AT] = updatedAt
 	taskData[COLUMN_STARTED_AT] = startedAt
 	taskData[COLUMN_COMPLETED_AT] = completedAt
-	taskData[COLUMN_DELETED_AT] = deletedAt
+	taskData[COLUMN_SOFT_DELETED_AT] = deletedAt
 
 	// Update status to "running" within the same transaction
 	updateSQL := `
@@ -603,7 +603,7 @@ func (store *Store) taskQueueSelectQuery(options TaskQueueQueryInterface) (selec
 		return q, columns, nil // soft deleted sites requested specifically
 	}
 
-	softDeleted := goqu.C(COLUMN_DELETED_AT).
+	softDeleted := goqu.C(COLUMN_SOFT_DELETED_AT).
 		Gt(carbon.Now(carbon.UTC).ToDateTimeString())
 
 	return q.Where(softDeleted), columns, nil

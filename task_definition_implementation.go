@@ -193,7 +193,7 @@ func (o *taskDefinition) Status() string {
 }
 
 func (o *taskDefinition) SoftDeletedAt() string {
-	return o.Get(COLUMN_DELETED_AT)
+	return o.Get(COLUMN_SOFT_DELETED_AT)
 }
 
 func (o *taskDefinition) SoftDeletedAtCarbon() *carbon.Carbon {
@@ -201,7 +201,7 @@ func (o *taskDefinition) SoftDeletedAtCarbon() *carbon.Carbon {
 }
 
 func (o *taskDefinition) SetSoftDeletedAt(deletedAt string) TaskDefinitionInterface {
-	o.Set(COLUMN_DELETED_AT, deletedAt)
+	o.Set(COLUMN_SOFT_DELETED_AT, deletedAt)
 	return o
 }
 

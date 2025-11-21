@@ -295,7 +295,7 @@ func (o *taskQueue) Status() string {
 }
 
 func (o *taskQueue) SoftDeletedAt() string {
-	return o.Get(COLUMN_DELETED_AT)
+	return o.Get(COLUMN_SOFT_DELETED_AT)
 }
 
 func (o *taskQueue) SoftDeletedAtCarbon() *carbon.Carbon {
@@ -303,7 +303,7 @@ func (o *taskQueue) SoftDeletedAtCarbon() *carbon.Carbon {
 }
 
 func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
-	o.Set(COLUMN_DELETED_AT, deletedAt)
+	o.Set(COLUMN_SOFT_DELETED_AT, deletedAt)
 	return o
 }
 

@@ -41,15 +41,15 @@ func TestNewTaskDefinition(t *testing.T) {
 
 func TestNewTaskDefinitionFromExistingData(t *testing.T) {
 	data := map[string]string{
-		COLUMN_ID:          "test-id",
-		COLUMN_ALIAS:       "test-alias",
-		COLUMN_TITLE:       "Test Title",
-		COLUMN_DESCRIPTION: "Test Description",
-		COLUMN_STATUS:      TaskDefinitionStatusCanceled,
-		COLUMN_MEMO:        "Test Memo",
-		COLUMN_CREATED_AT:  "2023-01-01 12:00:00",
-		COLUMN_UPDATED_AT:  "2023-01-02 12:00:00",
-		COLUMN_DELETED_AT:  "2023-01-03 12:00:00",
+		COLUMN_ID:              "test-id",
+		COLUMN_ALIAS:           "test-alias",
+		COLUMN_TITLE:           "Test Title",
+		COLUMN_DESCRIPTION:     "Test Description",
+		COLUMN_STATUS:          TaskDefinitionStatusCanceled,
+		COLUMN_MEMO:            "Test Memo",
+		COLUMN_CREATED_AT:      "2023-01-01 12:00:00",
+		COLUMN_UPDATED_AT:      "2023-01-02 12:00:00",
+		COLUMN_SOFT_DELETED_AT: "2023-01-03 12:00:00",
 	}
 
 	task := NewTaskDefinitionFromExistingData(data)
