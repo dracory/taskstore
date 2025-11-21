@@ -296,7 +296,12 @@ func (controller *taskDefinitionManagerController) tableFilter(data taskDefiniti
 		})
 }
 
-func (controller *taskDefinitionManagerController) tablePagination(data taskDefinitionManagerControllerData, count int, page int, perPage int) hb.TagInterface {
+func (controller *taskDefinitionManagerController) tablePagination(
+	data taskDefinitionManagerControllerData,
+	count int,
+	page int,
+	perPage int,
+) hb.TagInterface {
 	url := url(data.request, pathTaskDefinitionManager, map[string]string{
 		"status":       data.formStatus,
 		"name":         data.formName,

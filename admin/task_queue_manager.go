@@ -364,7 +364,6 @@ func (controller *taskQueueManagerController) tableRecords(data taskQueueManager
 				}).Else("-")
 
 				elapsedTime := lo.IfF(queuedTask.StartedAt() != "" && queuedTask.CompletedAt() != "", func() string {
-					//return queuedTask.CompletedAtCarbon().DiffForHumans(queuedTask.StartedAtCarbon())
 					diffSeconds := queuedTask.CompletedAtCarbon().DiffAbsInSeconds(queuedTask.StartedAtCarbon())
 					return cast.ToString(diffSeconds) + "s"
 				}).Else("-")
@@ -536,7 +535,12 @@ func (controller *taskQueueManagerController) tableFilter(data taskQueueManagerC
 		})
 }
 
-func (controller *taskQueueManagerController) tablePagination(data taskQueueManagerControllerData, count int, page int, perPage int) hb.TagInterface {
+func (controller *taskQueueManagerController) tablePagination(
+	data taskQueueManagerControllerData,
+	count int,
+	page int,
+	perPage int,
+) hb.TagInterface {
 	url := url(data.request, pathTaskQueueManager, map[string]string{
 		"status":       data.formStatus,
 		"name":         data.formName,
@@ -607,14 +611,6 @@ func (controller *taskQueueManagerController) fetchRecordList(data taskQueueMana
 	if data.formQueueID != "" {
 		queueIDs = append(queueIDs, data.formQueueID)
 	}
-
-	// if data.formCreatedFrom != "" {
-	// 	query.CreatedAtGte = data.formCreatedFrom + " 00:00:00"
-	// }
-
-	// if data.formCreatedTo != "" {
-	// 	query.CreatedAtLte = data.formCreatedTo + " 23:59:59"
-	// }
 
 	query := taskstore.TaskQueueQuery().
 		SetLimit(data.perPage).
