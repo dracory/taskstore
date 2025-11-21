@@ -41,6 +41,7 @@ func (c *taskQueueRequeueController) ToTag(w http.ResponseWriter, r *http.Reques
 	return c.modal(data)
 }
 
+// TODO add queue name, currently set to degault queue
 func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControllerData) hb.TagInterface {
 	if data.formParameters == "" {
 		data.formParameters = "{}"
@@ -69,7 +70,7 @@ func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControll
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
+	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), taskstore.DefaultQueueName, task.Alias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())

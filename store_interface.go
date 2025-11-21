@@ -39,7 +39,8 @@ type StoreInterface interface {
 	TaskDefinitionSoftDeleteByID(ctx context.Context, id string) error
 	TaskDefinitionUpdate(ctx context.Context, TaskDefinition TaskDefinitionInterface) error
 
-	TaskDefinitionEnqueueByAlias(ctx context.Context, alias string, parameters map[string]interface{}) (TaskQueueInterface, error)
+	// TaskDefinition Operations
+	TaskDefinitionEnqueueByAlias(ctx context.Context, queueName string, alias string, parameters map[string]any) (TaskQueueInterface, error)
 	TaskDefinitionExecuteCli(alias string, args []string) bool
 
 	// == TaskHandler Methods ==

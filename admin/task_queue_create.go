@@ -42,6 +42,7 @@ func (c *taskQueueCreateController) ToTag(w http.ResponseWriter, r *http.Request
 	return c.modalQueueCreate(data)
 }
 
+// TODO. Add queue name, currently set to default queue
 func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateControllerData) hb.TagInterface {
 	if data.formTaskID == "" {
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task is required.", Position: "top-right"})
@@ -74,7 +75,7 @@ func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateController
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
+	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), taskstore.DefaultQueueName, task.Alias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())

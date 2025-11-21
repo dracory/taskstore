@@ -98,7 +98,7 @@ func (h *MyHandler) HandleWithContext(ctx context.Context) bool {
 1. **Setup**: Initialize `Store` with database connection and options
 2. **Define Task**: Create a struct implementing `TaskHandlerInterface`
 3. **Register**: Add the handler to the store using `TaskHandlerAdd`
-4. **Enqueue**: Trigger a task execution via `TaskDefinitionEnqueueByAlias`
+4. **Enqueue**: Trigger a task execution via `TaskDefinitionEnqueueByAlias(queueName, alias, parameters)`
 5. **Process**: Run `TaskQueueRunDefault`, `TaskQueueRunSerial`, or `TaskQueueRunConcurrent`
 
 ## Data Model

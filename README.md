@@ -145,7 +145,7 @@ func (task *HelloWorldTask) Description() string {
 
 // Enqueue. Optional shortcut to quickly add this task to the task queue
 func (task *HelloWorldTask) Enqueue(name string) (taskQueue taskstore.TaskQueueInterface, err error) {
-	return myTaskStore.TaskDefinitionEnqueueByAlias(task.Alias(), map[string]any{
+	return myTaskStore.TaskDefinitionEnqueueByAlias(taskstore.DefaultTaskQueue, task.Alias(), map[string]any{
 		"name": name,
 	})
 }
@@ -201,7 +201,7 @@ go run . HelloWorldTask --name="Tom Jones"
 To add a task to the background task queue
 
 ```
-myTaskStore.TaskDefinitionEnqueueByAlias(NewHelloWorldTask.Alias(), map[string]any{
+myTaskStore.TaskDefinitionEnqueueByAlias(taskstore.DefaultTaskQueue, NewHelloWorldTask.Alias(), map[string]any{
 	"name": name,
 })
 ```
