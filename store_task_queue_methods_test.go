@@ -1,9 +1,12 @@
 package taskstore
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/dracory/sb"
 )
 
 func Test_Store_SqlCreateTaskQueueTable(t *testing.T) {
@@ -473,4 +476,67 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 			t.Errorf("Expected status to remain 'queued', got '%s'", queue.Status())
 		}
 	})
+}
+
+func Test_Store_TaskQueueClaimNext(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("TaskQueueClaimNext: Error[%v]", err)
+	}
+
+	query := store.SqlCreateTaskQueueTable()
+	if strings.Contains(query, "unsupported driver") {
+		t.Fatalf("TaskQueueClaimNext: UnExpected Query, received [%v]", query)
+	}
+
+	_, err = store.db.Exec(query)
+	if err != nil {
+		t.Fatalf("TaskQueueClaimNext: Table creation error: [%v]", err)
+	}
+
+	// Create a queued task
+	queueName := "test-queue"
+	task := NewTaskQueue().
+		SetTaskID("TASK_CLAIM").
+		SetQueueName(queueName).
+		SetStatus(TaskQueueStatusQueued).
+		SetAttempts(0)
+
+	err = store.TaskQueueCreate(task)
+	if err != nil {
+		t.Fatalf("TaskQueueClaimNext: Error in Creating TaskQueue: received [%v]", err)
+	}
+
+	// Claim the task
+	claimedTask, err := store.TaskQueueClaimNext(context.Background(), queueName)
+	if err != nil {
+		t.Fatalf("TaskQueueClaimNext: Error claiming task: [%v]", err)
+	}
+
+	if claimedTask == nil {
+		t.Fatal("TaskQueueClaimNext: Expected to claim a task, got nil")
+	}
+
+	// Verify the claimed task properties
+	if claimedTask.ID() != task.ID() {
+		t.Errorf("TaskQueueClaimNext: Expected task ID %s, got %s", task.ID(), claimedTask.ID())
+	}
+
+	if claimedTask.Status() != TaskQueueStatusRunning {
+		t.Errorf("TaskQueueClaimNext: Expected status %s, got %s", TaskQueueStatusRunning, claimedTask.Status())
+	}
+
+	if claimedTask.StartedAt() == "" || claimedTask.StartedAt() == sb.NULL_DATETIME {
+		t.Error("TaskQueueClaimNext: Expected StartedAt to be set")
+	}
+
+	// Verify database state
+	dbTask, err := store.TaskQueueFindByID(task.ID())
+	if err != nil {
+		t.Fatalf("TaskQueueClaimNext: Error finding task: [%v]", err)
+	}
+
+	if dbTask.Status() != TaskQueueStatusRunning {
+		t.Errorf("TaskQueueClaimNext: Database status expected %s, got %s", TaskQueueStatusRunning, dbTask.Status())
+	}
 }

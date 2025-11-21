@@ -2,7 +2,6 @@ package taskstore
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log"
 	"strconv"
@@ -286,38 +285,22 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 
 	// SELECT FOR UPDATE query to lock the row
 	// Note: This works across SQLite (3.35+), MySQL, and PostgreSQL
-	var selectSQL string
-	var params []interface{}
+	// SELECT FOR UPDATE query to lock the row
+	// Note: This works across SQLite (3.35+), MySQL, and PostgreSQL
+	selectSQL := `
+		SELECT *
+		FROM ` + store.taskQueueTableName + `
+		WHERE ` + COLUMN_STATUS + ` = ? 
+		  AND ` + COLUMN_QUEUE_NAME + ` = ?
+		ORDER BY ` + COLUMN_CREATED_AT + ` ASC
+		LIMIT 1`
 
-	if store.dbDriverName == "sqlite" {
-		// SQLite doesn't support FOR UPDATE, but it has implicit row-level locking in transactions
-		// We'll use a WHERE clause to ensure atomicity
-		selectSQL = `
-			SELECT ` + COLUMN_ID + `, ` + COLUMN_TASK_ID + `, ` + COLUMN_STATUS + `, ` + COLUMN_QUEUE_NAME + `, 
-			       ` + COLUMN_PARAMETERS + `, ` + COLUMN_OUTPUT + `, ` + COLUMN_DETAILS + `, ` + COLUMN_ATTEMPTS + `,
-			       ` + COLUMN_CREATED_AT + `, ` + COLUMN_UPDATED_AT + `, ` + COLUMN_STARTED_AT + `, 
-			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_SOFT_DELETED_AT + `
-			FROM ` + store.taskQueueTableName + `
-			WHERE ` + COLUMN_STATUS + ` = ? 
-			  AND ` + COLUMN_QUEUE_NAME + ` = ?
-			ORDER BY ` + COLUMN_CREATED_AT + ` ASC
-			LIMIT 1`
-		params = []interface{}{TaskQueueStatusQueued, queueName}
-	} else {
+	params := []interface{}{TaskQueueStatusQueued, queueName}
+
+	if store.dbDriverName != "sqlite" {
 		// MySQL and PostgreSQL support FOR UPDATE
 		// Note: SKIP LOCKED removed for MySQL 5.7 compatibility (only available in MySQL 8.0+)
-		selectSQL = `
-			SELECT ` + COLUMN_ID + `, ` + COLUMN_TASK_ID + `, ` + COLUMN_STATUS + `, ` + COLUMN_QUEUE_NAME + `, 
-			       ` + COLUMN_PARAMETERS + `, ` + COLUMN_OUTPUT + `, ` + COLUMN_DETAILS + `, ` + COLUMN_ATTEMPTS + `,
-			       ` + COLUMN_CREATED_AT + `, ` + COLUMN_UPDATED_AT + `, ` + COLUMN_STARTED_AT + `, 
-			       ` + COLUMN_COMPLETED_AT + `, ` + COLUMN_SOFT_DELETED_AT + `
-			FROM ` + store.taskQueueTableName + `
-			WHERE ` + COLUMN_STATUS + ` = ? 
-			  AND ` + COLUMN_QUEUE_NAME + ` = ?
-			ORDER BY ` + COLUMN_CREATED_AT + ` ASC
-			LIMIT 1
-			FOR UPDATE`
-		params = []interface{}{TaskQueueStatusQueued, queueName}
+		selectSQL += " FOR UPDATE"
 	}
 
 	if store.debugEnabled {
@@ -325,37 +308,39 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	}
 
 	// Execute SELECT query
-	row := tx.QueryRowContext(ctx, selectSQL, params...)
-
-	var taskData = make(map[string]string)
-	var id, taskID, status, queueNameCol, parameters, output, details, attempts string
-	var createdAt, updatedAt, startedAt, completedAt, deletedAt string
-
-	err = row.Scan(&id, &taskID, &status, &queueNameCol, &parameters, &output, &details, &attempts,
-		&createdAt, &updatedAt, &startedAt, &completedAt, &deletedAt)
-
+	rows, err := tx.QueryContext(ctx, selectSQL, params...)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			// No tasks available - this is normal
-			return nil, nil
-		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		// No tasks available - this is normal
+		return nil, nil
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
 		return nil, err
 	}
 
-	// Populate the task data map
-	taskData[COLUMN_ID] = id
-	taskData[COLUMN_TASK_ID] = taskID
-	taskData[COLUMN_STATUS] = status
-	taskData[COLUMN_QUEUE_NAME] = queueNameCol
-	taskData[COLUMN_PARAMETERS] = parameters
-	taskData[COLUMN_OUTPUT] = output
-	taskData[COLUMN_DETAILS] = details
-	taskData[COLUMN_ATTEMPTS] = attempts
-	taskData[COLUMN_CREATED_AT] = createdAt
-	taskData[COLUMN_UPDATED_AT] = updatedAt
-	taskData[COLUMN_STARTED_AT] = startedAt
-	taskData[COLUMN_COMPLETED_AT] = completedAt
-	taskData[COLUMN_SOFT_DELETED_AT] = deletedAt
+	values := make([]interface{}, len(columns))
+	valuePtrs := make([]interface{}, len(columns))
+	for i := range values {
+		valuePtrs[i] = &values[i]
+	}
+
+	if err := rows.Scan(valuePtrs...); err != nil {
+		return nil, err
+	}
+
+	taskData := make(map[string]string)
+	for i, col := range columns {
+		val := values[i]
+		taskData[col] = cast.ToString(val)
+	}
+
+	id := taskData[COLUMN_ID]
 
 	// Update status to "running" within the same transaction
 	updateSQL := `
