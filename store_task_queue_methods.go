@@ -390,7 +390,7 @@ func (store *Store) TaskQueueProcessNextByQueue(ctx context.Context, queueName s
 	}
 
 	// Process the claimed task synchronously
-	_, err = store.QueuedTaskProcess(ctx, nextQueuedTask)
+	_, err = store.TaskQueueProcessTask(ctx, nextQueuedTask)
 
 	return err
 }
@@ -412,9 +412,9 @@ func (store *Store) TaskQueueProcessNextAsyncByQueue(ctx context.Context, queueN
 
 	// Spawn goroutine to process the claimed task
 	go func(q TaskQueueInterface) {
-		_, err := store.QueuedTaskProcess(ctx, q)
+		_, err := store.TaskQueueProcessTask(ctx, q)
 		if err != nil && store.debugEnabled {
-			log.Println("QueuedTaskProcess error:", err)
+			log.Println("TaskQueueProcessTask error:", err)
 		}
 	}(nextQueuedTask)
 

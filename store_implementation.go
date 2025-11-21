@@ -135,16 +135,16 @@ func (st *Store) SetErrorHandler(handler func(queueName, taskID string, err erro
 	return st
 }
 
-// QueueRunDefault starts the queue processor for the default queue.
-// Equivalent to calling QueueRunSerial with DefaultQueueName.
-func (store *Store) QueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int) {
-	store.QueueRunSerial(ctx, DefaultQueueName, processSeconds, unstuckMinutes)
+// TaskQueueRunDefault starts the queue processor for the default queue.
+// Equivalent to calling TaskQueueRunSerial with DefaultQueueName.
+func (store *Store) TaskQueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int) {
+	store.TaskQueueRunSerial(ctx, DefaultQueueName, processSeconds, unstuckMinutes)
 }
 
-// QueueRunSerial starts a queue processor that handles tasks one at a time (serially).
+// TaskQueueRunSerial starts a queue processor that handles tasks one at a time (serially).
 // Each task must complete before the next one starts.
-// The processor runs in a background goroutine and can be stopped via QueueStopByName.
-func (store *Store) QueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+// The processor runs in a background goroutine and can be stopped via TaskQueueStopByName.
+func (store *Store) TaskQueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -178,10 +178,10 @@ func (store *Store) QueueRunSerial(ctx context.Context, queueName string, proces
 	}()
 }
 
-// QueueRunConcurrent starts a queue processor that handles multiple tasks concurrently.
+// TaskQueueRunConcurrent starts a queue processor that handles multiple tasks concurrently.
 // Tasks are processed in parallel up to the configured MaxConcurrency limit.
-// The processor runs in a background goroutine and can be stopped via QueueStopByName.
-func (store *Store) QueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
+// The processor runs in a background goroutine and can be stopped via TaskQueueStopByName.
+func (store *Store) TaskQueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -353,16 +353,16 @@ func sleepWithContext(ctx context.Context, d time.Duration) bool {
 	}
 }
 
-// QueueStop stops the default queue processor.
+// TaskQueueStop stops the default queue processor.
 // It blocks until the worker goroutine and all tasks have fully completed.
-func (store *Store) QueueStop() {
-	store.QueueStopByName(DefaultQueueName)
+func (store *Store) TaskQueueStop() {
+	store.TaskQueueStopByName(DefaultQueueName)
 }
 
-// QueueStopByName stops the specified queue processor.
+// TaskQueueStopByName stops the specified queue processor.
 // It cancels the context, waits for the queue loop to exit,
 // and waits for all in-flight tasks to complete.
-func (store *Store) QueueStopByName(queueName string) {
+func (store *Store) TaskQueueStopByName(queueName string) {
 	queueName = normalizeQueueName(queueName)
 
 	store.queueMu.Lock()
@@ -415,7 +415,7 @@ func (store *Store) TaskQueueUnstuckByQueue(ctx context.Context, queueName strin
 	}
 }
 
-func (store *Store) QueuedTaskProcess(ctx context.Context, queuedTask TaskQueueInterface) (bool, error) {
+func (store *Store) TaskQueueProcessTask(ctx context.Context, queuedTask TaskQueueInterface) (bool, error) {
 	return store.QueuedTaskProcessWithContext(ctx, queuedTask)
 }
 
@@ -489,9 +489,9 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 	return true, nil
 }
 
-// TaskExecuteCli - CLI tool to find a task by its alias and execute its handler
+// TaskDefinitionExecuteCli - CLI tool to find a task by its alias and execute its handler
 // - alias "list" is reserved. it lists all the available commands
-func (store *Store) TaskExecuteCli(alias string, args []string) bool {
+func (store *Store) TaskDefinitionExecuteCli(alias string, args []string) bool {
 	argumentsMap := argsToMap(args)
 	cfmt.Infoln("Executing task: ", alias, " with arguments: ", argumentsMap)
 

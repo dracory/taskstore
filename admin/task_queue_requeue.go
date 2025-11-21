@@ -69,7 +69,7 @@ func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControll
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
+	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())

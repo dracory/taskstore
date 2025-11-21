@@ -43,16 +43,16 @@ store, err := taskstore.NewStore(taskstore.NewStoreOptions{
 ```
 
 ### Graceful Shutdown
-- `QueueStop()` – Stop default queue and wait for all tasks to complete
-- `QueueStopByName(queueName)` – Stop specific queue and wait for all tasks
+- `TaskQueueStop()` – Stop default queue and wait for all tasks to complete
+- `TaskQueueStopByName(queueName)` – Stop specific queue and wait for all tasks
 - Ensures no task goroutines are abandoned
 
 ```golang
 // Start concurrent queue
-store.QueueRunConcurrent(ctx, "emails", 10, 1)
+store.TaskQueueRunConcurrent(ctx, "emails", 10, 1)
 
 // Later: gracefully stop and wait for completion
-store.QueueStopByName("emails")
+store.TaskQueueStopByName("emails")
 ```
 
 ### Error Handling
@@ -145,7 +145,7 @@ func (task *HelloWorldTask) Description() string {
 
 // Enqueue. Optional shortcut to quickly add this task to the task queue
 func (task *HelloWorldTask) Enqueue(name string) (taskQueue taskstore.TaskQueueInterface, err error) {
-	return myTaskStore.TaskEnqueueByAlias(task.Alias(), map[string]any{
+	return myTaskStore.TaskDefinitionEnqueueByAlias(task.Alias(), map[string]any{
 		"name": name,
 	})
 }
@@ -188,7 +188,7 @@ myTaskStore.TaskHandlerAdd(NewHelloWorldTask(), true)
 To add the option to execute tasks from the terminal add the following to your main method
 
 ```
-myTaskStore.TaskExecuteCli(args[1], args[1:])
+myTaskStore.TaskDefinitionExecuteCli(args[1], args[1:])
 ```
 
 Example:
@@ -201,7 +201,7 @@ go run . HelloWorldTask --name="Tom Jones"
 To add a task to the background task queue
 
 ```
-myTaskStore.TaskEnqueueByAlias(NewHelloWorldTask.Alias(), map[string]any{
+myTaskStore.TaskDefinitionEnqueueByAlias(NewHelloWorldTask.Alias(), map[string]any{
 	"name": name,
 })
 ```
@@ -219,13 +219,13 @@ To start the task queue, use one of the queue run methods:
 ctx := context.Background()
 
 // Option 1: Run default queue (serial processing)
-myTaskStore.QueueRunDefault(ctx, 10, 2) // every 10s, unstuck after 2 mins
+myTaskStore.TaskQueueRunDefault(ctx, 10, 2) // every 10s, unstuck after 2 mins
 
 // Option 2: Run named queue with serial processing
-myTaskStore.QueueRunSerial(ctx, "emails", 10, 2)
+myTaskStore.TaskQueueRunSerial(ctx, "emails", 10, 2)
 
 // Option 3: Run named queue with concurrent processing (respects MaxConcurrency)
-myTaskStore.QueueRunConcurrent(ctx, "emails", 10, 2)
+myTaskStore.TaskQueueRunConcurrent(ctx, "emails", 10, 2)
 ```
 
 ## Store Methods
@@ -281,7 +281,7 @@ at specific intervals or on demand.
 To create a task definition, you'll need to implement the TaskHandlerInterface and provide a Handle method that contains the task's logic. You can also extend the TaskHandlerBase struct for additional features.
 
 ### 5. How do I schedule a task to run in the background?
-Use the TaskEnqueueByAlias method to add a task to the background task queue. You can specify the interval at which the task queue is processed using the QueueRunGoroutine method.
+Use the TaskDefinitionEnqueueByAlias method to add a task to the background task queue. You can specify the interval at which the task queue is processed using the QueueRunGoroutine method.
 
 ### 6. Can I monitor the status of tasks?
 Yes, TaskStore provides methods to list tasks, check their status, and view task details.

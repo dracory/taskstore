@@ -74,7 +74,7 @@ func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateController
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
+	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), task.Alias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())

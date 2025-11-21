@@ -31,19 +31,19 @@ A task queue item represents a specific instance of a task to be executed.
 
 ### 4. Queue Processing Modes
 
-**QueueRunDefault** - Processes the default queue serially:
+**TaskQueueRunDefault** - Processes the default queue serially:
 ```go
-store.QueueRunDefault(ctx, 10, 2) // Process every 10s, unstuck after 2 mins
+store.TaskQueueRunDefault(ctx, 10, 2) // Process every 10s, unstuck after 2 mins
 ```
 
-**QueueRunSerial** - Processes named queue tasks one at a time:
+**TaskQueueRunSerial** - Processes named queue tasks one at a time:
 ```go
-store.QueueRunSerial(ctx, "emails", 10, 2)
+store.TaskQueueRunSerial(ctx, "emails", 10, 2)
 ```
 
-**QueueRunConcurrent** - Processes multiple tasks in parallel with concurrency limits:
+**TaskQueueRunConcurrent** - Processes multiple tasks in parallel with concurrency limits:
 ```go
-store.QueueRunConcurrent(ctx, "background-jobs", 10, 2)
+store.TaskQueueRunConcurrent(ctx, "background-jobs", 10, 2)
 // Respects MaxConcurrency setting (default: 10)
 ```
 
@@ -59,8 +59,8 @@ Tasks are claimed atomically using `SELECT FOR UPDATE` within database transacti
 
 ### Graceful Shutdown
 ```go
-store.QueueStop()                // Stop default queue
-store.QueueStopByName("emails")  // Stop named queue
+store.TaskQueueStop()                // Stop default queue
+store.TaskQueueStopByName("emails")  // Stop named queue
 // Both wait for all running tasks to complete
 ```
 
@@ -98,8 +98,8 @@ func (h *MyHandler) HandleWithContext(ctx context.Context) bool {
 1. **Setup**: Initialize `Store` with database connection and options
 2. **Define Task**: Create a struct implementing `TaskHandlerInterface`
 3. **Register**: Add the handler to the store using `TaskHandlerAdd`
-4. **Enqueue**: Trigger a task execution via `TaskEnqueueByAlias`
-5. **Process**: Run `QueueRunDefault`, `QueueRunSerial`, or `QueueRunConcurrent`
+4. **Enqueue**: Trigger a task execution via `TaskDefinitionEnqueueByAlias`
+5. **Process**: Run `TaskQueueRunDefault`, `TaskQueueRunSerial`, or `TaskQueueRunConcurrent`
 
 ## Data Model
 

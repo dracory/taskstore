@@ -269,8 +269,8 @@ func (store *Store) TaskDefinitionUpdate(ctx context.Context, task TaskDefinitio
 	return err
 }
 
-// TaskEnqueueByAlias finds a task by its alias and appends it to the queue
-func (st *Store) TaskEnqueueByAlias(ctx context.Context, taskAlias string, parameters map[string]interface{}) (TaskQueueInterface, error) {
+// TaskDefinitionEnqueueByAlias finds a task by its alias and appends it to the queue
+func (st *Store) TaskDefinitionEnqueueByAlias(ctx context.Context, taskAlias string, parameters map[string]interface{}) (TaskQueueInterface, error) {
 	task, err := st.TaskDefinitionFindByAlias(ctx, taskAlias)
 
 	if err != nil {
