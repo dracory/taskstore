@@ -65,8 +65,8 @@ func adminHeader(store taskstore.StoreInterface, logger *slog.Logger, r *http.Re
 }
 
 func breadcrumbs(r *http.Request, pageBreadcrumbs []Breadcrumb) hb.TagInterface {
-	adminHomeURL := "/admin" //AdminHomeURL(r)
-	//path := utils.Req(r, "path", "")
+	adminHomeURL := "/admin" // AdminHomeURL(r)
+	// path := utils.Req(r, "path", "")
 
 	adminHomeBreadcrumb := lo.
 		If(adminHomeURL != "", Breadcrumb{

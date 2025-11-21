@@ -48,7 +48,7 @@ func (c *taskQueueManagerController) ToTag(w http.ResponseWriter, r *http.Reques
 	}
 
 	if data.action == actionModalQueueFilterShow {
-		return c.onModalRecordFilterShow(data)
+		return c.onModalRecordFilterShow(&data)
 	}
 
 	if data.action == actionModalQueuedTaskFilterShow {
@@ -73,13 +73,13 @@ func (c *taskQueueManagerController) ToTag(w http.ResponseWriter, r *http.Reques
 		}
 	}, 1000);`
 
-	c.layout.SetBody(c.page(data).ToHTML())
+	c.layout.SetBody(c.page(&data).ToHTML())
 	c.layout.SetScripts([]string{htmxScript, swalScript})
 
 	return hb.Raw(c.layout.Render(w, r))
 }
 
-func (*taskQueueManagerController) onModalRecordFilterShow(data taskQueueManagerControllerData) *hb.Tag {
+func (*taskQueueManagerController) onModalRecordFilterShow(data *taskQueueManagerControllerData) *hb.Tag {
 	modalCloseScript := `document.getElementById('ModalMessage').remove();document.getElementById('ModalBackdrop').remove();`
 
 	title := hb.Heading5().
@@ -224,7 +224,7 @@ func (*taskQueueManagerController) onModalRecordFilterShow(data taskQueueManager
 
 }
 
-func (controller *taskQueueManagerController) page(data taskQueueManagerControllerData) hb.TagInterface {
+func (controller *taskQueueManagerController) page(data *taskQueueManagerControllerData) hb.TagInterface {
 	adminHeader := adminHeader(controller.store, &controller.logger, data.request)
 	breadcrumbs := breadcrumbs(data.request, []Breadcrumb{
 		{
@@ -255,7 +255,7 @@ func (controller *taskQueueManagerController) page(data taskQueueManagerControll
 		Child(controller.tableRecords(data))
 }
 
-func (controller *taskQueueManagerController) tableRecords(data taskQueueManagerControllerData) hb.TagInterface {
+func (controller *taskQueueManagerController) tableRecords(data *taskQueueManagerControllerData) hb.TagInterface {
 	table := hb.Table().
 		Class("table table-striped table-hover table-bordered").
 		Children([]hb.TagInterface{
@@ -437,7 +437,7 @@ func (controller *taskQueueManagerController) tableRecords(data taskQueueManager
 	})
 }
 
-func (controller *taskQueueManagerController) sortableColumnLabel(data taskQueueManagerControllerData, tableLabel string, columnName string) hb.TagInterface {
+func (controller *taskQueueManagerController) sortableColumnLabel(data *taskQueueManagerControllerData, tableLabel, columnName string) hb.TagInterface {
 	isSelected := strings.EqualFold(data.sortBy, columnName)
 
 	direction := lo.If(data.sortOrder == sb.ASC, sb.DESC).Else(sb.ASC)
@@ -463,7 +463,7 @@ func (controller *taskQueueManagerController) sortableColumnLabel(data taskQueue
 		Href(link)
 }
 
-func (controller *taskQueueManagerController) sortingIndicator(columnName string, sortByColumnName string, sortOrder string) hb.TagInterface {
+func (controller *taskQueueManagerController) sortingIndicator(columnName, sortByColumnName, sortOrder string) hb.TagInterface {
 	isSelected := strings.EqualFold(sortByColumnName, columnName)
 
 	direction := lo.If(isSelected && sortOrder == "asc", "up").
@@ -479,7 +479,7 @@ func (controller *taskQueueManagerController) sortingIndicator(columnName string
 	return sortingIndicator
 }
 
-func (controller *taskQueueManagerController) tableFilter(data taskQueueManagerControllerData) hb.TagInterface {
+func (controller *taskQueueManagerController) tableFilter(data *taskQueueManagerControllerData) hb.TagInterface {
 	buttonFilter := hb.Button().
 		Class("btn btn-sm btn-info text-white me-2").
 		Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
@@ -536,9 +536,9 @@ func (controller *taskQueueManagerController) tableFilter(data taskQueueManagerC
 }
 
 func (controller *taskQueueManagerController) tablePagination(
-	data taskQueueManagerControllerData,
-	count int,
-	page int,
+	data *taskQueueManagerControllerData,
+	count,
+	page,
 	perPage int,
 ) hb.TagInterface {
 	url := url(data.request, pathTaskQueueManager, map[string]string{
@@ -584,7 +584,7 @@ func (controller *taskQueueManagerController) prepareData(r *http.Request) (data
 	data.formQueueID = req.GetStringTrimmed(r, "filter_queue_id")
 	data.formStatus = req.GetStringTrimmed(r, "filter_status")
 
-	data.recordList, data.recordCount, err = controller.fetchRecordList(data)
+	data.recordList, data.recordCount, err = controller.fetchRecordList(&data)
 
 	if err != nil {
 		controller.logger.Error("At queueManagerController > prepareData", "error", err.Error())
@@ -605,7 +605,7 @@ func (controller *taskQueueManagerController) prepareData(r *http.Request) (data
 	return data, ""
 }
 
-func (controller *taskQueueManagerController) fetchRecordList(data taskQueueManagerControllerData) (records []taskstore.TaskQueueInterface, recordCount int64, err error) {
+func (controller *taskQueueManagerController) fetchRecordList(data *taskQueueManagerControllerData) (records []taskstore.TaskQueueInterface, recordCount int64, err error) {
 	queueIDs := []string{}
 
 	if data.formQueueID != "" {

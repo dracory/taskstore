@@ -128,6 +128,4 @@ func (a *admin) handler() hb.TagInterface {
 
 	a.layout.SetBody(hb.H1().HTML(controller).ToHTML())
 	return hb.Raw(a.layout.Render(a.response, a.request))
-	// redirect(a.response, a.request, url(a.request, pathQueueManager, map[string]string{}))
-	// return nil
 }

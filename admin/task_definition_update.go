@@ -40,13 +40,13 @@ func (c *taskDefinitionUpdateController) ToTag(w http.ResponseWriter, r *http.Re
 	}
 
 	if r.Method == http.MethodPost {
-		return c.formSubmitted(data)
+		return c.formSubmitted(&data)
 	}
 
-	return c.modal(data)
+	return c.modal(&data)
 }
 
-func (c *taskDefinitionUpdateController) formSubmitted(data taskDefinitionUpdateControllerData) hb.TagInterface {
+func (c *taskDefinitionUpdateController) formSubmitted(data *taskDefinitionUpdateControllerData) hb.TagInterface {
 	if data.formTitle == "" {
 		return hb.Swal(hb.SwalOptions{
 			Icon:              "error",
@@ -111,7 +111,7 @@ func (c *taskDefinitionUpdateController) formSubmitted(data taskDefinitionUpdate
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *taskDefinitionUpdateController) modal(data taskDefinitionUpdateControllerData) *hb.Tag {
+func (c *taskDefinitionUpdateController) modal(data *taskDefinitionUpdateControllerData) *hb.Tag {
 	fieldTitle := form.NewField(form.FieldOptions{
 		Label:    "Title",
 		Name:     "title",

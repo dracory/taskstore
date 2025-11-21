@@ -10,7 +10,7 @@ import (
 	"github.com/samber/lo"
 )
 
-func (controller *taskQueueManagerController) modalTaskFilters(data taskQueueManagerControllerData) *hb.Tag {
+func (controller *taskQueueManagerController) modalTaskFilters(data *taskQueueManagerControllerData) *hb.Tag {
 	modalCloseScript := `document.getElementById('ModalMessage').remove();document.getElementById('ModalBackdrop').remove();`
 
 	title := hb.Heading5().

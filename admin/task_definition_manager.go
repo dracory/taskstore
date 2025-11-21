@@ -63,13 +63,13 @@ func (c *taskDefinitionManagerController) ToTag(w http.ResponseWriter, r *http.R
 		}
 	}, 1000);`
 
-	c.layout.SetBody(c.page(data).ToHTML())
+	c.layout.SetBody(c.page(&data).ToHTML())
 	c.layout.SetScripts([]string{htmxScript, swalScript})
 
 	return hb.Raw(c.layout.Render(w, r))
 }
 
-func (controller *taskDefinitionManagerController) page(data taskDefinitionManagerControllerData) hb.TagInterface {
+func (controller *taskDefinitionManagerController) page(data *taskDefinitionManagerControllerData) hb.TagInterface {
 	adminHeader := adminHeader(controller.store, &controller.logger, data.request)
 	breadcrumbs := breadcrumbs(data.request, []Breadcrumb{
 		{
@@ -100,7 +100,7 @@ func (controller *taskDefinitionManagerController) page(data taskDefinitionManag
 		Child(controller.tableRecords(data))
 }
 
-func (controller *taskDefinitionManagerController) tableRecords(data taskDefinitionManagerControllerData) hb.TagInterface {
+func (controller *taskDefinitionManagerController) tableRecords(data *taskDefinitionManagerControllerData) hb.TagInterface {
 	table := hb.Table().
 		Class("table table-striped table-hover table-bordered").
 		Children([]hb.TagInterface{
@@ -198,7 +198,7 @@ func (controller *taskDefinitionManagerController) tableRecords(data taskDefinit
 	})
 }
 
-func (controller *taskDefinitionManagerController) sortableColumnLabel(data taskDefinitionManagerControllerData, tableLabel string, columnName string) hb.TagInterface {
+func (controller *taskDefinitionManagerController) sortableColumnLabel(data *taskDefinitionManagerControllerData, tableLabel, columnName string) hb.TagInterface {
 	isSelected := strings.EqualFold(data.sortBy, columnName)
 
 	direction := lo.If(data.sortOrder == sb.ASC, sb.DESC).Else(sb.ASC)
@@ -224,7 +224,7 @@ func (controller *taskDefinitionManagerController) sortableColumnLabel(data task
 		Href(link)
 }
 
-func (controller *taskDefinitionManagerController) sortingIndicator(columnName string, sortByColumnName string, sortOrder string) hb.TagInterface {
+func (controller *taskDefinitionManagerController) sortingIndicator(columnName, sortByColumnName, sortOrder string) hb.TagInterface {
 	isSelected := strings.EqualFold(sortByColumnName, columnName)
 
 	direction := lo.If(isSelected && sortOrder == "asc", "up").
@@ -240,7 +240,7 @@ func (controller *taskDefinitionManagerController) sortingIndicator(columnName s
 	return sortingIndicator
 }
 
-func (controller *taskDefinitionManagerController) tableFilter(data taskDefinitionManagerControllerData) hb.TagInterface {
+func (controller *taskDefinitionManagerController) tableFilter(data *taskDefinitionManagerControllerData) hb.TagInterface {
 	buttonFilter := hb.Button().
 		Class("btn btn-sm btn-info text-white me-2").
 		Style("margin-bottom: 2px; margin-left:2px; margin-right:2px;").
@@ -297,9 +297,9 @@ func (controller *taskDefinitionManagerController) tableFilter(data taskDefiniti
 }
 
 func (controller *taskDefinitionManagerController) tablePagination(
-	data taskDefinitionManagerControllerData,
-	count int,
-	page int,
+	data *taskDefinitionManagerControllerData,
+	count,
+	page,
 	perPage int,
 ) hb.TagInterface {
 	url := url(data.request, pathTaskDefinitionManager, map[string]string{
@@ -344,7 +344,7 @@ func (controller *taskDefinitionManagerController) prepareData(r *http.Request) 
 	data.formTaskID = req.GetStringTrimmed(r, "filter_task_id")
 	data.formStatus = req.GetStringTrimmed(r, "filter_status")
 
-	data.recordList, data.recordCount, err = controller.fetchRecordList(data)
+	data.recordList, data.recordCount, err = controller.fetchRecordList(&data)
 
 	if err != nil {
 		controller.logger.Error("At taskManagerController > prepareData", "error", err.Error())
@@ -354,16 +354,12 @@ func (controller *taskDefinitionManagerController) prepareData(r *http.Request) 
 	return data, ""
 }
 
-func (controller *taskDefinitionManagerController) fetchRecordList(data taskDefinitionManagerControllerData) (records []taskstore.TaskDefinitionInterface, recordCount int64, err error) {
+func (controller *taskDefinitionManagerController) fetchRecordList(data *taskDefinitionManagerControllerData) (records []taskstore.TaskDefinitionInterface, recordCount int64, err error) {
 	taskIDs := []string{}
 
 	if data.formTaskID != "" {
 		taskIDs = append(taskIDs, data.formTaskID)
 	}
-
-	// if data.formCreatedFrom != "" {
-	// 	query.CreatedAtGte = data.formCreatedFrom + " 00:00:00"
-	// }
 
 	// if data.formCreatedTo != "" {
 	// 	query.CreatedAtLte = data.formCreatedTo + " 23:59:59"

@@ -36,14 +36,14 @@ func (c *taskQueueCreateController) ToTag(w http.ResponseWriter, r *http.Request
 	}
 
 	if r.Method == http.MethodPost {
-		return c.formSubmitted(data)
+		return c.formSubmitted(&data)
 	}
 
-	return c.modalQueueCreate(data)
+	return c.modalQueueCreate(&data)
 }
 
 // TODO. Add queue name, currently set to default queue
-func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateControllerData) hb.TagInterface {
+func (c *taskQueueCreateController) formSubmitted(data *taskQueueCreateControllerData) hb.TagInterface {
 	if data.formTaskID == "" {
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task is required.", Position: "top-right"})
 	}
@@ -87,7 +87,7 @@ func (c *taskQueueCreateController) formSubmitted(data taskQueueCreateController
 		Child(hb.Script(`setTimeout(function(){window.location.href = window.location.href}, 2000);`))
 }
 
-func (c *taskQueueCreateController) modalQueueCreate(data taskQueueCreateControllerData) *hb.Tag {
+func (c *taskQueueCreateController) modalQueueCreate(data *taskQueueCreateControllerData) *hb.Tag {
 	modalID := `ModalQueueCreate`
 	formID := modalID + `Form`
 	fieldParameters := form.NewField(form.FieldOptions{
