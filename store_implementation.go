@@ -569,6 +569,9 @@ func argsToMap(args []string) map[string]string {
 		if strings.HasPrefix(current, "--") {
 			if strings.Contains(current, "=") {
 				currentArray := strings.Split(current, "=")
+				if len(currentArray) < 2 {
+					continue
+				}
 				kv[currentArray[0][2:]] = currentArray[1]
 			} else {
 				next := ""

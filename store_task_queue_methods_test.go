@@ -536,6 +536,10 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 		t.Fatalf("TaskQueueClaimNext: Error finding task: [%v]", err)
 	}
 
+	if dbTask == nil {
+		t.Fatal("TaskQueueClaimNext: Expected to find task in database, got nil")
+	}
+
 	if dbTask.Status() != TaskQueueStatusRunning {
 		t.Errorf("TaskQueueClaimNext: Database status expected %s, got %s", TaskQueueStatusRunning, dbTask.Status())
 	}

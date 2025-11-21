@@ -101,5 +101,10 @@ func (handler *TaskHandlerBase) GetParamArray(paramName string) []string {
 		return []string{}
 	}
 
-	return strings.Split(param, ";")
+	result := strings.Split(param, ";")
+	if result == nil {
+		return []string{}
+	}
+
+	return result
 }
