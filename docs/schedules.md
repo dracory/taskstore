@@ -54,22 +54,54 @@ err := store.ScheduleCreate(ctx, schedule)
 
 ### Processing Schedules
 
-Call `ScheduleRun()` periodically (e.g., every minute) to process due schedules:
+There are two main ways to process schedules:
+
+#### 1. Using `ScheduleRunner` (recommended)
+
+`ScheduleRunner` encapsulates the scheduling loop with proper start/stop
+semantics and context support:
+
+```go
+ctx := context.Background()
+
+runner := taskstore.NewScheduleRunner(store, taskstore.ScheduleRunnerOptions{
+	IntervalSeconds: 60, // check for due schedules every 60s
+})
+
+// Start background loop
+runner.Start(ctx)
+
+// Optionally, initialize next run times for existing schedules
+if err := runner.SetInitialRuns(ctx); err != nil {
+	// handle error
+}
+
+// Later, when shutting down
+runner.Stop()
+```
+
+You can also call `runner.RunOnce(ctx)` in tests or CLI tools to process due
+schedules a single time.
+
+#### 2. Using `ScheduleRun` directly
+
+For lower-level or legacy integrations, you can call `ScheduleRun()` on the
+store periodically (e.g., every minute) to process due schedules:
 
 ```go
 err := store.ScheduleRun(ctx)
 ```
 
-The `ScheduleRun` method:
+`ScheduleRun`:
 1. Finds all schedules with `status = "active"` and `next_run_at <= NOW()`
 2. For each due schedule:
-   - Enqueues the task using `TaskDefinitionEnqueueByAlias`
-   - Updates `last_run_at` to current time
-   - Increments `execution_count`
-   - Calculates and updates `next_run_at` using the recurrence rule
-   - Marks as `completed` if:
-     - `max_execution_count` is reached, OR
-     - `next_run_at > end_at`
+	- Enqueues the task using `TaskDefinitionEnqueueByAlias`
+	- Updates `last_run_at` to current time
+	- Increments `execution_count`
+	- Calculates and updates `next_run_at` using the recurrence rule
+	- Marks as `completed` if:
+		- `max_execution_count` is reached, OR
+		- `next_run_at > end_at`
 
 ### Recurrence Rules
 
