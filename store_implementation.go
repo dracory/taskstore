@@ -19,6 +19,7 @@ import (
 type Store struct {
 	taskDefinitionTableName string
 	taskQueueTableName      string
+	scheduleTableName       string
 	taskHandlers            []TaskHandlerInterface
 	db                      *sql.DB
 	dbDriverName            string
@@ -44,6 +45,7 @@ var _ StoreInterface = (*Store)(nil)
 type NewStoreOptions struct {
 	TaskDefinitionTableName string
 	TaskQueueTableName      string
+	ScheduleTableName       string
 	DB                      *sql.DB
 	DbDriverName            string
 	AutomigrateEnabled      bool
@@ -57,6 +59,7 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 	store := &Store{
 		taskDefinitionTableName: opts.TaskDefinitionTableName,
 		taskQueueTableName:      opts.TaskQueueTableName,
+		scheduleTableName:       opts.ScheduleTableName,
 		automigrateEnabled:      opts.AutomigrateEnabled,
 		db:                      opts.DB,
 		dbDriverName:            opts.DbDriverName,
@@ -77,6 +80,10 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 
 	if store.taskQueueTableName == "" {
 		return nil, errors.New("task store: TaskQueueTableName is required")
+	}
+
+	if store.scheduleTableName == "" {
+		return nil, errors.New("task store: ScheduleTableName is required")
 	}
 
 	if store.db == nil {
@@ -120,6 +127,18 @@ func (st *Store) AutoMigrate() error {
 	if errQueue != nil {
 		log.Println(errQueue)
 		return errQueue
+	}
+
+	sqlScheduleTable := st.SqlCreateScheduleTable()
+
+	if st.debugEnabled {
+		log.Println(sqlScheduleTable)
+	}
+
+	_, errSchedule := st.db.Exec(sqlScheduleTable)
+	if errSchedule != nil {
+		log.Println(errSchedule)
+		return errSchedule
 	}
 
 	return nil

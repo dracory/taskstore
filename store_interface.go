@@ -18,6 +18,7 @@ type StoreInterface interface {
 	TaskQueueSoftDelete(ctx context.Context, TaskQueue TaskQueueInterface) error
 	TaskQueueSoftDeleteByID(ctx context.Context, id string) error
 	TaskQueueUpdate(ctx context.Context, TaskQueue TaskQueueInterface) error
+	TaskQueueClaimNext(ctx context.Context, queueName string) (TaskQueueInterface, error)
 
 	TaskQueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int)
 	TaskQueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
@@ -47,4 +48,17 @@ type StoreInterface interface {
 
 	TaskHandlerList() []TaskHandlerInterface
 	TaskHandlerAdd(ctx context.Context, taskHandler TaskHandlerInterface, createIfMissing bool) error
+
+	// == Schedule Methods ==
+
+	ScheduleCount(ctx context.Context, options ScheduleQueryInterface) (int64, error)
+	ScheduleCreate(ctx context.Context, schedule ScheduleInterface) error
+	ScheduleDelete(ctx context.Context, schedule ScheduleInterface) error
+	ScheduleDeleteByID(ctx context.Context, id string) error
+	ScheduleFindByID(ctx context.Context, id string) (ScheduleInterface, error)
+	ScheduleList(ctx context.Context, options ScheduleQueryInterface) ([]ScheduleInterface, error)
+	ScheduleSoftDelete(ctx context.Context, schedule ScheduleInterface) error
+	ScheduleSoftDeleteByID(ctx context.Context, id string) error
+	ScheduleUpdate(ctx context.Context, schedule ScheduleInterface) error
+	ScheduleRun(ctx context.Context) error
 }

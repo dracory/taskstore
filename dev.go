@@ -1,26 +1,26 @@
 package taskstore
 
-type ScheduleDefinition interface {
-	GetID() string
-	SetID(string) ScheduleDefinition
+// type ScheduleDefinition interface {
+// 	GetID() string
+// 	SetID(string) ScheduleDefinition
 
-	GetRecurrenceRule() string
-	SetRecurrenceRule(dateTimeUtc string) ScheduleDefinition
+// 	GetRecurrenceRule() string
+// 	SetRecurrenceRule(dateTimeUtc string) ScheduleDefinition
 
-	GetStartsAt() string
-	SetStartsAt(dateTimeUtc string)
+// 	GetStartsAt() string
+// 	SetStartsAt(dateTimeUtc string)
 
-	GetEndsAt() string
-	SetEndsAt(string)
+// 	GetEndsAt() string
+// 	SetEndsAt(string)
 
-	IsValid() bool
-	GetNextRunTime(string) (string, error)
-}
+// 	IsValid() bool
+// 	GetNextRunTime(string) (string, error)
+// }
 
-type ScheduleInterface interface {
-	ScheduleDefinitionID() string
-	SetScheduleDefinition(ScheduleDefinition)
-}
+// type ScheduleInterface interface {
+// 	ScheduleDefinitionID() string
+// 	SetScheduleDefinition(ScheduleDefinition)
+// }
 
 // type RecurrenceRule struct {
 // 	// Required

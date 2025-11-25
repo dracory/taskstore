@@ -20,6 +20,7 @@ require (
 	github.com/dromara/carbon/v2 v2.6.15
 	github.com/mingrammer/cfmt v1.1.0
 	github.com/spf13/cast v1.10.0
+	github.com/stretchr/testify v1.11.1
 	modernc.org/sqlite v1.40.1
 )
 
@@ -34,6 +35,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	golang.org/x/exp v0.0.0-20251113190631-e25ba8c21ef6 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.67.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

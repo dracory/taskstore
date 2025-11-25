@@ -25,6 +25,7 @@ func initStore() (*Store, error) {
 	return NewStore(NewStoreOptions{
 		TaskDefinitionTableName: "task_definition",
 		TaskQueueTableName:      "task_queue",
+		ScheduleTableName:       "schedules",
 		DB:                      db,
 		DbDriverName:            "sqlite",
 		AutomigrateEnabled:      false,

@@ -96,6 +96,13 @@ myTaskStore = taskstore.NewStore(taskstore.NewStoreOptions{
 	DebugEnabled:       false,
 })
 ```
+ 
+## Documentation
+
+- [Package overview](./docs/overview.md)
+- [Task definitions](./docs/task-definitions.md)
+- [Task queues](./docs/task-queues.md)
+- [Schedules](./docs/schedules.md)
 
 ## Task Definitions
 

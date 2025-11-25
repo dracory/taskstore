@@ -124,3 +124,86 @@ func (st *Store) SqlCreateTaskDefinitionTable() string {
 		}).
 		CreateIfNotExists()
 }
+
+// SqlCreateScheduleTable - creates the schedule table
+func (st *Store) SqlCreateScheduleTable() string {
+	return sb.NewBuilder(st.dbDriverName).
+		Table(st.scheduleTableName).
+		Column(sb.Column{
+			Name:       COLUMN_ID,
+			Type:       sb.COLUMN_TYPE_STRING,
+			PrimaryKey: true,
+			Length:     50,
+		}).
+		Column(sb.Column{
+			Name:   COLUMN_NAME,
+			Type:   sb.COLUMN_TYPE_STRING,
+			Length: 100,
+		}).
+		Column(sb.Column{
+			Name:   COLUMN_DESCRIPTION,
+			Type:   sb.COLUMN_TYPE_STRING,
+			Length: 255,
+		}).
+		Column(sb.Column{
+			Name:   COLUMN_STATUS,
+			Type:   sb.COLUMN_TYPE_STRING,
+			Length: 50,
+		}).
+		Column(sb.Column{
+			Name:   COLUMN_RECURRENCE_RULE,
+			Type:   sb.COLUMN_TYPE_TEXT,
+			Length: 1000,
+		}).
+		Column(sb.Column{
+			Name:   COLUMN_QUEUE_NAME,
+			Type:   sb.COLUMN_TYPE_STRING,
+			Length: 100,
+		}).
+		Column(sb.Column{
+			Name:   COLUMN_TASK_DEFINITION_ID,
+			Type:   sb.COLUMN_TYPE_STRING,
+			Length: 50,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_PARAMETERS,
+			Type: sb.COLUMN_TYPE_TEXT,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_START_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_END_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_EXECUTION_COUNT,
+			Type: sb.COLUMN_TYPE_INTEGER,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_MAX_EXECUTION_COUNT,
+			Type: sb.COLUMN_TYPE_INTEGER,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_LAST_RUN_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_NEXT_RUN_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_CREATED_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_UPDATED_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		Column(sb.Column{
+			Name: COLUMN_SOFT_DELETED_AT,
+			Type: sb.COLUMN_TYPE_DATETIME,
+		}).
+		CreateIfNotExists()
+}

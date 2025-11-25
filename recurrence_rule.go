@@ -10,6 +10,8 @@ import (
 )
 
 // Define a string type alias
+// Frequency represents how often a schedule recurs (daily, weekly, etc.).
+// It is a string-based alias compatible with rrule-go frequencies.
 type Frequency string
 
 // Define the constants as strings
@@ -24,6 +26,7 @@ const (
 	FrequencyYearly   Frequency = "yearly"
 )
 
+// DayOfWeek represents a day of the week used in weekly recurrence rules.
 type DayOfWeek string
 
 const (
@@ -36,6 +39,7 @@ const (
 	DayOfWeekSunday    DayOfWeek = "sunday"
 )
 
+// MonthOfYear represents a month used in yearly or monthly recurrence rules.
 type MonthOfYear string
 
 const (
@@ -53,29 +57,55 @@ const (
 	MonthOfYearDecember  MonthOfYear = "DECEMBER"
 )
 
+// RecurrenceRuleInterface defines the contract for recurrence rules used by schedules.
+// It exposes frequency, start/end times, interval, and optional day/month filters.
 type RecurrenceRuleInterface interface {
+	// GetFrequency returns how often the rule recurs (e.g. daily, weekly).
 	GetFrequency() Frequency
+
+	// SetFrequency sets how often the rule recurs.
 	SetFrequency(Frequency) RecurrenceRuleInterface
 
+	// GetStartsAt returns the UTC datetime when the rule becomes active.
 	GetStartsAt() string
+
+	// SetStartsAt sets the UTC datetime when the rule becomes active.
 	SetStartsAt(dateTimeUTC string) RecurrenceRuleInterface
 
+	// GetEndsAt returns the UTC datetime when the rule stops producing occurrences.
 	GetEndsAt() string
+
+	// SetEndsAt sets the UTC datetime when the rule stops producing occurrences.
 	SetEndsAt(dateTimeUTC string) RecurrenceRuleInterface
 
+	// GetInterval returns the step interval between occurrences (e.g. every N days).
 	GetInterval() int
+
+	// SetInterval sets the step interval between occurrences.
 	SetInterval(int) RecurrenceRuleInterface
 
+	// GetDaysOfWeek returns the days of the week the rule applies to (for weekly rules).
 	GetDaysOfWeek() []DayOfWeek
+
+	// SetDaysOfWeek sets the days of the week the rule applies to (for weekly rules).
 	SetDaysOfWeek([]DayOfWeek) RecurrenceRuleInterface
 
+	// GetDaysOfMonth returns the days of the month the rule applies to.
 	GetDaysOfMonth() []int
+
+	// SetDaysOfMonth sets the days of the month the rule applies to.
 	SetDaysOfMonth([]int) RecurrenceRuleInterface
 
+	// GetMonthsOfYear returns the months of the year the rule applies to.
 	GetMonthsOfYear() []MonthOfYear
+
+	// SetMonthsOfYear sets the months of the year the rule applies to.
 	SetMonthsOfYear([]MonthOfYear) RecurrenceRuleInterface
 }
 
+// NextRunAt calculates the next time a recurrence rule should run, given the
+// current time. It respects the rule's start and end times, interval and
+// frequency, and returns an error if no further runs exist.
 func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon, error) {
 	startsAt := parseDateTime(rule.GetStartsAt())
 
@@ -141,181 +171,13 @@ func frequencyToRRuleFrequency(frequency Frequency) rrule.Frequency {
 	}
 }
 
-// func NextRunAt(rule RecurrenceRule, now carbon.Carbon) (carbon.Carbon, error) {
-// 	startsAt := parseDateTime(rule.GetStartsAt())
-
-// 	endsAt := parseDateTime(rule.GetEndsAt())
-
-// 	// If end time has passed, return max datetime to indicate no more runs
-// 	if now.Gt(endsAt) {
-// 		return carbon.Parse(sb.MAX_DATETIME, carbon.UTC), nil
-// 	}
-
-// 	if interval := rule.GetInterval(); interval <= 0 {
-// 		return carbon.Carbon{}, fmt.Errorf("interval must be positive")
-// 	}
-
-// 	if now.Lt(startsAt) {
-// 		return startsAt, nil
-// 	}
-
-// 	nextRun, err := calculateNextRun(rule, now)
-
-// 	if err != nil {
-// 		return carbon.Carbon{}, err
-// 	}
-
-// 	// If next run is after end time, return max datetime to indicate no more runs
-// 	if nextRun.Gt(endsAt) {
-// 		return carbon.Parse(sb.MAX_DATETIME, carbon.UTC), nil
-// 	}
-
-// 	return nextRun, nil
-// }
-
-// func calculateNextRun(rule RecurrenceRule, now carbon.Carbon) (carbon.Carbon, error) {
-// 	interval := rule.GetInterval()
-
-// 	switch rule.GetFrequency() {
-// 	case FrequencySecondly:
-// 		return now.AddSeconds(interval), nil
-// 	case FrequencyMinutely:
-// 		return now.AddMinutes(interval), nil
-// 	case FrequencyHourly:
-// 		return now.AddHours(interval), nil
-// 	case FrequencyDaily:
-// 		return calculateDailyNextRun(rule, now)
-// 	case FrequencyWeekly:
-// 		return calculateWeeklyNextRun(rule, now)
-// 	case FrequencyMonthly:
-// 		return now.AddMonths(interval), nil
-// 	case FrequencyYearly:
-// 		return now.AddYears(interval), nil
-// 	default:
-// 		return carbon.Carbon{}, fmt.Errorf("unknown frequency")
-// 	}
-// }
-
-// func calculateWeeklyNextRun(rule RecurrenceRule, now carbon.Carbon) (carbon.Carbon, error) {
-// 	daysOfWeek := rule.GetDaysOfWeek()
-// 	startsAt := parseDateTime(rule.GetStartsAt())
-
-// 	daysToAdd := calculateWeeklyDaysToAdd(now, daysOfWeek)
-
-// 	if daysToAdd == 0 && now.Hour()*60+now.Minute() >= startsAt.Hour()*60+startsAt.Minute() {
-// 		daysToAdd = 7
-// 	}
-
-// 	return startsAt.AddDays(daysToAdd + (rule.GetInterval()-1)*7), nil
-// }
-
-// func calculateDailyNextRun(rule RecurrenceRule, now carbon.Carbon) (carbon.Carbon, error) {
-// 	startsAt := parseDateTime(rule.GetStartsAt())
-
-// 	diffDays := cast.ToInt(now.DiffInDays(startsAt)) + 1
-
-// 	// If starts in the future, return startsAt
-// 	if diffDays <= 0 {
-// 		return startsAt, nil
-// 	}
-
-// 	interval := rule.GetInterval()
-
-// 	if interval <= 0 {
-// 		return carbon.Carbon{}, fmt.Errorf("interval must be positive")
-// 	}
-
-// 	daysToAdd := (diffDays / interval) * interval
-// 	if diffDays%interval != 0 {
-// 		daysToAdd += interval
-// 	}
-
-// 	return startsAt.AddDays(daysToAdd), nil
-// }
-
-// func calculateWeeklyDaysToAdd(now carbon.Carbon, daysOfWeek []DayOfWeek) int {
-// 	dayOfWeek := now.DayOfWeek()
-
-// 	if len(daysOfWeek) == 0 {
-// 		return (7 - dayOfWeek) % 7
-// 	}
-
-// 	sort.Slice(daysOfWeek, func(i, j int) bool {
-// 		return dayOfWeekToInt(daysOfWeek[i]) < dayOfWeekToInt(daysOfWeek[j])
-// 	})
-
-// 	nextDayOfWeek := -1
-// 	for _, day := range daysOfWeek {
-// 		dayInt := dayOfWeekToInt(day)
-// 		if dayInt > dayOfWeek {
-// 			nextDayOfWeek = dayInt
-// 			break
-// 		}
-// 	}
-
-// 	if nextDayOfWeek == -1 {
-// 		nextDayOfWeek = dayOfWeekToInt(daysOfWeek[0])
-// 	}
-
-// 	return (nextDayOfWeek - int(dayOfWeek) + 7) % 7
-// }
-
+// parseDateTime parses a UTC datetime string into a carbon instance.
 func parseDateTime(dateTimeUTC string) *carbon.Carbon {
 	return carbon.Parse(dateTimeUTC, carbon.UTC)
 }
 
-// func UNUSED_dayOfWeekToInt(day DayOfWeek) int {
-// 	switch day {
-// 	case DayOfWeekSunday:
-// 		return 0
-// 	case DayOfWeekMonday:
-// 		return 1
-// 	case DayOfWeekTuesday:
-// 		return 2
-// 	case DayOfWeekWednesday:
-// 		return 3
-// 	case DayOfWeekThursday:
-// 		return 4
-// 	case DayOfWeekFriday:
-// 		return 5
-// 	case DayOfWeekSaturday:
-// 		return 6
-// 	default:
-// 		return 0
-// 	}
-// }
-
-// func UNUSED_monthOfYearToInt(month MonthOfYear) int {
-// 	switch month {
-// 	case MonthOfYearJanuary:
-// 		return 1
-// 	case MonthOfYearFebruary:
-// 		return 2
-// 	case MonthOfYearMarch:
-// 		return 3
-// 	case MonthOfYearApril:
-// 		return 4
-// 	case MonthOfYearMay:
-// 		return 5
-// 	case MonthOfYearJune:
-// 		return 6
-// 	case MonthOfYearJuly:
-// 		return 7
-// 	case MonthOfYearAugust:
-// 		return 8
-// 	case MonthOfYearSeptember:
-// 		return 9
-// 	case MonthOfYearOctober:
-// 		return 10
-// 	case MonthOfYearNovember:
-// 		return 11
-// 	case MonthOfYearDecember:
-// 		return 12
-// 	default:
-// 		return 0
-// 	}
-// }
-
+// NewRecurrenceRule creates a new recurrence rule with default values.
+// By default, it has no end time (MAX_DATETIME) and an interval of 1.
 func NewRecurrenceRule() RecurrenceRuleInterface {
 	r := recurrenceRule{}
 
@@ -328,6 +190,8 @@ func NewRecurrenceRule() RecurrenceRuleInterface {
 	return &r
 }
 
+// recurrenceRule is the concrete implementation of RecurrenceRuleInterface.
+// It stores all recurrence fields including frequency, timing, and filters.
 type recurrenceRule struct {
 	frequency    Frequency
 	startsAt     string
@@ -338,74 +202,90 @@ type recurrenceRule struct {
 	monthsOfYear []MonthOfYear
 }
 
+// GetFrequency returns how often the rule recurs.
 func (r *recurrenceRule) GetFrequency() Frequency {
 	return r.frequency
 }
 
+// SetFrequency sets how often the rule recurs.
 func (r *recurrenceRule) SetFrequency(frequency Frequency) RecurrenceRuleInterface {
 	r.frequency = frequency
 	return r
 }
 
+// GetStartsAt returns the UTC datetime when the rule becomes active.
 func (r *recurrenceRule) GetStartsAt() string {
 	return r.startsAt
 }
 
+// SetStartsAt sets the UTC datetime when the rule becomes active.
 func (r *recurrenceRule) SetStartsAt(startsAt string) RecurrenceRuleInterface {
 	r.startsAt = startsAt
 	return r
 }
 
+// GetEndsAt returns the UTC datetime when the rule stops producing occurrences.
 func (r *recurrenceRule) GetEndsAt() string {
 	return r.endsAt
 }
 
+// SetEndsAt sets the UTC datetime when the rule stops producing occurrences.
 func (r *recurrenceRule) SetEndsAt(endsAt string) RecurrenceRuleInterface {
 	r.endsAt = endsAt
 	return r
 }
 
+// GetInterval returns the step interval between occurrences.
 func (r *recurrenceRule) GetInterval() int {
 	return r.interval
 }
 
+// SetInterval sets the step interval between occurrences.
 func (r *recurrenceRule) SetInterval(interval int) RecurrenceRuleInterface {
 	r.interval = interval
 	return r
 }
 
+// GetDaysOfWeek returns the days of the week the rule applies to.
 func (r *recurrenceRule) GetDaysOfWeek() []DayOfWeek {
 	return r.daysOfWeek
 }
 
+// SetDaysOfWeek sets the days of the week the rule applies to.
 func (r *recurrenceRule) SetDaysOfWeek(daysOfWeek []DayOfWeek) RecurrenceRuleInterface {
 	r.daysOfWeek = daysOfWeek
 	return r
 }
 
+// GetDaysOfMonth returns the days of the month the rule applies to.
 func (r *recurrenceRule) GetDaysOfMonth() []int {
 	return r.daysOfMonth
 }
 
+// SetDaysOfMonth sets the days of the month the rule applies to.
 func (r *recurrenceRule) SetDaysOfMonth(daysOfMonth []int) RecurrenceRuleInterface {
 	r.daysOfMonth = daysOfMonth
 	return r
 }
 
+// GetMonthsOfYear returns the months of the year the rule applies to.
 func (r *recurrenceRule) GetMonthsOfYear() []MonthOfYear {
 	return r.monthsOfYear
 }
 
+// SetMonthsOfYear sets the months of the year the rule applies to.
 func (r *recurrenceRule) SetMonthsOfYear(monthsOfYear []MonthOfYear) RecurrenceRuleInterface {
 	r.monthsOfYear = monthsOfYear
 	return r
 }
 
+// String returns a human-readable representation of the recurrence rule.
 func (r *recurrenceRule) String() string {
 	return fmt.Sprintf("frequency: %s, startsAt: %s, endsAt: %s, interval: %d, daysOfWeek: %v, daysOfMonth: %v, monthsOfYear: %v",
 		r.frequency, r.startsAt, r.endsAt, r.interval, r.daysOfWeek, r.daysOfMonth, r.monthsOfYear)
 }
 
+// Clone creates a shallow copy of the recurrence rule.
 func (r *recurrenceRule) Clone() RecurrenceRuleInterface {
 	return &recurrenceRule{
 		frequency:    r.frequency,
@@ -418,6 +298,7 @@ func (r *recurrenceRule) Clone() RecurrenceRuleInterface {
 	}
 }
 
+// MarshalJSON serializes the recurrence rule into JSON.
 func (r *recurrenceRule) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Frequency    Frequency     `json:"frequency"`
@@ -438,6 +319,7 @@ func (r *recurrenceRule) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON deserializes the recurrence rule from JSON.
 func (r *recurrenceRule) UnmarshalJSON(data []byte) error {
 	var v struct {
 		Frequency    Frequency     `json:"frequency"`

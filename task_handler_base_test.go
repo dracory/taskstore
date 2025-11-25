@@ -2,8 +2,6 @@ package taskstore
 
 import (
 	"testing"
-
-	"github.com/mingrammer/cfmt"
 )
 
 func Test_TaskHandlerBase(t *testing.T) {
@@ -124,9 +122,6 @@ func (handler *testTaskHandler) Description() string {
 }
 
 func (handler *testTaskHandler) Handle() bool {
-	_, _ = cfmt.Warningln("Param 1", handler.GetParam("completeWithSuccess"))
-	_, _ = cfmt.Warningln("Param 2", handler.GetParam("completeWithFail"))
-
 	if handler.GetParam("completeWithSuccess") == "yes" {
 		handler.LogSuccess("Task forced to succeed.")
 		return true
