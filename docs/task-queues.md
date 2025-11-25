@@ -23,7 +23,7 @@ Tasks are usually enqueued via `TaskDefinitionEnqueueByAlias`:
 
 ```go
 queuedTask, err := myTaskStore.TaskDefinitionEnqueueByAlias(
-    "emails",
+    taskstore.DefaultQueueName, // or "emails" for a specific queue
     "SendWelcomeEmail",
     map[string]any{
         "user_id": 123,

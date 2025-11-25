@@ -79,11 +79,11 @@ To enqueue a task based on a definition alias:
 
 ```go
 queuedTask, err := myTaskStore.TaskDefinitionEnqueueByAlias(
-    taskstore.DefaultTaskQueue,
-    "HelloWorldTask",
-    map[string]any{
-        "name": "Tom Jones",
-    },
+	taskstore.DefaultQueueName,
+	"HelloWorldTask",
+	map[string]any{
+		"name": "Tom Jones",
+	},
 )
 ```
 
@@ -93,11 +93,11 @@ You can also provide convenience methods on your handler:
 
 ```go
 func (task *HelloWorldTask) Enqueue(name string) (taskstore.TaskQueueInterface, error) {
-    return myTaskStore.TaskDefinitionEnqueueByAlias(
-        taskstore.DefaultTaskQueue,
-        task.Alias(),
-        map[string]any{"name": name},
-    )
+	return myTaskStore.TaskDefinitionEnqueueByAlias(
+		taskstore.DefaultQueueName,
+		task.Alias(),
+		map[string]any{"name": name},
+	)
 }
 ```
 

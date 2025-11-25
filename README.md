@@ -301,7 +301,7 @@ at specific intervals or on demand.
 To create a task definition, you'll need to implement the TaskHandlerInterface and provide a Handle method that contains the task's logic. You can also extend the TaskHandlerBase struct for additional features.
 
 ### 5. How do I schedule a task to run in the background?
-Use the TaskDefinitionEnqueueByAlias method to add a task to the background task queue. You can specify the interval at which the task queue is processed using the QueueRunGoroutine method.
+Use `TaskDefinitionEnqueueByAlias` to add a task to the background task queue, and start a worker using `TaskQueueRunDefault`, `TaskQueueRunSerial`, or `TaskQueueRunConcurrent`. For recurring schedules, use `ScheduleRunner` or call `ScheduleRun` periodically.
 
 ### 6. Can I monitor the status of tasks?
 Yes, TaskStore provides methods to list tasks, check their status, and view task details.
