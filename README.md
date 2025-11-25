@@ -60,7 +60,7 @@ Configure custom error handlers for monitoring and alerting:
 
 ```golang
 store.SetErrorHandler(func(queueName, taskID string, err error) {
-    log.Printf("[ERROR] Queue: %s, Task: %s, Error: %v", queue Name, taskID, err)
+    log.Printf("[ERROR] Queue: %s, Task: %s, Error: %v", queueName, taskID, err)
     // Send to monitoring system
     metrics.RecordTaskError(queueName, taskID)
 })
@@ -88,13 +88,17 @@ func (h *EmailHandler) HandleWithContext(ctx context.Context) bool {
 ## Setup
 
 ```golang
-myTaskStore = taskstore.NewStore(taskstore.NewStoreOptions{
-	DB:                 databaseInstance,
-	TaskDefinitionTableName: "my_task_definition",
-	TaskQueueTableName:      "my_task_queue",
-	AutomigrateEnabled: true,
-	DebugEnabled:       false,
+myTaskStore, err := taskstore.NewStore(taskstore.NewStoreOptions{
+    DB:                 databaseInstance,
+    TaskDefinitionTableName: "my_task_definition",
+    TaskQueueTableName:      "my_task_queue",
+    ScheduleTableName:      "my_schedules",
+    AutomigrateEnabled:      true,
+    DebugEnabled:           false,
 })
+if err != nil {
+    // handle error
+}
 ```
  
 ## Documentation
@@ -129,72 +133,75 @@ The tasks placed in the task queue will be processed at a specified interval.
 package tasks
 
 func NewHelloWorldTask() *HelloWorldTask {
-	return &HelloWorldTask{}
+    return &HelloWorldTask{}
 }
 
 type HelloWorldTask struct {
-	taskstore.TaskHandlerBase
+    taskstore.TaskHandlerBase
 }
 
 var _ taskstore.TaskHandlerInterface = (*HelloWorldTask)(nil) // verify it extends the task handler interface
 
 func (task *HelloWorldTask) Alias() string {
-	return "HelloWorldTask"
+    return "HelloWorldTask"
 }
 
 func (task *HelloWorldTask) Title() string {
-	return "Hello World"
+    return "Hello World"
 }
 
 func (task *HelloWorldTask) Description() string {
-	return "Say hello world"
+    return "Say hello world"
 }
 
 // Enqueue. Optional shortcut to quickly add this task to the task queue
-func (task *HelloWorldTask) Enqueue(name string) (taskQueue taskstore.TaskQueueInterface, err error) {
-	return myTaskStore.TaskDefinitionEnqueueByAlias(taskstore.DefaultTaskQueue, task.Alias(), map[string]any{
-		"name": name,
-	})
+func (task *HelloWorldTask) Enqueue(name string) (taskstore.TaskQueueInterface, error) {
+    return myTaskStore.TaskDefinitionEnqueueByAlias(taskstore.DefaultQueueName, task.Alias(), map[string]any{
+        "name": name,
+    })
 }
 
 func (task *HelloWorldTask) Handle() bool {
-	name := handler.GetParam("name")
+    name := task.GetParam("name")
 
-        // Optional to allow adding the task to the task queue manually. Useful while in development
-	if !task.HasQueuedTask() && task.GetParam("enqueue") == "yes" {
-		_, err := handler.Enqueue(name)
+    // Optional to allow adding the task to the task queue manually. Useful while in development
+    if !task.HasQueuedTask() && task.GetParam("enqueue") == "yes" {
+        _, err := task.Enqueue(name)
 
-		if err != nil {
-			task.LogError("Error enqueuing task: " + err.Error())
-		} else {
-			task.LogSuccess("Task enqueued.")
-		}
-		
-		return true
-	}
+        if err != nil {
+            task.LogError("Error enqueuing task: " + err.Error())
+        } else {
+            task.LogSuccess("Task enqueued.")
+        }
+        
+        return true
+    }
 
-        if name != "" {
-		task.LogInfo("Hello" + name + "!")	
-	} else {
-		task.LogInfo("Hello World!")
-	}
+    if name != "" {
+        task.LogInfo("Hello " + name + "!")
+    } else {
+        task.LogInfo("Hello World!")
+    }
 
-	return true
+    return true
 }
 ```
 ## Registering Task Definitions to the TaskStore
 
 Registering the task definition to the task store will persist it in the database.
 
-```
-myTaskStore.TaskHandlerAdd(NewHelloWorldTask(), true)
+```golang
+ctx := context.Background()
+if err := myTaskStore.TaskHandlerAdd(ctx, NewHelloWorldTask(), true); err != nil {
+    // handle error
+}
 ```
 
 ## Executing Task Definitions in the Terminal
 
 To add the option to execute tasks from the terminal add the following to your main method
 
-```
+```golang
 myTaskStore.TaskDefinitionExecuteCli(args[1], args[1:])
 ```
 
@@ -207,14 +214,18 @@ go run . HelloWorldTask --name="Tom Jones"
 
 To add a task to the background task queue
 
-```
-myTaskStore.TaskDefinitionEnqueueByAlias(taskstore.DefaultTaskQueue, NewHelloWorldTask.Alias(), map[string]any{
-	"name": name,
-})
+```golang
+_, err := myTaskStore.TaskDefinitionEnqueueByAlias(
+    taskstore.DefaultQueueName,
+    "HelloWorldTask",
+    map[string]any{
+        "name": name,
+    },
+)
 ```
 
 Or if you have defined an Enqueue method as in the example task above.
-```
+```golang
 NewHelloWorldTask().Enqueue("Tom Jones")
 ```
 
@@ -242,23 +253,25 @@ myTaskStore.TaskQueueRunConcurrent(ctx, "emails", 10, 2)
 
 ## Task Definition Methods
 
-- `TaskDefinitionCreate(task TaskDefinitionInterface) error` – creates a task definition
-- `TaskDefinitionFindByAlias(alias string) (TaskDefinitionInterface, error)` – finds a task definition by alias
-- `TaskDefinitionFindByID(id string) (TaskDefinitionInterface, error)` – finds a task definition by ID
-- `TaskDefinitionList(options TaskDefinitionQueryInterface) ([]TaskDefinitionInterface, error)` – lists task definitions
-- `TaskDefinitionUpdate(task TaskDefinitionInterface) error` – updates a task definition
-- `TaskDefinitionSoftDelete(task TaskDefinitionInterface) error` – soft deletes a task definition
+- `TaskDefinitionCreate(ctx context.Context, task TaskDefinitionInterface) error` – creates a task definition
+- `TaskDefinitionFindByAlias(ctx context.Context, alias string) (TaskDefinitionInterface, error)` – finds a task definition by alias
+- `TaskDefinitionFindByID(ctx context.Context, id string) (TaskDefinitionInterface, error)` – finds a task definition by ID
+- `TaskDefinitionList(ctx context.Context, options TaskDefinitionQueryInterface) ([]TaskDefinitionInterface, error)` – lists task definitions
+- `TaskDefinitionUpdate(ctx context.Context, task TaskDefinitionInterface) error` – updates a task definition
+- `TaskDefinitionSoftDelete(ctx context.Context, task TaskDefinitionInterface) error` – soft deletes a task definition
 
 ## Task Queue Methods
 
-- `TaskQueueCreate(queue TaskQueueInterface) error` – creates a new queued task
-- `TaskQueueDeleteByID(id string) error` – deletes a queued task by ID
-- `TaskQueueFindByID(id string) (TaskQueueInterface, error)` – finds a queued task by ID
-- `TaskQueueFail(queue TaskQueueInterface) error` – marks a queued task as failed
-- `TaskQueueSoftDeleteByID(id string) error` – soft deletes a queued task by ID (populates the deleted_at field)
-- `TaskQueueSuccess(queue TaskQueueInterface) error` – completes a queued task successfully
-- `TaskQueueList(options TaskQueueQueryInterface) ([]TaskQueueInterface, error)` – lists the queued tasks
-- `TaskQueueUpdate(queue TaskQueueInterface) error` – updates a queued task
+- `TaskQueueCreate(ctx context.Context, queue TaskQueueInterface) error` – creates a new queued task
+- `TaskQueueDeleteByID(ctx context.Context, id string) error` – deletes a queued task by ID
+- `TaskQueueFindByID(ctx context.Context, id string) (TaskQueueInterface, error)` – finds a queued task by ID
+- `TaskQueueSoftDeleteByID(ctx context.Context, id string) error` – soft deletes a queued task by ID (populates the deleted_at field)
+- `TaskQueueList(ctx context.Context, options TaskQueueQueryInterface) ([]TaskQueueInterface, error)` – lists the queued tasks
+- `TaskQueueUpdate(ctx context.Context, queue TaskQueueInterface) error` – updates a queued task
+- `TaskQueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int)` – starts the default queue worker
+- `TaskQueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)` – starts a serial worker for a named queue
+- `TaskQueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)` – starts a concurrent worker for a named queue
+- `TaskQueueStop()` / `TaskQueueStopByName(queueName string)` – stops queue workers and waits for in‑flight tasks
 
 ## Frequently Asked Questions (FAQ)
 
