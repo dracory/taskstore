@@ -2,15 +2,17 @@ package taskstore
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
 
 func initDB(filename ...string) (*sql.DB, error) {
 	// Use shared cache mode to allow concurrent goroutines to access the same in-memory database
-	// Note: Must use file::memory: to allow sharing, :memory: is always private
-	dsn := "file::memory:?cache=shared&parseTime=true"
+	// Note: Must use file:Name?mode=memory&cache=shared to allow sharing within the test but isolation between tests
+	dsn := fmt.Sprintf("file:memdb%d?mode=memory&cache=shared&parseTime=true", time.Now().UnixNano())
 	if len(filename) > 0 {
 		// For file-based databases, use WAL mode and busy timeout for concurrent access
 		// Use _pragma for modernc.org/sqlite
@@ -60,70 +62,3 @@ func initStore(filename ...string) (*Store, error) {
 		DebugEnabled:            false,
 	})
 }
-
-// func TestWithDb(t *testing.T) {
-// 	db := InitDB("test.db")
-// 	store, error := InitStore()
-
-// 	f := WithDb(db)
-// 	f(s)
-
-// 	if s.db == nil {
-// 		t.Fatalf("DB: Expected Initialized DB, received [%v]", s.db)
-// 	}
-
-// }
-
-// func TestWithDefinitionTableName(t *testing.T) {
-// 	s := InitStore()
-
-// 	table_name := "test_taskTableName.db"
-// 	f := WithDefinitionTableName(table_name)
-// 	f(s)
-// 	if s.taskDefinitionTableName != table_name {
-// 		t.Fatalf("Expected DefinitionTableName [%v], received [%v]", table_name, s.taskDefinitionTableName)
-// 	}
-// 	table_name = "Table2"
-// 	f = WithDefinitionTableName(table_name)
-// 	f(s)
-// 	if s.taskDefinitionTableName != table_name {
-// 		t.Fatalf("Expected DefinitionTableName [%v], received [%v]", table_name, s.taskDefinitionTableName)
-// 	}
-// }
-
-// func TestWithTaskTableName(t *testing.T) {
-// 	s := InitStore()
-
-// 	table_name := "test_taskTableName.db"
-// 	f := WithTaskTableName(table_name)
-// 	f(s)
-// 	if s.taskTaskTableName != table_name {
-// 		t.Fatalf("Expected TaskTableName [%v], received [%v]", table_name, s.taskTaskTableName)
-// 	}
-// 	table_name = "Table2"
-// 	f = WithTaskTableName(table_name)
-// 	f(s)
-// 	if s.taskTaskTableName != table_name {
-// 		t.Fatalf("Expected TaskTableName [%v], received [%v]", table_name, s.taskTaskTableName)
-// 	}
-// }
-
-// func TestWithDebug(t *testing.T) {
-// 	s := InitStore()
-
-// 	b := false
-// 	f := WithDebug(b)
-// 	f(s)
-// 	if s.debug != b {
-// 		t.Fatalf("Expected Debug [%v], received [%v]", b, s.debug)
-// 	}
-// }
-
-// func Test_Store_DriverName(t *testing.T) {
-// 	db := InitDB("sqlite")
-// 	store := InitStore()
-// 	s := store.DriverName(db)
-// 	if s != "sqlite" {
-// 		t.Fatalf("Expected Debug [%v], received [%v]", "sqlite", s)
-// 	}
-// }

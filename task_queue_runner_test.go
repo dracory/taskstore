@@ -2,8 +2,6 @@ package taskstore
 
 import (
 	"context"
-	"log"
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -294,7 +292,6 @@ func TestTaskQueueRunner_GracefulShutdownConcurrent(t *testing.T) {
 		UnstuckMinutes:  1,
 		QueueName:       DefaultQueueName,
 		MaxConcurrency:  3,
-		Logger:          log.New(os.Stdout, "TEST-RUNNER: ", log.LstdFlags),
 	})
 
 	runCtx, cancel := context.WithCancel(ctx)
