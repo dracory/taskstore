@@ -124,7 +124,7 @@ func TestTaskQueueRunner_SerialProcessing(t *testing.T) {
 
 // Test 2: Concurrent Processing (MaxConcurrency > 1)
 func TestTaskQueueRunner_ConcurrentProcessing(t *testing.T) {
-	store, err := initStore()
+	store, err := initStore("test_concurrent_processing.db")
 	require.NoError(t, err)
 	defer store.db.Close()
 
@@ -165,8 +165,8 @@ func TestTaskQueueRunner_ConcurrentProcessing(t *testing.T) {
 	assert.NoError(t, err)
 	elapsed := time.Since(start)
 
-	// Small sleep to ensure all DB updates are flushed
-	time.Sleep(50 * time.Millisecond)
+	// Wait longer for all DB updates to complete (tasks take 100ms each)
+	time.Sleep(3000 * time.Millisecond)
 
 	// Verify all tasks completed
 	success, err := store.TaskQueueList(ctx, TaskQueueQuery().SetStatus(TaskQueueStatusSuccess))

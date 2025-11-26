@@ -2,24 +2,40 @@ package taskstore
 
 import (
 	"database/sql"
+	"os"
 
 	_ "modernc.org/sqlite"
 )
 
-func initDB() (*sql.DB, error) {
+func initDB(filename ...string) (*sql.DB, error) {
 	// Use shared cache mode to allow concurrent goroutines to access the same in-memory database
 	dsn := ":memory:?cache=shared&parseTime=true"
+	if len(filename) > 0 {
+		// For file-based databases, use WAL mode and busy timeout for concurrent access
+		dsn = filename[0] + "?_busy_timeout=5000&_journal_mode=WAL&_synchronous=NORMAL"
+		// Remove the file if it exists to ensure clean state
+		if err := os.Remove(filename[0]); err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
 	db, err := sql.Open("sqlite", dsn)
 
 	if err != nil {
 		return nil, err
 	}
 
+	// Configure connection pool for concurrent access
+	if len(filename) > 0 {
+		db.SetMaxOpenConns(25) // Allow multiple concurrent connections
+		db.SetMaxIdleConns(5)
+		db.SetConnMaxLifetime(0) // Connections never expire
+	}
+
 	return db, nil
 }
 
-func initStore() (*Store, error) {
-	db, err := initDB()
+func initStore(filename ...string) (*Store, error) {
+	db, err := initDB(filename...)
 	if err != nil {
 		return nil, err
 	}
