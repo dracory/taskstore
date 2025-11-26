@@ -7,7 +7,8 @@ import (
 )
 
 func initDB() (*sql.DB, error) {
-	dsn := ":memory:?parseTime=true"
+	// Use shared cache mode to allow concurrent goroutines to access the same in-memory database
+	dsn := ":memory:?cache=shared&parseTime=true"
 	db, err := sql.Open("sqlite", dsn)
 
 	if err != nil {
@@ -28,7 +29,7 @@ func initStore() (*Store, error) {
 		ScheduleTableName:       "schedules",
 		DB:                      db,
 		DbDriverName:            "sqlite",
-		AutomigrateEnabled:      false,
+		AutomigrateEnabled:      true, // Enable automigration for tests
 		DebugEnabled:            false,
 	})
 }

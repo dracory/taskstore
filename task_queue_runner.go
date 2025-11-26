@@ -3,6 +3,7 @@ package taskstore
 import (
 	"context"
 	"log"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -12,6 +13,7 @@ type TaskQueueRunnerOptions struct {
 	UnstuckMinutes  int
 	QueueName       string
 	Logger          *log.Logger
+	MaxConcurrency  int // 0 or 1 = serial, >1 = concurrent (default: 1)
 }
 
 type TaskQueueRunnerInterface interface {
@@ -22,10 +24,12 @@ type TaskQueueRunnerInterface interface {
 }
 
 type taskQueueRunner struct {
-	store   StoreInterface
-	opts    TaskQueueRunnerOptions
-	running atomic.Bool
-	stopCh  chan struct{}
+	store     StoreInterface
+	opts      TaskQueueRunnerOptions
+	running   atomic.Bool
+	stopCh    chan struct{}
+	taskWg    sync.WaitGroup // Tracks spawned task goroutines
+	semaphore chan struct{}  // Concurrency limiter
 }
 
 func NewTaskQueueRunner(store StoreInterface, opts TaskQueueRunnerOptions) TaskQueueRunnerInterface {
@@ -41,10 +45,16 @@ func NewTaskQueueRunner(store StoreInterface, opts TaskQueueRunnerOptions) TaskQ
 		opts.QueueName = DefaultQueueName
 	}
 
+	// Default MaxConcurrency to 1 (serial) if not specified
+	if opts.MaxConcurrency <= 0 {
+		opts.MaxConcurrency = 1
+	}
+
 	return &taskQueueRunner{
-		store:  store,
-		opts:   opts,
-		stopCh: make(chan struct{}, 1),
+		store:     store,
+		opts:      opts,
+		stopCh:    make(chan struct{}, 1),
+		semaphore: make(chan struct{}, opts.MaxConcurrency),
 	}
 }
 
@@ -88,6 +98,9 @@ func (r *taskQueueRunner) Stop() {
 	case r.stopCh <- struct{}{}:
 	default:
 	}
+
+	// Wait for all spawned task goroutines to complete
+	r.taskWg.Wait()
 }
 
 func (r *taskQueueRunner) IsRunning() bool {
@@ -95,6 +108,14 @@ func (r *taskQueueRunner) IsRunning() bool {
 }
 
 func (r *taskQueueRunner) RunOnce(ctx context.Context) error {
+	if r.opts.MaxConcurrency == 1 {
+		return r.runOnceSerial(ctx)
+	}
+	return r.runOnceConcurrent(ctx)
+}
+
+// runOnceSerial processes tasks one at a time (original behavior)
+func (r *taskQueueRunner) runOnceSerial(ctx context.Context) error {
 	queueName := normalizeQueueName(r.opts.QueueName)
 
 	for {
@@ -115,6 +136,54 @@ func (r *taskQueueRunner) RunOnce(ctx context.Context) error {
 		if err != nil {
 			r.logf("TaskQueueRunner: error processing task %s: %v", queuedTask.ID(), err)
 		}
+	}
+}
+
+// runOnceConcurrent processes multiple tasks concurrently up to MaxConcurrency limit
+func (r *taskQueueRunner) runOnceConcurrent(ctx context.Context) error {
+	queueName := normalizeQueueName(r.opts.QueueName)
+
+	// Defer waiting for all spawned goroutines to complete
+	defer r.taskWg.Wait()
+
+	for {
+		if ctx != nil && ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		// Claim next task (don't hold semaphore during claim)
+		queuedTask, err := r.store.TaskQueueClaimNext(ctx, queueName)
+		if err != nil {
+			return err
+		}
+
+		if queuedTask == nil {
+			return nil // Will wait for spawned goroutines due to defer
+		}
+
+		// Acquire semaphore slot (blocks if at max concurrency)
+		select {
+		case r.semaphore <- struct{}{}:
+			// Got a slot, proceed
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+
+		// Track the goroutine
+		r.taskWg.Add(1)
+
+		// Spawn goroutine to process the task
+		go func(task TaskQueueInterface) {
+			defer func() {
+				<-r.semaphore   // Release semaphore slot
+				r.taskWg.Done() // Mark goroutine as complete
+			}()
+
+			_, processErr := r.store.TaskQueueProcessTask(ctx, task)
+			if processErr != nil {
+				r.logf("TaskQueueRunner: error processing task %s: %v", task.ID(), processErr)
+			}
+		}(queuedTask)
 	}
 }
 
