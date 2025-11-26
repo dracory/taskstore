@@ -1,7 +1,7 @@
 # TaskStore Package Overview
 
 ## Introduction
-`dracory/taskstore` is a robust, asynchronous durable task queue package designed to offload time-consuming or resource-intensive operations from the main application. It leverages a durable database (SQLite, MySQL, or PostgreSQL) for persistence.
+`dracory/taskstore` is a robust, asynchronous task processing package that provides both durable task queues and scheduled task execution. It's designed to offload time-consuming or resource-intensive operations from the main application and automate recurring tasks. It leverages a durable database (SQLite, MySQL, or PostgreSQL) for persistence.
 
 ## Core Concepts
 
@@ -29,7 +29,26 @@ A task queue item represents a specific instance of a task to be executed.
     - `Attempts`: Number of execution attempts
     - `Timestamps`: CreatedAt, StartedAt, CompletedAt
 
-### 4. Queue Processing Modes
+### 4. Schedule
+A schedule defines when and how often a task should be automatically enqueued.
+- **Properties**:
+    - `ID`: Unique identifier
+    - `TaskDefinitionID`: Reference to the task definition to execute
+    - `Status`: Current state (Active, Paused, Completed, Canceled)
+    - `RecurrenceRule`: RRULE string defining the schedule pattern
+    - `TaskParameters`: JSON-encoded parameters for task execution
+    - `QueueName`: Target queue for enqueued tasks
+    - `ExecutionCount`: Number of times the schedule has run
+    - `MaxExecutions`: Optional limit on total executions
+    - `Timestamps`: StartDate, EndDate, LastRunAt, NextRunAt
+
+### 5. Runners
+Runners are background components that automate task processing:
+- **Task Queue Runner**: Continuously processes queued tasks from a specific queue
+- **Schedule Runner**: Monitors schedules and enqueues tasks based on recurrence rules
+- Both runners support graceful shutdown, configurable intervals, and optional logging
+
+### 6. Queue Processing Modes
 
 **TaskQueueRunDefault** - Processes the default queue serially:
 ```go
@@ -107,12 +126,15 @@ func (h *MyHandler) HandleWithContext(ctx context.Context) bool {
 - [Task Definitions](./task-definitions.md)
 - [Task Queues](./task-queues.md)
 - [Schedules](./schedules.md)
+- [Runners](./runners.md)
+- [Recurrence Rules](./recurrence_rules.md)
 
 ## Data Model
 
 ```mermaid
 erDiagram
     TASK ||--o{ QUEUE : has
+    TASK ||--o{ SCHEDULE : defines
     TASK {
         string id PK
         string status
@@ -135,6 +157,23 @@ erDiagram
         int attempts
         datetime started_at
         datetime completed_at
+        datetime created_at
+        datetime updated_at
+        datetime deleted_at
+    }
+    SCHEDULE {
+        string id PK
+        string status
+        string task_definition_id FK
+        string queue_name
+        text recurrence_rule
+        text task_parameters
+        int execution_count
+        int max_executions
+        datetime start_date
+        datetime end_date
+        datetime last_run_at
+        datetime next_run_at
         datetime created_at
         datetime updated_at
         datetime deleted_at

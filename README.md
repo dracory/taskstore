@@ -5,7 +5,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/gouniverse/taskstore)](https://goreportcard.com/report/github.com/gouniverse/taskstore)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/gouniverse/taskstore)](https://pkg.go.dev/github.com/gouniverse/taskstore)
 
-TaskStore is a robust, asynchronous durable task queue package designed to offload time-consuming or resource-intensive operations from your main application.
+TaskStore is a robust, asynchronous task processing package that provides both durable task queues and scheduled task execution. It's designed to offload time-consuming or resource-intensive operations from your main application and automate recurring tasks.
 
 By deferring tasks to the background, you can improve application responsiveness and prevent performance bottlenecks.
 
@@ -107,6 +107,8 @@ if err != nil {
 - [Task definitions](./docs/task-definitions.md)
 - [Task queues](./docs/task-queues.md)
 - [Schedules](./docs/schedules.md)
+- [Runners](./docs/runners.md)
+- [Recurrence rules](./docs/recurrence_rules.md)
 
 ## Task Definitions
 
@@ -231,20 +233,48 @@ NewHelloWorldTask().Enqueue("Tom Jones")
 
 ## Starting the Task Queue
 
-To start the task queue, use one of the queue run methods:
+To start processing tasks, create and start a Task Queue Runner:
 
 ```golang
 ctx := context.Background()
 
-// Option 1: Run default queue (serial processing)
-myTaskStore.TaskQueueRunDefault(ctx, 10, 2) // every 10s, unstuck after 2 mins
+// Create a task queue runner for the default queue
+queueRunner := taskstore.NewTaskQueueRunner(myTaskStore, taskstore.TaskQueueRunnerOptions{
+    IntervalSeconds: 10,        // Check for tasks every 10 seconds
+    UnstuckMinutes:  1,         // Reclaim stuck tasks after 1 minute
+    QueueName:       "default", // Process the default queue
+    Logger:          log.Default(),
+})
 
-// Option 2: Run named queue with serial processing
-myTaskStore.TaskQueueRunSerial(ctx, "emails", 10, 2)
+// Start the runner
+queueRunner.Start(ctx)
 
-// Option 3: Run named queue with concurrent processing (respects MaxConcurrency)
-myTaskStore.TaskQueueRunConcurrent(ctx, "emails", 10, 2)
+// Later: gracefully stop the runner
+defer queueRunner.Stop()
 ```
+
+For scheduled tasks, use the Schedule Runner:
+
+```golang
+// Create a schedule runner
+scheduleRunner := taskstore.NewScheduleRunner(myTaskStore, taskstore.ScheduleRunnerOptions{
+    IntervalSeconds: 60, // Check schedules every 60 seconds
+    Logger:          log.Default(),
+})
+
+// Initialize next run times for existing schedules
+if err := scheduleRunner.SetInitialRuns(ctx); err != nil {
+    log.Printf("Error setting initial runs: %v", err)
+}
+
+// Start the runner
+scheduleRunner.Start(ctx)
+
+// Later: gracefully stop the runner
+defer scheduleRunner.Stop()
+```
+
+See [Runners documentation](./docs/runners.md) for more details.
 
 ## Store Methods
 
@@ -301,7 +331,7 @@ at specific intervals or on demand.
 To create a task definition, you'll need to implement the TaskHandlerInterface and provide a Handle method that contains the task's logic. You can also extend the TaskHandlerBase struct for additional features.
 
 ### 5. How do I schedule a task to run in the background?
-Use `TaskDefinitionEnqueueByAlias` to add a task to the background task queue, and start a worker using `TaskQueueRunDefault`, `TaskQueueRunSerial`, or `TaskQueueRunConcurrent`. For recurring schedules, use `ScheduleRunner` or call `ScheduleRun` periodically.
+Use `TaskDefinitionEnqueueByAlias` to add a task to the background task queue, and start a `TaskQueueRunner` to process tasks. For recurring schedules, create a `Schedule` entity and use `ScheduleRunner` to automatically enqueue tasks based on recurrence rules.
 
 ### 6. Can I monitor the status of tasks?
 Yes, TaskStore provides methods to list tasks, check their status, and view task details.
