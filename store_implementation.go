@@ -158,6 +158,9 @@ func (st *Store) SetErrorHandler(handler func(queueName, taskID string, err erro
 
 // TaskQueueRunDefault starts the queue processor for the default queue.
 // Equivalent to calling TaskQueueRunSerial with DefaultQueueName.
+//
+// Deprecated: Use NewTaskQueueRunner instead. This method will be removed in a future version.
+// See docs/runners.md for the recommended approach.
 func (store *Store) TaskQueueRunDefault(
 	ctx context.Context,
 	processSeconds int,
@@ -169,6 +172,9 @@ func (store *Store) TaskQueueRunDefault(
 // TaskQueueRunSerial starts a queue processor that handles tasks one at a time (serially).
 // Each task must complete before the next one starts.
 // The processor runs in a background goroutine and can be stopped via TaskQueueStopByName.
+//
+// Deprecated: Use NewTaskQueueRunner instead. This method will be removed in a future version.
+// See docs/runners.md for the recommended approach.
 func (store *Store) TaskQueueRunSerial(
 	ctx context.Context,
 	queueName string,
@@ -211,6 +217,9 @@ func (store *Store) TaskQueueRunSerial(
 // TaskQueueRunConcurrent starts a queue processor that handles multiple tasks concurrently.
 // Tasks are processed in parallel up to the configured MaxConcurrency limit.
 // The processor runs in a background goroutine and can be stopped via TaskQueueStopByName.
+//
+// Deprecated: Use NewTaskQueueRunner instead. This method will be removed in a future version.
+// See docs/runners.md for the recommended approach.
 func (store *Store) TaskQueueRunConcurrent(
 	ctx context.Context,
 	queueName string,
@@ -401,6 +410,9 @@ func sleepWithContext(ctx context.Context, d time.Duration) bool {
 
 // TaskQueueStop stops the default queue processor.
 // It blocks until the worker goroutine and all tasks have fully completed.
+//
+// Deprecated: Use TaskQueueRunner.Stop() instead. This method will be removed in a future version.
+// See docs/runners.md for the recommended approach.
 func (store *Store) TaskQueueStop() {
 	store.TaskQueueStopByName(DefaultQueueName)
 }
@@ -408,6 +420,9 @@ func (store *Store) TaskQueueStop() {
 // TaskQueueStopByName stops the specified queue processor.
 // It cancels the context, waits for the queue loop to exit,
 // and waits for all in-flight tasks to complete.
+//
+// Deprecated: Use TaskQueueRunner.Stop() instead. This method will be removed in a future version.
+// See docs/runners.md for the recommended approach.
 func (store *Store) TaskQueueStopByName(queueName string) {
 	queueName = normalizeQueueName(queueName)
 

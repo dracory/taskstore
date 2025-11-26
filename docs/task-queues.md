@@ -39,19 +39,42 @@ This creates a new queue record in the specified queue.
 
 ## Processing Queues
 
+> [!WARNING]
+> **Deprecated:** The following methods are deprecated and will be removed in a future version. Use the new `TaskQueueRunner` pattern instead. See [Runners documentation](./runners.md).
+
 The store provides multiple processing modes:
 
 ```go
 ctx := context.Background()
 
-// 1. Default queue (serial)
+// 1. Default queue (serial) - DEPRECATED
 myTaskStore.TaskQueueRunDefault(ctx, 10, 2) // every 10s, unstuck after 2 mins
 
-// 2. Named queue (serial)
+// 2. Named queue (serial) - DEPRECATED
 myTaskStore.TaskQueueRunSerial(ctx, "emails", 10, 2)
 
-// 3. Named queue (concurrent)
+// 3. Named queue (concurrent) - DEPRECATED
 myTaskStore.TaskQueueRunConcurrent(ctx, "emails", 10, 2)
+```
+
+**Recommended approach using TaskQueueRunner:**
+
+```go
+ctx := context.Background()
+
+// Create a task queue runner
+queueRunner := taskstore.NewTaskQueueRunner(myTaskStore, taskstore.TaskQueueRunnerOptions{
+    IntervalSeconds: 10,
+    UnstuckMinutes:  1,
+    QueueName:       "emails",
+    Logger:          log.Default(),
+})
+
+// Start the runner
+queueRunner.Start(ctx)
+
+// Later: gracefully stop the runner
+defer queueRunner.Stop()
 ```
 
 ### Concurrency Control
@@ -62,9 +85,12 @@ myTaskStore.TaskQueueRunConcurrent(ctx, "emails", 10, 2)
 
 ### Graceful Shutdown
 
+> [!WARNING]
+> **Deprecated:** The following methods are deprecated. Use `TaskQueueRunner.Stop()` instead. See [Runners documentation](./runners.md).
+
 ```go
-myTaskStore.TaskQueueStop()               // Stop default queue
-myTaskStore.TaskQueueStopByName("emails") // Stop only the "emails" queue
+myTaskStore.TaskQueueStop()               // Stop default queue - DEPRECATED
+myTaskStore.TaskQueueStopByName("emails") // Stop only the "emails" queue - DEPRECATED
 ```
 
 Both methods wait for in‑flight tasks to complete before returning.

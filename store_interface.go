@@ -20,10 +20,20 @@ type StoreInterface interface {
 	TaskQueueUpdate(ctx context.Context, TaskQueue TaskQueueInterface) error
 	TaskQueueClaimNext(ctx context.Context, queueName string) (TaskQueueInterface, error)
 
+	// Deprecated: Use NewTaskQueueRunner instead. These methods will be removed in a future version.
+	// See docs/runners.md for the recommended approach.
 	TaskQueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int)
+	// Deprecated: Use NewTaskQueueRunner instead. These methods will be removed in a future version.
+	// See docs/runners.md for the recommended approach.
 	TaskQueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
+	// Deprecated: Use NewTaskQueueRunner instead. These methods will be removed in a future version.
+	// See docs/runners.md for the recommended approach.
 	TaskQueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)
+	// Deprecated: Use TaskQueueRunner.Stop() instead. These methods will be removed in a future version.
+	// See docs/runners.md for the recommended approach.
 	TaskQueueStop()
+	// Deprecated: Use TaskQueueRunner.Stop() instead. These methods will be removed in a future version.
+	// See docs/runners.md for the recommended approach.
 	TaskQueueStopByName(queueName string)
 	TaskQueueProcessTask(ctx context.Context, queuedTask TaskQueueInterface) (bool, error)
 

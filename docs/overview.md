@@ -50,6 +50,9 @@ Runners are background components that automate task processing:
 
 ### 6. Queue Processing Modes
 
+> [!WARNING]
+> **Deprecated:** The following methods are deprecated and will be removed in a future version. Use the new `TaskQueueRunner` pattern instead. See [Runners documentation](./runners.md).
+
 **TaskQueueRunDefault** - Processes the default queue serially:
 ```go
 store.TaskQueueRunDefault(ctx, 10, 2) // Process every 10s, unstuck after 2 mins
@@ -77,6 +80,10 @@ Tasks are claimed atomically using `SELECT FOR UPDATE` within database transacti
 - Automatic backpressure when limit is reached
 
 ### Graceful Shutdown
+
+> [!WARNING]
+> **Deprecated:** The following methods are deprecated. Use `TaskQueueRunner.Stop()` instead. See [Runners documentation](./runners.md).
+
 ```go
 store.TaskQueueStop()                // Stop default queue
 store.TaskQueueStopByName("emails")  // Stop named queue

@@ -43,15 +43,17 @@ store, err := taskstore.NewStore(taskstore.NewStoreOptions{
 ```
 
 ### Graceful Shutdown
+
+> [!WARNING]
+> The methods `TaskQueueStop()` and `TaskQueueStopByName()` are **deprecated**. Use the new `TaskQueueRunner` pattern instead. See [Runners documentation](./docs/runners.md).
+
 - `TaskQueueStop()` – Stop default queue and wait for all tasks to complete
 - `TaskQueueStopByName(queueName)` – Stop specific queue and wait for all tasks
 - Ensures no task goroutines are abandoned
 
 ```golang
-// Start concurrent queue
+// Deprecated approach - still works but not recommended
 store.TaskQueueRunConcurrent(ctx, "emails", 10, 1)
-
-// Later: gracefully stop and wait for completion
 store.TaskQueueStopByName("emails")
 ```
 
@@ -298,10 +300,16 @@ See [Runners documentation](./docs/runners.md) for more details.
 - `TaskQueueSoftDeleteByID(ctx context.Context, id string) error` – soft deletes a queued task by ID (populates the deleted_at field)
 - `TaskQueueList(ctx context.Context, options TaskQueueQueryInterface) ([]TaskQueueInterface, error)` – lists the queued tasks
 - `TaskQueueUpdate(ctx context.Context, queue TaskQueueInterface) error` – updates a queued task
-- `TaskQueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int)` – starts the default queue worker
-- `TaskQueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)` – starts a serial worker for a named queue
-- `TaskQueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)` – starts a concurrent worker for a named queue
-- `TaskQueueStop()` / `TaskQueueStopByName(queueName string)` – stops queue workers and waits for in‑flight tasks
+
+### Deprecated Methods
+
+> [!WARNING]
+> The following methods are **deprecated** and will be removed in a future version. Use the new `TaskQueueRunner` pattern instead. See [Runners documentation](./docs/runners.md).
+
+- `TaskQueueRunDefault(ctx context.Context, processSeconds int, unstuckMinutes int)` – **Deprecated:** starts the default queue worker
+- `TaskQueueRunSerial(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)` – **Deprecated:** starts a serial worker for a named queue
+- `TaskQueueRunConcurrent(ctx context.Context, queueName string, processSeconds int, unstuckMinutes int)` – **Deprecated:** starts a concurrent worker for a named queue
+- `TaskQueueStop()` / `TaskQueueStopByName(queueName string)` – **Deprecated:** stops queue workers and waits for in‑flight tasks. Use `TaskQueueRunner.Stop()` instead.
 
 ## Frequently Asked Questions (FAQ)
 
