@@ -9,10 +9,12 @@ import (
 
 func initDB(filename ...string) (*sql.DB, error) {
 	// Use shared cache mode to allow concurrent goroutines to access the same in-memory database
-	dsn := ":memory:?cache=shared&parseTime=true"
+	// Note: Must use file::memory: to allow sharing, :memory: is always private
+	dsn := "file::memory:?cache=shared&parseTime=true"
 	if len(filename) > 0 {
 		// For file-based databases, use WAL mode and busy timeout for concurrent access
-		dsn = filename[0] + "?_busy_timeout=5000&_journal_mode=WAL&_synchronous=NORMAL"
+		// Use _pragma for modernc.org/sqlite
+		dsn = filename[0] + "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)"
 		// Remove the file if it exists to ensure clean state
 		if err := os.Remove(filename[0]); err != nil && !os.IsNotExist(err) {
 			return nil, err
@@ -25,11 +27,20 @@ func initDB(filename ...string) (*sql.DB, error) {
 	}
 
 	// Configure connection pool for concurrent access
-	if len(filename) > 0 {
-		db.SetMaxOpenConns(25) // Allow multiple concurrent connections
-		db.SetMaxIdleConns(5)
-		db.SetConnMaxLifetime(0) // Connections never expire
+	// Explicitly set pragmas to be safe
+	if _, err := db.Exec("PRAGMA busy_timeout = 5000"); err != nil {
+		return nil, err
 	}
+	if _, err := db.Exec("PRAGMA journal_mode = WAL"); err != nil {
+		return nil, err
+	}
+	if _, err := db.Exec("PRAGMA synchronous = NORMAL"); err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(25)   // Allow multiple concurrent connections
+	db.SetMaxIdleConns(25)   // Keep idle connections to prevent in-memory DB loss
+	db.SetConnMaxLifetime(0) // Connections never expire
 
 	return db, nil
 }

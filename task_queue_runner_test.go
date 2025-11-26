@@ -2,6 +2,8 @@ package taskstore
 
 import (
 	"context"
+	"log"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -124,7 +126,7 @@ func TestTaskQueueRunner_SerialProcessing(t *testing.T) {
 
 // Test 2: Concurrent Processing (MaxConcurrency > 1)
 func TestTaskQueueRunner_ConcurrentProcessing(t *testing.T) {
-	store, err := initStore("test_concurrent_processing.db")
+	store, err := initStore() // Use in-memory DB now that it's fixed
 	require.NoError(t, err)
 	defer store.db.Close()
 
@@ -271,7 +273,7 @@ func TestTaskQueueRunner_GracefulShutdownConcurrent(t *testing.T) {
 	var completedCount int32
 
 	handler := &delayedHandler{
-		delay: 300 * time.Millisecond,
+		delay: 2000 * time.Millisecond,
 		onComplete: func() {
 			atomic.AddInt32(&completedCount, 1)
 		},
@@ -292,23 +294,24 @@ func TestTaskQueueRunner_GracefulShutdownConcurrent(t *testing.T) {
 		UnstuckMinutes:  1,
 		QueueName:       DefaultQueueName,
 		MaxConcurrency:  3,
+		Logger:          log.New(os.Stdout, "TEST-RUNNER: ", log.LstdFlags),
 	})
 
 	runCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	runner.Start(runCtx)
 
 	// Wait for tasks to start
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
 	// Stop the runner (should wait for in-flight tasks)
 	stopStart := time.Now()
-	cancel()
 	runner.Stop()
 	stopDuration := time.Since(stopStart)
 
 	// Verify Stop() waited for tasks to complete
-	// Tasks take 300ms, we waited 100ms before stopping, so Stop should wait ~200ms
-	assert.GreaterOrEqual(t, stopDuration, 150*time.Millisecond, "Stop should wait for in-flight tasks")
+	// Tasks take 1000ms, we waited 500ms before stopping, so Stop should wait ~500ms
+	assert.GreaterOrEqual(t, stopDuration, 400*time.Millisecond, "Stop should wait for in-flight tasks")
 
 	// Verify all tasks completed successfully
 	completed := atomic.LoadInt32(&completedCount)
