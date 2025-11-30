@@ -373,7 +373,7 @@ func TestTaskQueueRunner_DefaultMaxConcurrency(t *testing.T) {
 
 // Helper: delayedHandler for testing concurrent execution
 type delayedHandler struct {
-	TaskHandlerBase
+	TaskDefinitionHandlerBase
 	delay      time.Duration
 	onExecute  func()
 	onComplete func()

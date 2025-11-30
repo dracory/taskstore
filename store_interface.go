@@ -56,8 +56,8 @@ type StoreInterface interface {
 
 	// == TaskHandler Methods ==
 
-	TaskHandlerList() []TaskHandlerInterface
-	TaskHandlerAdd(ctx context.Context, taskHandler TaskHandlerInterface, createIfMissing bool) error
+	TaskHandlerList() []TaskDefinitionHandlerInterface
+	TaskHandlerAdd(ctx context.Context, taskHandler TaskDefinitionHandlerInterface, createIfMissing bool) error
 
 	// == Schedule Methods ==
 

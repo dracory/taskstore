@@ -20,7 +20,7 @@ type Store struct {
 	taskDefinitionTableName string
 	taskQueueTableName      string
 	scheduleTableName       string
-	taskHandlers            []TaskHandlerInterface
+	taskHandlers            []TaskDefinitionHandlerInterface
 	db                      *sql.DB
 	dbDriverName            string
 	automigrateEnabled      bool

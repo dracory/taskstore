@@ -15,7 +15,7 @@ The `Store` is the central component that manages the connection to the database
 ### 2. Task Definition
 A task definition represents a unit of work. It is identified by a unique **Alias**.
 - **Properties**: Alias, Title, Description, Status (Active/Canceled)
-- **Handler**: Each task definition is associated with a `TaskHandlerInterface` implementation that defines the actual logic (`Handle` method)
+- **Handler**: Each task definition is associated with a `TaskDefinitionHandlerInterface` implementation that defines the actual logic (`Handle` method)
 - **Context Support**: Handlers can optionally implement `TaskHandlerWithContext` for cancellation support
 
 ### 3. Task Queue
@@ -122,7 +122,7 @@ func (h *MyHandler) HandleWithContext(ctx context.Context) bool {
 
 ## Usage Flow
 1. **Setup**: Initialize `Store` with database connection and options
-2. **Define Task**: Create a struct implementing `TaskHandlerInterface`
+2. **Define Task**: Create a struct implementing `TaskDefinitionHandlerInterface`
 3. **Register**: Add the handler to the store using `TaskHandlerAdd`
 4. **Enqueue**: Trigger a task execution via `TaskDefinitionEnqueueByAlias(queueName, alias, parameters)`
 5. **Process**: Run `TaskQueueRunDefault`, `TaskQueueRunSerial`, or `TaskQueueRunConcurrent`

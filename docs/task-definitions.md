@@ -14,7 +14,7 @@ Task definitions are persisted in the `task_definition` table and are referenced
 - **Status**
   - Controls whether the definition is active and can be used.
 - **Handler**
-  - Go type implementing `TaskHandlerInterface` (and optionally `TaskHandlerWithContext`).
+  - Go type implementing `TaskDefinitionHandlerInterface` (and optionally `TaskHandlerWithContext`).
 
 ## Implementing a Task Handler
 
@@ -26,10 +26,10 @@ package tasks
 import "github.com/dracory/taskstore"
 
 type HelloWorldTask struct {
-    taskstore.TaskHandlerBase
+    taskstore.TaskDefinitionHandlerBase
 }
 
-var _ taskstore.TaskHandlerInterface = (*HelloWorldTask)(nil)
+var _ taskstore.TaskDefinitionHandlerInterface = (*HelloWorldTask)(nil)
 
 func (task *HelloWorldTask) Alias() string {
     return "HelloWorldTask"
@@ -120,6 +120,6 @@ go run . HelloWorldTask --name="Tom Jones"
 
 - **Use stable aliases** – avoid renaming aliases once used in production.
 - **Keep handlers small** – delegate heavy logic to separate services or packages.
-- **Log clearly** – use the logging helpers on `TaskHandlerBase` to record progress.
+- **Log clearly** – use the logging helpers on `TaskDefinitionHandlerBase` to record progress.
 - **Validate parameters** – fail fast and log when inputs are invalid.
 - **Use context where appropriate** – implement `TaskHandlerWithContext` for long‑running tasks.

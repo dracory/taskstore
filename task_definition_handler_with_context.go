@@ -9,7 +9,7 @@ import "context"
 // Example usage:
 //
 //	type MyHandler struct {
-//	    TaskHandlerBase
+//	    TaskDefinitionHandlerBase
 //	}
 //
 //	func (h *MyHandler) HandleWithContext(ctx context.Context) bool {
@@ -23,6 +23,6 @@ import "context"
 //	    }
 //	}
 type TaskHandlerWithContext interface {
-	TaskHandlerInterface
+	TaskDefinitionHandlerInterface
 	HandleWithContext(ctx context.Context) bool
 }

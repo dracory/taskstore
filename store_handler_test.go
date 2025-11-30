@@ -60,7 +60,7 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 }
 
 type testHandler struct {
-	TaskHandlerBase
+	TaskDefinitionHandlerBase
 }
 
 func (h *testHandler) Alias() string {
@@ -79,10 +79,10 @@ func (h *testHandler) Handle() bool {
 	return true
 }
 
-var _ TaskHandlerInterface = (*testHandler)(nil)
+var _ TaskDefinitionHandlerInterface = (*testHandler)(nil)
 
 type testHandler2 struct {
-	TaskHandlerBase
+	TaskDefinitionHandlerBase
 }
 
 func (h *testHandler2) Alias() string {
@@ -101,4 +101,4 @@ func (h *testHandler2) Handle() bool {
 	return true
 }
 
-var _ TaskHandlerInterface = (*testHandler2)(nil)
+var _ TaskDefinitionHandlerInterface = (*testHandler2)(nil)

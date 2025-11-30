@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func Test_TaskHandlerBase(t *testing.T) {
+func Test_TaskDefinitionHandlerBase(t *testing.T) {
 	handler := newTestTaskHandler()
 
 	handler.SetOptions(map[string]string{
@@ -38,7 +38,7 @@ func Test_TaskHandlerBase(t *testing.T) {
 	}
 }
 
-func Test_TaskHandlerBase_GetParamArray(t *testing.T) {
+func Test_TaskDefinitionHandlerBase_GetParamArray(t *testing.T) {
 	handler := newTestTaskHandler()
 
 	// Test case 1: Empty input
@@ -104,10 +104,10 @@ func newTestTaskHandler() *testTaskHandler {
 }
 
 type testTaskHandler struct {
-	TaskHandlerBase
+	TaskDefinitionHandlerBase
 }
 
-var _ TaskHandlerInterface = (*testTaskHandler)(nil) // verify it extends the task interface
+var _ TaskDefinitionHandlerInterface = (*testTaskHandler)(nil) // verify it extends the task interface
 
 func (handler *testTaskHandler) Alias() string {
 	return "HelloWorldTaskHandler"

@@ -123,10 +123,10 @@ Each task definition is uniquely identified by an alias and provides a human-rea
 Each task definition is uniquely identified by an alias that allows the task to be easily called. 
 A human-readable title and description give the user more information on the task definition.
 
-To define a task definition, implement the TaskHandlerInterface and provide a Handle method
+To define a task definition, implement the TaskDefinitionHandlerInterface and provide a Handle method
 that contains the task's logic.
 
-Optionally, extend the TaskHandlerBase struct for additional features like parameter
+Optionally, extend the TaskDefinitionHandlerBase struct for additional features like parameter
 retrieval.
 
 Task definitions can be executed directly from the command line (CLI) or as part of a background task queue.
@@ -141,10 +141,10 @@ func NewHelloWorldTask() *HelloWorldTask {
 }
 
 type HelloWorldTask struct {
-    taskstore.TaskHandlerBase
+    taskstore.TaskDefinitionHandlerBase
 }
 
-var _ taskstore.TaskHandlerInterface = (*HelloWorldTask)(nil) // verify it extends the task handler interface
+var _ taskstore.TaskDefinitionHandlerInterface = (*HelloWorldTask)(nil) // verify it extends the task handler interface
 
 func (task *HelloWorldTask) Alias() string {
     return "HelloWorldTask"
@@ -336,7 +336,7 @@ at specific intervals or on demand.
 - Ease of use: Define tasks using a simple interface and integrate with your existing application.
 
 ### 4. How do I create a task definition in TaskStore?
-To create a task definition, you'll need to implement the TaskHandlerInterface and provide a Handle method that contains the task's logic. You can also extend the TaskHandlerBase struct for additional features.
+To create a task definition, you'll need to implement the TaskDefinitionHandlerInterface and provide a Handle method that contains the task's logic. You can also extend the TaskHandlerBase struct for additional features.
 
 ### 5. How do I schedule a task to run in the background?
 Use `TaskDefinitionEnqueueByAlias` to add a task to the background task queue, and start a `TaskQueueRunner` to process tasks. For recurring schedules, create a `Schedule` entity and use `ScheduleRunner` to automatically enqueue tasks based on recurrence rules.
@@ -356,13 +356,14 @@ Yes, TaskStore supports SQLite, MySQL, and PostgreSQL.
 ### 10. Can I customize TaskStore to fit my specific needs?
 Yes, TaskStore is highly customizable. You can extend and modify the code to suit your requirements.
 
-## Similar
+## Similar (in Alphabetical Order)
 
-- https://github.com/harshadmanglani/polaris
+- https://github.com/ajvb/kala
 - https://github.com/bamzi/jobrunner
-- https://github.com/rk/go-cron
+- https://github.com/exograd/eventline
 - https://github.com/fieldryand/goflow
 - https://github.com/go-co-op/gocron
-- https://github.com/exograd/eventline
-- https://github.com/ajvb/kala
+- https://github.com/gocraft/work
+- https://github.com/harshadmanglani/polaris
+- https://github.com/rk/go-cron
 - https://github.com/shiblon/taskstore

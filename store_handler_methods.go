@@ -7,7 +7,7 @@ import (
 
 var errTaskMissing = errors.New("task not found")
 
-func (store *Store) TaskHandlerAdd(ctx context.Context, taskHandler TaskHandlerInterface, createIfMissing bool) error {
+func (store *Store) TaskHandlerAdd(ctx context.Context, taskHandler TaskDefinitionHandlerInterface, createIfMissing bool) error {
 	alias := taskHandler.Alias()
 	task, err := store.TaskDefinitionFindByAlias(ctx, alias)
 
@@ -42,6 +42,6 @@ func (store *Store) TaskHandlerAdd(ctx context.Context, taskHandler TaskHandlerI
 	return nil
 }
 
-func (store *Store) TaskHandlerList() []TaskHandlerInterface {
+func (store *Store) TaskHandlerList() []TaskDefinitionHandlerInterface {
 	return store.taskHandlers
 }
