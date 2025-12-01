@@ -19,52 +19,35 @@ type TaskDefinitionHandlerBase struct {
 	mu             sync.RWMutex
 	queuedTask     TaskQueueInterface // dynamic
 	options        map[string]string
+	output         string
 	errorMessage   string
 	infoMessage    string
 	successMessage string
 }
 
-// LastErrorMessage returns the last error message recorded via LogError.
-func (handler *TaskDefinitionHandlerBase) LastErrorMessage() string {
+// GetLastErrorMessage returns the last error message recorded via LogError.
+func (handler *TaskDefinitionHandlerBase) GetLastErrorMessage() string {
 	handler.mu.RLock()
 	defer handler.mu.RUnlock()
 	return handler.errorMessage
 }
 
-// ErrorMessage alias is kept for backwards compatibility.
-// Deprecated: use LastErrorMessage instead. Will be removed after 2026-11-30.
-func (handler *TaskDefinitionHandlerBase) ErrorMessage() string {
-	return handler.LastErrorMessage()
-}
-
-// LastInfoMessage returns the last informational message recorded via LogInfo.
-func (handler *TaskDefinitionHandlerBase) LastInfoMessage() string {
+// GetLastInfoMessage returns the last informational message recorded via LogInfo.
+func (handler *TaskDefinitionHandlerBase) GetLastInfoMessage() string {
 	handler.mu.RLock()
 	defer handler.mu.RUnlock()
 	return handler.infoMessage
 }
 
-// InfoMessage alias is kept for backwards compatibility.
-// Deprecated: use LastInfoMessage instead. Will be removed after 2026-11-30.
-func (handler *TaskDefinitionHandlerBase) InfoMessage() string {
-	return handler.LastInfoMessage()
-}
-
-// LastSuccessMessage returns the last success message recorded via LogSuccess.
-func (handler *TaskDefinitionHandlerBase) LastSuccessMessage() string {
+// GetLastSuccessMessage returns the last success message recorded via LogSuccess.
+func (handler *TaskDefinitionHandlerBase) GetLastSuccessMessage() string {
 	handler.mu.RLock()
 	defer handler.mu.RUnlock()
 	return handler.successMessage
 }
 
-// SuccessMessage alias is kept for backwards compatibility.
-// Deprecated: use LastSuccessMessage instead. Will be removed after 2026-11-30.
-func (handler *TaskDefinitionHandlerBase) SuccessMessage() string {
-	return handler.LastSuccessMessage()
-}
-
-// QueuedTask returns the currently associated queued task, if any.
-func (handler *TaskDefinitionHandlerBase) QueuedTask() TaskQueueInterface {
+// GetQueuedTask returns the currently associated queued task, if any.
+func (handler *TaskDefinitionHandlerBase) GetQueuedTask() TaskQueueInterface {
 	handler.mu.RLock()
 	defer handler.mu.RUnlock()
 	return handler.queuedTask
@@ -77,9 +60,9 @@ func (handler *TaskDefinitionHandlerBase) SetQueuedTask(queuedTask TaskQueueInte
 	handler.queuedTask = queuedTask
 }
 
-// Options returns the options map used when the handler is executed directly
+// GetOptions returns the options map used when the handler is executed directly
 // without an associated queued task.
-func (handler *TaskDefinitionHandlerBase) Options() map[string]string {
+func (handler *TaskDefinitionHandlerBase) GetOptions() map[string]string {
 	handler.mu.RLock()
 	defer handler.mu.RUnlock()
 	return handler.options
@@ -91,6 +74,30 @@ func (handler *TaskDefinitionHandlerBase) SetOptions(options map[string]string) 
 	handler.mu.Lock()
 	defer handler.mu.Unlock()
 	handler.options = options
+}
+
+func (handler *TaskDefinitionHandlerBase) GetOutput() string {
+	handler.mu.RLock()
+	qt := handler.queuedTask
+	output := handler.output
+	handler.mu.RUnlock()
+
+	if qt != nil {
+		return qt.Output()
+	}
+
+	return output
+}
+
+func (handler *TaskDefinitionHandlerBase) SetOutput(output string) {
+	handler.mu.Lock()
+	handler.output = output
+	qt := handler.queuedTask
+	handler.mu.Unlock()
+
+	if qt != nil {
+		qt.SetOutput(output)
+	}
 }
 
 // HasQueuedTask reports whether the handler is currently associated with a
@@ -195,4 +202,54 @@ func (handler *TaskDefinitionHandlerBase) GetParamArray(paramName string) []stri
 	}
 
 	return result
+}
+
+// ==================== DEPRECATED ==========================================
+
+// LastErrorMessage alias is kept for backwards compatibility.
+// Deprecated: use GetLastErrorMessage instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) LastErrorMessage() string {
+	return handler.GetLastErrorMessage()
+}
+
+// ErrorMessage alias is kept for backwards compatibility.
+// Deprecated: use GetLastErrorMessage instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) ErrorMessage() string {
+	return handler.GetLastErrorMessage()
+}
+
+// LastInfoMessage alias is kept for backwards compatibility.
+// Deprecated: use GetLastInfoMessage instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) LastInfoMessage() string {
+	return handler.GetLastInfoMessage()
+}
+
+// InfoMessage alias is kept for backwards compatibility.
+// Deprecated: use GetLastInfoMessage instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) InfoMessage() string {
+	return handler.GetLastInfoMessage()
+}
+
+// LastSuccessMessage alias is kept for backwards compatibility.
+// Deprecated: use GetLastSuccessMessage instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) LastSuccessMessage() string {
+	return handler.GetLastSuccessMessage()
+}
+
+// SuccessMessage alias is kept for backwards compatibility.
+// Deprecated: use GetLastSuccessMessage instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) SuccessMessage() string {
+	return handler.GetLastSuccessMessage()
+}
+
+// QueuedTask alias is kept for backwards compatibility.
+// Deprecated: use GetQueuedTask instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) QueuedTask() TaskQueueInterface {
+	return handler.GetQueuedTask()
+}
+
+// Options alias is kept for backwards compatibility.
+// Deprecated: use GetOptions instead. Will be removed after 2026-11-30.
+func (handler *TaskDefinitionHandlerBase) Options() map[string]string {
+	return handler.GetOptions()
 }

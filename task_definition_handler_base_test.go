@@ -17,8 +17,8 @@ func Test_TaskDefinitionHandlerBase(t *testing.T) {
 		t.Fatalf("Test 1: Must be successful")
 	}
 
-	if handler.SuccessMessage() != "Task forced to succeed." {
-		t.Fatalf("Test 1: Message must be 'Task forced to succeed.', but found: %s", handler.SuccessMessage())
+	if handler.GetLastSuccessMessage() != "Task forced to succeed." {
+		t.Fatalf("Test 1: Message must be 'Task forced to succeed.', but found: %s", handler.GetLastSuccessMessage())
 	}
 
 	handler2 := newTestTaskHandler()
@@ -33,8 +33,8 @@ func Test_TaskDefinitionHandlerBase(t *testing.T) {
 		t.Fatalf("Test 2: Must Fail")
 	}
 
-	if handler2.ErrorMessage() != "Task forced to fail." {
-		t.Fatalf("Test 2: Message must be 'Task forced to fail.', but found: %s", handler2.ErrorMessage())
+	if handler2.GetLastErrorMessage() != "Task forced to fail." {
+		t.Fatalf("Test 2: Message must be 'Task forced to fail.', but found: %s", handler2.GetLastErrorMessage())
 	}
 }
 
