@@ -64,6 +64,7 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 
 	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
 	assert.NoError(t, err)
+	require.NotNil(t, updatedSchedule)
 	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.GetLastRunAt())
 	assert.True(t, carbon.Parse(updatedSchedule.GetNextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)))
 	assert.Equal(t, 1, updatedSchedule.GetExecutionCount())
@@ -108,6 +109,7 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 
 	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
 	assert.NoError(t, err)
+	require.NotNil(t, updatedSchedule)
 	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.GetNextRunAt())
 	assert.Equal(t, "active", updatedSchedule.GetStatus())
 }

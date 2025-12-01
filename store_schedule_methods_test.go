@@ -52,6 +52,7 @@ func TestScheduleCRUD(t *testing.T) {
 
 	updated, err := store.ScheduleFindByID(ctx, schedule.GetID())
 	require.NoError(t, err)
+	require.NotNil(t, updated)
 	require.Equal(t, "Updated Schedule", updated.GetName())
 
 	// List
@@ -117,6 +118,7 @@ func TestScheduleRun(t *testing.T) {
 	// Verify Schedule Updated
 	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
 	assert.NoError(t, err)
+	require.NotNil(t, updatedSchedule)
 	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.GetLastRunAt())
 	assert.True(t, carbon.Parse(updatedSchedule.GetNextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)))
 }
