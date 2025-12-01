@@ -95,7 +95,7 @@ func (r *scheduleRunner) RunOnce(ctx context.Context) error {
 
 	for _, s := range schedules {
 		if err := r.runSchedule(ctx, s); err != nil {
-			r.logf("ScheduleRunner: error running schedule %s: %v", s.ID(), err)
+			r.logf("ScheduleRunner: error running schedule %s: %v", s.GetID(), err)
 		}
 	}
 
@@ -110,19 +110,19 @@ func (r *scheduleRunner) SetInitialRuns(ctx context.Context) error {
 	}
 
 	for _, s := range schedules {
-		if s.NextRunAt() != sb.NULL_DATETIME {
+		if s.GetNextRunAt() != sb.NULL_DATETIME {
 			continue
 		}
 
 		next, err := s.GetNextOccurrence()
 		if err != nil {
-			r.logf("ScheduleRunner: error calculating initial next run for schedule %s: %v", s.ID(), err)
+			r.logf("ScheduleRunner: error calculating initial next run for schedule %s: %v", s.GetID(), err)
 			continue
 		}
 
 		s.SetNextRunAt(next)
 		if err := r.store.ScheduleUpdate(ctx, s); err != nil {
-			r.logf("ScheduleRunner: error updating schedule %s: %v", s.ID(), err)
+			r.logf("ScheduleRunner: error updating schedule %s: %v", s.GetID(), err)
 		}
 	}
 
@@ -155,16 +155,16 @@ func (r *scheduleRunner) findActiveSchedulesToBeRun(ctx context.Context) ([]Sche
 		if s.HasReachedEndDate() || s.HasReachedMaxExecutions() {
 			s.SetStatus("completed")
 			if err := r.store.ScheduleUpdate(ctx, s); err != nil {
-				r.logf("ScheduleRunner: error marking completed schedule %s: %v", s.ID(), err)
+				r.logf("ScheduleRunner: error marking completed schedule %s: %v", s.GetID(), err)
 			}
 			continue
 		}
 
 		// Initialize next run if needed
-		if s.NextRunAt() == sb.NULL_DATETIME {
+		if s.GetNextRunAt() == sb.NULL_DATETIME {
 			s.UpdateNextRunAt()
 			if err := r.store.ScheduleUpdate(ctx, s); err != nil {
-				r.logf("ScheduleRunner: error initializing next run for schedule %s: %v", s.ID(), err)
+				r.logf("ScheduleRunner: error initializing next run for schedule %s: %v", s.GetID(), err)
 			}
 		}
 
@@ -187,17 +187,17 @@ func (r *scheduleRunner) runSchedule(ctx context.Context, s ScheduleInterface) e
 		return nil
 	}
 
-	taskDef, err := r.store.TaskDefinitionFindByID(ctx, s.TaskDefinitionID())
+	taskDef, err := r.store.TaskDefinitionFindByID(ctx, s.GetTaskDefinitionID())
 	if err != nil {
 		return err
 	}
 
 	if taskDef == nil {
-		r.logf("ScheduleRunner: task definition not found for schedule %s", s.ID())
+		r.logf("ScheduleRunner: task definition not found for schedule %s", s.GetID())
 		return nil
 	}
 
-	_, err = r.store.TaskDefinitionEnqueueByAlias(ctx, s.QueueName(), taskDef.Alias(), s.TaskParameters())
+	_, err = r.store.TaskDefinitionEnqueueByAlias(ctx, s.GetQueueName(), taskDef.Alias(), s.GetTaskParameters())
 	if err != nil {
 		return err
 	}

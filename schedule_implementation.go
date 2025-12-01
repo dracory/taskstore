@@ -48,8 +48,8 @@ func NewSchedule() ScheduleInterface {
 	}
 }
 
-// ID returns the unique identifier of the schedule.
-func (s *scheduleImplementation) ID() string {
+// GetID returns the unique identifier of the schedule.
+func (s *scheduleImplementation) GetID() string {
 	return s.id
 }
 
@@ -59,8 +59,8 @@ func (s *scheduleImplementation) SetID(id string) ScheduleInterface {
 	return s
 }
 
-// Name returns the name of the schedule.
-func (s *scheduleImplementation) Name() string {
+// GetName returns the name of the schedule.
+func (s *scheduleImplementation) GetName() string {
 	return s.name
 }
 
@@ -71,7 +71,7 @@ func (s *scheduleImplementation) SetName(name string) ScheduleInterface {
 }
 
 // Description returns the description of the schedule.
-func (s *scheduleImplementation) Description() string {
+func (s *scheduleImplementation) GetDescription() string {
 	return s.description
 }
 
@@ -82,7 +82,7 @@ func (s *scheduleImplementation) SetDescription(description string) ScheduleInte
 }
 
 // Status returns the status of the schedule.
-func (s *scheduleImplementation) Status() string {
+func (s *scheduleImplementation) GetStatus() string {
 	return s.status
 }
 
@@ -93,7 +93,7 @@ func (s *scheduleImplementation) SetStatus(status string) ScheduleInterface {
 }
 
 // RecurrenceRule returns the recurrence rule that defines when the schedule should run.
-func (s *scheduleImplementation) RecurrenceRule() RecurrenceRuleInterface {
+func (s *scheduleImplementation) GetRecurrenceRule() RecurrenceRuleInterface {
 	return s.recurrenceRule
 }
 
@@ -104,7 +104,7 @@ func (s *scheduleImplementation) SetRecurrenceRule(rule RecurrenceRuleInterface)
 }
 
 // QueueName returns the name of the queue that this schedule is associated with.
-func (s *scheduleImplementation) QueueName() string {
+func (s *scheduleImplementation) GetQueueName() string {
 	return s.queueName
 }
 
@@ -115,7 +115,7 @@ func (s *scheduleImplementation) SetQueueName(queueName string) ScheduleInterfac
 }
 
 // TaskDefinitionID returns the unique identifier of the task definition that this schedule is associated with.
-func (s *scheduleImplementation) TaskDefinitionID() string {
+func (s *scheduleImplementation) GetTaskDefinitionID() string {
 	return s.taskDefinitionID
 }
 
@@ -126,7 +126,7 @@ func (s *scheduleImplementation) SetTaskDefinitionID(taskDefinitionID string) Sc
 }
 
 // TaskParameters returns the parameters to be passed to the task definition when it is executed.
-func (s *scheduleImplementation) TaskParameters() map[string]any {
+func (s *scheduleImplementation) GetTaskParameters() map[string]any {
 	return s.taskParameters
 }
 
@@ -137,7 +137,7 @@ func (s *scheduleImplementation) SetTaskParameters(parameters map[string]any) Sc
 }
 
 // StartAt returns the start date and time of the schedule.
-func (s *scheduleImplementation) StartAt() string {
+func (s *scheduleImplementation) GetStartAt() string {
 	return s.startAt
 }
 
@@ -150,7 +150,7 @@ func (s *scheduleImplementation) SetStartAt(startAt string) ScheduleInterface {
 
 // EndAt returns the end date and time of the schedule.
 // The default value is the maximum datetime (never expires).
-func (s *scheduleImplementation) EndAt() string {
+func (s *scheduleImplementation) GetEndAt() string {
 	return s.endAt
 }
 
@@ -161,7 +161,7 @@ func (s *scheduleImplementation) SetEndAt(endAt string) ScheduleInterface {
 }
 
 // ExecutionCount returns the number of times the schedule has been executed.
-func (s *scheduleImplementation) ExecutionCount() int {
+func (s *scheduleImplementation) GetExecutionCount() int {
 	return s.executionCount
 }
 
@@ -173,7 +173,7 @@ func (s *scheduleImplementation) SetExecutionCount(count int) ScheduleInterface 
 
 // MaxExecutionCount returns the maximum number of times the schedule is allowed to be executed.
 // The default value is int max (no limit). To execute only once, set maxExecutionCount to 1.
-func (s *scheduleImplementation) MaxExecutionCount() int {
+func (s *scheduleImplementation) GetMaxExecutionCount() int {
 	return s.maxExecutionCount
 }
 
@@ -184,7 +184,7 @@ func (s *scheduleImplementation) SetMaxExecutionCount(count int) ScheduleInterfa
 }
 
 // LastRunAt returns the last date and time the schedule was executed.
-func (s *scheduleImplementation) LastRunAt() string {
+func (s *scheduleImplementation) GetLastRunAt() string {
 	return s.lastRunAt
 }
 
@@ -195,7 +195,7 @@ func (s *scheduleImplementation) SetLastRunAt(lastRunAt string) ScheduleInterfac
 }
 
 // NextRunAt returns the next date and time the schedule is scheduled to run.
-func (s *scheduleImplementation) NextRunAt() string {
+func (s *scheduleImplementation) GetNextRunAt() string {
 	return s.nextRunAt
 }
 
@@ -206,7 +206,7 @@ func (s *scheduleImplementation) SetNextRunAt(nextRunAt string) ScheduleInterfac
 }
 
 // CreatedAt returns the date and time the schedule was created.
-func (s *scheduleImplementation) CreatedAt() string {
+func (s *scheduleImplementation) GetCreatedAt() string {
 	return s.createdAt
 }
 
@@ -217,7 +217,7 @@ func (s *scheduleImplementation) SetCreatedAt(createdAt string) ScheduleInterfac
 }
 
 // UpdatedAt returns the date and time the schedule was last updated.
-func (s *scheduleImplementation) UpdatedAt() string {
+func (s *scheduleImplementation) GetUpdatedAt() string {
 	return s.updatedAt
 }
 
@@ -232,7 +232,7 @@ func (s *scheduleImplementation) SetUpdatedAt(updatedAt string) ScheduleInterfac
 // To soft delete a schedule, set softDeletedAt to the current time.
 // To unsoft delete a schedule, set softDeletedAt to max datetime.
 // A soft deleted schedule is when its in the past.
-func (s *scheduleImplementation) SoftDeletedAt() string {
+func (s *scheduleImplementation) GetSoftDeletedAt() string {
 	return s.softDeletedAt
 }
 

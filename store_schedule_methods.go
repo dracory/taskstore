@@ -60,32 +60,32 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 	schedule.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
 	data := map[string]interface{}{
-		COLUMN_ID:                  schedule.ID(),
-		COLUMN_NAME:                schedule.Name(),
-		COLUMN_DESCRIPTION:         schedule.Description(),
-		COLUMN_STATUS:              schedule.Status(),
-		COLUMN_QUEUE_NAME:          schedule.QueueName(),
-		COLUMN_TASK_DEFINITION_ID:  schedule.TaskDefinitionID(),
-		COLUMN_START_AT:            schedule.StartAt(),
-		COLUMN_END_AT:              schedule.EndAt(),
-		COLUMN_EXECUTION_COUNT:     schedule.ExecutionCount(),
-		COLUMN_MAX_EXECUTION_COUNT: schedule.MaxExecutionCount(),
-		COLUMN_LAST_RUN_AT:         schedule.LastRunAt(),
-		COLUMN_NEXT_RUN_AT:         schedule.NextRunAt(),
-		COLUMN_CREATED_AT:          schedule.CreatedAt(),
-		COLUMN_UPDATED_AT:          schedule.UpdatedAt(),
-		COLUMN_SOFT_DELETED_AT:     schedule.SoftDeletedAt(),
+		COLUMN_ID:                  schedule.GetID(),
+		COLUMN_NAME:                schedule.GetName(),
+		COLUMN_DESCRIPTION:         schedule.GetDescription(),
+		COLUMN_STATUS:              schedule.GetStatus(),
+		COLUMN_QUEUE_NAME:          schedule.GetQueueName(),
+		COLUMN_TASK_DEFINITION_ID:  schedule.GetTaskDefinitionID(),
+		COLUMN_START_AT:            schedule.GetStartAt(),
+		COLUMN_END_AT:              schedule.GetEndAt(),
+		COLUMN_EXECUTION_COUNT:     schedule.GetExecutionCount(),
+		COLUMN_MAX_EXECUTION_COUNT: schedule.GetMaxExecutionCount(),
+		COLUMN_LAST_RUN_AT:         schedule.GetLastRunAt(),
+		COLUMN_NEXT_RUN_AT:         schedule.GetNextRunAt(),
+		COLUMN_CREATED_AT:          schedule.GetCreatedAt(),
+		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt(),
 	}
 
 	// Marshal RecurrenceRule
-	rrBytes, err := json.Marshal(schedule.RecurrenceRule())
+	rrBytes, err := json.Marshal(schedule.GetRecurrenceRule())
 	if err != nil {
 		return err
 	}
 	data[COLUMN_RECURRENCE_RULE] = string(rrBytes)
 
 	// Marshal TaskParameters
-	tpBytes, err := json.Marshal(schedule.TaskParameters())
+	tpBytes, err := json.Marshal(schedule.GetTaskParameters())
 	if err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (store *Store) ScheduleDelete(ctx context.Context, schedule ScheduleInterfa
 		return errors.New("schedule is nil")
 	}
 
-	return store.ScheduleDeleteByID(ctx, schedule.ID())
+	return store.ScheduleDeleteByID(ctx, schedule.GetID())
 }
 
 func (store *Store) ScheduleDeleteByID(ctx context.Context, id string) error {
@@ -264,30 +264,30 @@ func (store *Store) ScheduleUpdate(ctx context.Context, schedule ScheduleInterfa
 	schedule.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
 	data := map[string]interface{}{
-		COLUMN_NAME:                schedule.Name(),
-		COLUMN_DESCRIPTION:         schedule.Description(),
-		COLUMN_STATUS:              schedule.Status(),
-		COLUMN_QUEUE_NAME:          schedule.QueueName(),
-		COLUMN_TASK_DEFINITION_ID:  schedule.TaskDefinitionID(),
-		COLUMN_START_AT:            schedule.StartAt(),
-		COLUMN_END_AT:              schedule.EndAt(),
-		COLUMN_EXECUTION_COUNT:     schedule.ExecutionCount(),
-		COLUMN_MAX_EXECUTION_COUNT: schedule.MaxExecutionCount(),
-		COLUMN_LAST_RUN_AT:         schedule.LastRunAt(),
-		COLUMN_NEXT_RUN_AT:         schedule.NextRunAt(),
-		COLUMN_UPDATED_AT:          schedule.UpdatedAt(),
-		COLUMN_SOFT_DELETED_AT:     schedule.SoftDeletedAt(),
+		COLUMN_NAME:                schedule.GetName(),
+		COLUMN_DESCRIPTION:         schedule.GetDescription(),
+		COLUMN_STATUS:              schedule.GetStatus(),
+		COLUMN_QUEUE_NAME:          schedule.GetQueueName(),
+		COLUMN_TASK_DEFINITION_ID:  schedule.GetTaskDefinitionID(),
+		COLUMN_START_AT:            schedule.GetStartAt(),
+		COLUMN_END_AT:              schedule.GetEndAt(),
+		COLUMN_EXECUTION_COUNT:     schedule.GetExecutionCount(),
+		COLUMN_MAX_EXECUTION_COUNT: schedule.GetMaxExecutionCount(),
+		COLUMN_LAST_RUN_AT:         schedule.GetLastRunAt(),
+		COLUMN_NEXT_RUN_AT:         schedule.GetNextRunAt(),
+		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt(),
 	}
 
 	// Marshal RecurrenceRule
-	rrBytes, err := json.Marshal(schedule.RecurrenceRule())
+	rrBytes, err := json.Marshal(schedule.GetRecurrenceRule())
 	if err != nil {
 		return err
 	}
 	data[COLUMN_RECURRENCE_RULE] = string(rrBytes)
 
 	// Marshal TaskParameters
-	tpBytes, err := json.Marshal(schedule.TaskParameters())
+	tpBytes, err := json.Marshal(schedule.GetTaskParameters())
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func (store *Store) ScheduleUpdate(ctx context.Context, schedule ScheduleInterfa
 		Update(store.scheduleTableName).
 		Prepared(true).
 		Set(data).
-		Where(goqu.C(COLUMN_ID).Eq(schedule.ID())).
+		Where(goqu.C(COLUMN_ID).Eq(schedule.GetID())).
 		ToSQL()
 
 	if errSql != nil {
@@ -337,56 +337,56 @@ func (store *Store) ScheduleRun(ctx context.Context) error {
 
 	for _, schedule := range schedules {
 		// Check if due
-		nextRunAt := carbon.Parse(schedule.NextRunAt(), carbon.UTC)
+		nextRunAt := carbon.Parse(schedule.GetNextRunAt(), carbon.UTC)
 		if store.debugEnabled {
-			log.Println("Schedule:", schedule.ID(), "NextRunAt:", nextRunAt, "Now:", now)
+			log.Println("Schedule:", schedule.GetID(), "NextRunAt:", nextRunAt, "Now:", now)
 		}
 		if nextRunAt.Lt(now) || nextRunAt.Eq(now) {
 			// Enqueue task
 			// Let's fetch TaskDefinition
-			taskDef, err := store.TaskDefinitionFindByID(ctx, schedule.TaskDefinitionID())
+			taskDef, err := store.TaskDefinitionFindByID(ctx, schedule.GetTaskDefinitionID())
 			if err != nil {
-				log.Println("Error finding task definition for schedule", schedule.ID(), err)
+				log.Println("Error finding task definition for schedule", schedule.GetID(), err)
 				continue
 			}
 			if taskDef == nil {
-				log.Println("Task definition not found for schedule", schedule.ID())
+				log.Println("Task definition not found for schedule", schedule.GetID())
 				continue
 			}
 
-			_, err = store.TaskDefinitionEnqueueByAlias(ctx, schedule.QueueName(), taskDef.Alias(), schedule.TaskParameters())
+			_, err = store.TaskDefinitionEnqueueByAlias(ctx, schedule.GetQueueName(), taskDef.Alias(), schedule.GetTaskParameters())
 			if err != nil {
-				log.Println("Error enqueuing task for schedule", schedule.ID(), err)
+				log.Println("Error enqueuing task for schedule", schedule.GetID(), err)
 				continue
 			}
 
 			// Update schedule
 			schedule.SetLastRunAt(now.ToDateTimeString(carbon.UTC))
-			schedule.SetExecutionCount(schedule.ExecutionCount() + 1)
+			schedule.SetExecutionCount(schedule.GetExecutionCount() + 1)
 
 			// Calculate next run
-			nextRun, err := NextRunAt(schedule.RecurrenceRule(), now)
+			nextRun, err := NextRunAt(schedule.GetRecurrenceRule(), now)
 			if err != nil {
-				log.Println("Error calculating next run for schedule", schedule.ID(), err)
+				log.Println("Error calculating next run for schedule", schedule.GetID(), err)
 				// Disable schedule?
 				continue
 			}
 			schedule.SetNextRunAt(nextRun.ToDateTimeString(carbon.UTC))
 
 			// Check max execution count
-			if schedule.MaxExecutionCount() > 0 && schedule.ExecutionCount() >= schedule.MaxExecutionCount() {
+			if schedule.GetMaxExecutionCount() > 0 && schedule.GetExecutionCount() >= schedule.GetMaxExecutionCount() {
 				schedule.SetStatus("completed")
 			}
 
 			// Check end date
-			endAt := carbon.Parse(schedule.EndAt(), carbon.UTC)
+			endAt := carbon.Parse(schedule.GetEndAt(), carbon.UTC)
 			if nextRun.Gt(endAt) {
 				schedule.SetStatus("completed")
 			}
 
 			err = store.ScheduleUpdate(ctx, schedule)
 			if err != nil {
-				log.Println("Error updating schedule", schedule.ID(), err)
+				log.Println("Error updating schedule", schedule.GetID(), err)
 			}
 		}
 	}

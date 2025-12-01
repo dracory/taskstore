@@ -45,9 +45,9 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 
 	schedule.SetStartAt(past)
 	schedule.SetNextRunAt(past)
-	schedule.RecurrenceRule().SetFrequency(FrequencyMinutely)
-	schedule.RecurrenceRule().SetInterval(1)
-	schedule.RecurrenceRule().SetStartsAt(past)
+	schedule.GetRecurrenceRule().SetFrequency(FrequencyMinutely)
+	schedule.GetRecurrenceRule().SetInterval(1)
+	schedule.GetRecurrenceRule().SetStartsAt(past)
 
 	err = store.ScheduleCreate(ctx, schedule)
 	require.NoError(t, err)
@@ -62,12 +62,12 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 	assert.Len(t, queueList, 1)
 	assert.Equal(t, taskDef.ID(), queueList[0].TaskID())
 
-	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.ID())
+	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
 	assert.NoError(t, err)
-	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.LastRunAt())
-	assert.True(t, carbon.Parse(updatedSchedule.NextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)))
-	assert.Equal(t, 1, updatedSchedule.ExecutionCount())
-	assert.Equal(t, "active", updatedSchedule.Status())
+	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.GetLastRunAt())
+	assert.True(t, carbon.Parse(updatedSchedule.GetNextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)))
+	assert.Equal(t, 1, updatedSchedule.GetExecutionCount())
+	assert.Equal(t, "active", updatedSchedule.GetStatus())
 }
 
 func TestScheduleRunnerSetInitialRuns(t *testing.T) {
@@ -94,9 +94,9 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 	startAt := carbon.Now(carbon.UTC).AddMinutes(5).ToDateTimeString(carbon.UTC)
 	schedule.SetStartAt(startAt)
 	schedule.SetNextRunAt(sb.NULL_DATETIME)
-	schedule.RecurrenceRule().SetFrequency(FrequencyDaily)
-	schedule.RecurrenceRule().SetInterval(1)
-	schedule.RecurrenceRule().SetStartsAt(startAt)
+	schedule.GetRecurrenceRule().SetFrequency(FrequencyDaily)
+	schedule.GetRecurrenceRule().SetInterval(1)
+	schedule.GetRecurrenceRule().SetStartsAt(startAt)
 
 	err = store.ScheduleCreate(ctx, schedule)
 	require.NoError(t, err)
@@ -106,10 +106,10 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 	err = runner.SetInitialRuns(ctx)
 	assert.NoError(t, err)
 
-	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.ID())
+	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
 	assert.NoError(t, err)
-	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.NextRunAt())
-	assert.Equal(t, "active", updatedSchedule.Status())
+	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.GetNextRunAt())
+	assert.Equal(t, "active", updatedSchedule.GetStatus())
 }
 
 func TestScheduleRunnerStartStop(t *testing.T) {

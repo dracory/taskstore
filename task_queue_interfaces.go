@@ -5,9 +5,17 @@ import (
 )
 
 type TaskQueueInterface interface {
+	// =======================================================================
+	// Metadata Methods
+	// =======================================================================
+
 	Data() map[string]string
 	DataChanged() map[string]string
 	MarkAsNotDirty()
+
+	// =======================================================================
+	// Informational Methods
+	// =======================================================================
 
 	IsCanceled() bool
 	IsDeleted() bool
@@ -17,6 +25,10 @@ type TaskQueueInterface interface {
 	IsRunning() bool
 	IsSuccess() bool
 	IsSoftDeleted() bool
+
+	// =======================================================================
+	// Accessors (Setters and Getters)
+	// =======================================================================
 
 	Attempts() int
 	SetAttempts(attempts int) TaskQueueInterface
