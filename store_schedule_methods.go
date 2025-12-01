@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cast"
 )
 
+// ScheduleCount returns the number of schedules that match the given query options.
 func (store *Store) ScheduleCount(ctx context.Context, options ScheduleQueryInterface) (int64, error) {
 	options.SetLimit(1)
 	q, _, err := store.scheduleSelectQuery(options)
@@ -43,22 +44,24 @@ func (store *Store) ScheduleCount(ctx context.Context, options ScheduleQueryInte
 		return -1, nil
 	}
 
+	// Parse the count from the result
 	countStr := mapped[0]["count"]
-
 	i, err := strconv.ParseInt(countStr, 10, 64)
 
 	if err != nil {
 		return -1, err
-
 	}
 
 	return i, nil
 }
 
+// ScheduleCreate creates a new schedule record in the store.
 func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterface) error {
+	// Set the created and updated timestamps
 	schedule.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	schedule.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
+	// Prepare the data to be inserted
 	data := map[string]interface{}{
 		COLUMN_ID:                  schedule.GetID(),
 		COLUMN_NAME:                schedule.GetName(),
@@ -77,7 +80,7 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt(),
 	}
 
-	// Marshal RecurrenceRule
+	// Marshal the recurrence rule and task parameters
 	rrBytes, err := json.Marshal(schedule.GetRecurrenceRule())
 	if err != nil {
 		return err
@@ -91,6 +94,7 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 	}
 	data[COLUMN_PARAMETERS] = string(tpBytes)
 
+	// Prepare the insert query
 	sqlStr, params, errSql := goqu.Dialect(store.dbDriverName).
 		Insert(store.scheduleTableName).
 		Prepared(true).
@@ -101,10 +105,12 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 		return errSql
 	}
 
+	// Log the SQL query if debug is enabled
 	if store.debugEnabled {
 		log.Println(sqlStr)
 	}
 
+	// Execute the insert query
 	if store.db == nil {
 		return errors.New("taskstore: database is nil")
 	}
@@ -114,6 +120,7 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 	return err
 }
 
+// ScheduleDelete deletes the given schedule from the store.
 func (store *Store) ScheduleDelete(ctx context.Context, schedule ScheduleInterface) error {
 	if schedule == nil {
 		return errors.New("schedule is nil")
@@ -122,6 +129,7 @@ func (store *Store) ScheduleDelete(ctx context.Context, schedule ScheduleInterfa
 	return store.ScheduleDeleteByID(ctx, schedule.GetID())
 }
 
+// ScheduleDeleteByID deletes the schedule with the given ID from the store.
 func (store *Store) ScheduleDeleteByID(ctx context.Context, id string) error {
 	if id == "" {
 		return errors.New("schedule id is empty")
@@ -146,6 +154,7 @@ func (store *Store) ScheduleDeleteByID(ctx context.Context, id string) error {
 	return err
 }
 
+// ScheduleFindByID finds a schedule by its ID.
 func (store *Store) ScheduleFindByID(ctx context.Context, id string) (ScheduleInterface, error) {
 	if id == "" {
 		return nil, errors.New("schedule id is empty")
@@ -166,6 +175,7 @@ func (store *Store) ScheduleFindByID(ctx context.Context, id string) (ScheduleIn
 	return nil, nil
 }
 
+// ScheduleList returns a list of schedules that match the given query options.
 func (store *Store) ScheduleList(ctx context.Context, options ScheduleQueryInterface) ([]ScheduleInterface, error) {
 	q, columns, err := store.scheduleSelectQuery(options)
 
@@ -236,6 +246,7 @@ func (store *Store) ScheduleList(ctx context.Context, options ScheduleQueryInter
 	return list, nil
 }
 
+// ScheduleSoftDelete marks the given schedule as soft-deleted.
 func (store *Store) ScheduleSoftDelete(ctx context.Context, schedule ScheduleInterface) error {
 	if schedule == nil {
 		return errors.New("schedule is nil")
@@ -246,6 +257,7 @@ func (store *Store) ScheduleSoftDelete(ctx context.Context, schedule ScheduleInt
 	return store.ScheduleUpdate(ctx, schedule)
 }
 
+// ScheduleSoftDeleteByID marks the schedule with the given ID as soft-deleted.
 func (store *Store) ScheduleSoftDeleteByID(ctx context.Context, id string) error {
 	schedule, err := store.ScheduleFindByID(ctx, id)
 
@@ -256,6 +268,7 @@ func (store *Store) ScheduleSoftDeleteByID(ctx context.Context, id string) error
 	return store.ScheduleSoftDelete(ctx, schedule)
 }
 
+// ScheduleUpdate updates an existing schedule record in the store.
 func (store *Store) ScheduleUpdate(ctx context.Context, schedule ScheduleInterface) error {
 	if schedule == nil {
 		return errors.New("schedule is nil")
@@ -317,6 +330,7 @@ func (store *Store) ScheduleUpdate(ctx context.Context, schedule ScheduleInterfa
 	return err
 }
 
+// ScheduleRun scans for due schedules and enqueues their associated tasks.
 func (store *Store) ScheduleRun(ctx context.Context) error {
 	// Find active schedules that are due
 	now := carbon.Now(carbon.UTC)
