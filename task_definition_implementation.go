@@ -57,8 +57,14 @@ func (o *taskDefinition) IsSoftDeleted() bool {
 
 // == SETTERS AND GETTERS =====================================================
 
-func (o *taskDefinition) Alias() string {
+func (o *taskDefinition) GetAlias() string {
 	return o.Get(COLUMN_ALIAS)
+}
+
+// Alias alias is kept for backwards compatibility.
+// Deprecated: use GetAlias instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) Alias() string {
+	return o.GetAlias()
 }
 
 func (o *taskDefinition) SetAlias(alias string) TaskDefinitionInterface {
@@ -66,12 +72,18 @@ func (o *taskDefinition) SetAlias(alias string) TaskDefinitionInterface {
 	return o
 }
 
-func (o *taskDefinition) CreatedAt() string {
+func (o *taskDefinition) GetCreatedAt() string {
 	return o.Get(COLUMN_CREATED_AT)
 }
 
+// CreatedAt alias is kept for backwards compatibility.
+// Deprecated: use GetCreatedAt instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) CreatedAt() string {
+	return o.GetCreatedAt()
+}
+
 func (o *taskDefinition) CreatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.CreatedAt(), carbon.UTC)
+	return carbon.Parse(o.GetCreatedAt(), carbon.UTC)
 }
 
 func (o *taskDefinition) SetCreatedAt(createdAt string) TaskDefinitionInterface {
@@ -79,8 +91,14 @@ func (o *taskDefinition) SetCreatedAt(createdAt string) TaskDefinitionInterface 
 	return o
 }
 
-func (o *taskDefinition) Description() string {
+func (o *taskDefinition) GetDescription() string {
 	return o.Get(COLUMN_DESCRIPTION)
+}
+
+// Description alias is kept for backwards compatibility.
+// Deprecated: use GetDescription instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) Description() string {
+	return o.GetDescription()
 }
 
 func (o *taskDefinition) SetDescription(description string) TaskDefinitionInterface {
@@ -88,8 +106,14 @@ func (o *taskDefinition) SetDescription(description string) TaskDefinitionInterf
 	return o
 }
 
-func (o *taskDefinition) ID() string {
+func (o *taskDefinition) GetID() string {
 	return o.Get(COLUMN_ID)
+}
+
+// ID alias is kept for backwards compatibility.
+// Deprecated: use GetID instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) ID() string {
+	return o.GetID()
 }
 
 func (o *taskDefinition) SetID(id string) TaskDefinitionInterface {
@@ -97,8 +121,14 @@ func (o *taskDefinition) SetID(id string) TaskDefinitionInterface {
 	return o
 }
 
-func (o *taskDefinition) Memo() string {
+func (o *taskDefinition) GetMemo() string {
 	return o.Get(COLUMN_MEMO)
+}
+
+// Memo alias is kept for backwards compatibility.
+// Deprecated: use GetMemo instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) Memo() string {
+	return o.GetMemo()
 }
 
 func (o *taskDefinition) SetMemo(memo string) TaskDefinitionInterface {
@@ -106,8 +136,14 @@ func (o *taskDefinition) SetMemo(memo string) TaskDefinitionInterface {
 	return o
 }
 
-func (o *taskDefinition) IsRecurring() int {
+func (o *taskDefinition) GetIsRecurring() int {
 	return cast.ToInt(o.Get(COLUMN_IS_RECURRING))
+}
+
+// IsRecurring alias is kept for backwards compatibility.
+// Deprecated: use GetIsRecurring instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) IsRecurring() int {
+	return o.GetIsRecurring()
 }
 
 func (o *taskDefinition) SetIsRecurring(isRecurring int) TaskDefinitionInterface {
@@ -115,8 +151,14 @@ func (o *taskDefinition) SetIsRecurring(isRecurring int) TaskDefinitionInterface
 	return o
 }
 
-func (o *taskDefinition) RecurrenceRule() string {
+func (o *taskDefinition) GetRecurrenceRule() string {
 	return o.Get(COLUMN_RECURRENCE_RULE)
+}
+
+// RecurrenceRule alias is kept for backwards compatibility.
+// Deprecated: use GetRecurrenceRule instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) RecurrenceRule() string {
+	return o.GetRecurrenceRule()
 }
 
 func (o *taskDefinition) SetRecurrenceRule(recurrenceRule string) TaskDefinitionInterface {
@@ -182,16 +224,28 @@ func (o *taskDefinition) SetRecurrenceRule(recurrenceRule string) TaskDefinition
 // 	return o.SetMetas(currentMetas)
 // }
 
-func (o *taskDefinition) Status() string {
+func (o *taskDefinition) GetStatus() string {
 	return o.Get(COLUMN_STATUS)
 }
 
-func (o *taskDefinition) SoftDeletedAt() string {
+// Status alias is kept for backwards compatibility.
+// Deprecated: use GetStatus instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) Status() string {
+	return o.GetStatus()
+}
+
+func (o *taskDefinition) GetSoftDeletedAt() string {
 	return o.Get(COLUMN_SOFT_DELETED_AT)
 }
 
+// SoftDeletedAt alias is kept for backwards compatibility.
+// Deprecated: use GetSoftDeletedAt instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) SoftDeletedAt() string {
+	return o.GetSoftDeletedAt()
+}
+
 func (o *taskDefinition) SoftDeletedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.SoftDeletedAt(), carbon.UTC)
+	return carbon.Parse(o.GetSoftDeletedAt(), carbon.UTC)
 }
 
 func (o *taskDefinition) SetSoftDeletedAt(deletedAt string) TaskDefinitionInterface {
@@ -204,8 +258,14 @@ func (o *taskDefinition) SetStatus(status string) TaskDefinitionInterface {
 	return o
 }
 
-func (o *taskDefinition) Title() string {
+func (o *taskDefinition) GetTitle() string {
 	return o.Get(COLUMN_TITLE)
+}
+
+// Title alias is kept for backwards compatibility.
+// Deprecated: use GetTitle instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) Title() string {
+	return o.GetTitle()
 }
 
 func (o *taskDefinition) SetTitle(title string) TaskDefinitionInterface {
@@ -213,12 +273,18 @@ func (o *taskDefinition) SetTitle(title string) TaskDefinitionInterface {
 	return o
 }
 
-func (o *taskDefinition) UpdatedAt() string {
+func (o *taskDefinition) GetUpdatedAt() string {
 	return o.Get(COLUMN_UPDATED_AT)
 }
 
+// UpdatedAt alias is kept for backwards compatibility.
+// Deprecated: use GetUpdatedAt instead. Will be removed after 2026-11-30.
+func (o *taskDefinition) UpdatedAt() string {
+	return o.GetUpdatedAt()
+}
+
 func (o *taskDefinition) UpdatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.Get(COLUMN_UPDATED_AT), carbon.UTC)
+	return carbon.Parse(o.GetUpdatedAt(), carbon.UTC)
 }
 
 func (o *taskDefinition) SetUpdatedAt(updatedAt string) TaskDefinitionInterface {

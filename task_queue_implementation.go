@@ -88,9 +88,15 @@ func (o *taskQueue) IsSoftDeleted() bool {
 
 // == SETTERS AND GETTERS =====================================================
 
-func (o *taskQueue) Attempts() int {
+func (o *taskQueue) GetAttempts() int {
 	attempts := o.Get(COLUMN_ATTEMPTS)
 	return cast.ToInt(attempts)
+}
+
+// Attempts alias is kept for backwards compatibility.
+// Deprecated: use GetAttempts instead. Will be removed after 2026-11-30.
+func (o *taskQueue) Attempts() int {
+	return o.GetAttempts()
 }
 
 func (o *taskQueue) SetAttempts(attempts int) TaskQueueInterface {
@@ -98,12 +104,18 @@ func (o *taskQueue) SetAttempts(attempts int) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) CompletedAt() string {
+func (o *taskQueue) GetCompletedAt() string {
 	return o.Get(COLUMN_COMPLETED_AT)
 }
 
+// CompletedAt alias is kept for backwards compatibility.
+// Deprecated: use GetCompletedAt instead. Will be removed after 2026-11-30.
+func (o *taskQueue) CompletedAt() string {
+	return o.GetCompletedAt()
+}
+
 func (o *taskQueue) CompletedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.CompletedAt(), carbon.UTC)
+	return carbon.Parse(o.GetCompletedAt(), carbon.UTC)
 }
 
 func (o *taskQueue) SetCompletedAt(completedAt string) TaskQueueInterface {
@@ -111,12 +123,18 @@ func (o *taskQueue) SetCompletedAt(completedAt string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) CreatedAt() string {
+func (o *taskQueue) GetCreatedAt() string {
 	return o.Get(COLUMN_CREATED_AT)
 }
 
+// CreatedAt alias is kept for backwards compatibility.
+// Deprecated: use GetCreatedAt instead. Will be removed after 2026-11-30.
+func (o *taskQueue) CreatedAt() string {
+	return o.GetCreatedAt()
+}
+
 func (o *taskQueue) CreatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.CreatedAt(), carbon.UTC)
+	return carbon.Parse(o.GetCreatedAt(), carbon.UTC)
 }
 
 func (o *taskQueue) SetCreatedAt(createdAt string) TaskQueueInterface {
@@ -124,8 +142,14 @@ func (o *taskQueue) SetCreatedAt(createdAt string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) ID() string {
+func (o *taskQueue) GetID() string {
 	return o.Get(COLUMN_ID)
+}
+
+// ID alias is kept for backwards compatibility.
+// Deprecated: use GetID instead. Will be removed after 2026-11-30.
+func (o *taskQueue) ID() string {
+	return o.GetID()
 }
 
 // AppendDetails appends details to the queued task
@@ -140,8 +164,14 @@ func (o *taskQueue) AppendDetails(details string) TaskQueueInterface {
 	return o.SetDetails(text)
 }
 
-func (o *taskQueue) Details() string {
+func (o *taskQueue) GetDetails() string {
 	return o.Get(COLUMN_DETAILS)
+}
+
+// Details alias is kept for backwards compatibility.
+// Deprecated: use GetDetails instead. Will be removed after 2026-11-30.
+func (o *taskQueue) Details() string {
+	return o.GetDetails()
 }
 
 func (o *taskQueue) SetDetails(details string) TaskQueueInterface {
@@ -149,8 +179,14 @@ func (o *taskQueue) SetDetails(details string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) QueueName() string {
+func (o *taskQueue) GetQueueName() string {
 	return o.Get(COLUMN_QUEUE_NAME)
+}
+
+// QueueName alias is kept for backwards compatibility.
+// Deprecated: use GetQueueName instead. Will be removed after 2026-11-30.
+func (o *taskQueue) QueueName() string {
+	return o.GetQueueName()
 }
 
 func (o *taskQueue) SetQueueName(queueName string) TaskQueueInterface {
@@ -230,8 +266,14 @@ func (o *taskQueue) SetID(id string) TaskQueueInterface {
 // 	return o.SetMetas(currentMetas)
 // }
 
-func (o *taskQueue) Output() string {
+func (o *taskQueue) GetOutput() string {
 	return o.Get(COLUMN_OUTPUT)
+}
+
+// Output alias is kept for backwards compatibility.
+// Deprecated: use GetOutput instead. Will be removed after 2026-11-30.
+func (o *taskQueue) Output() string {
+	return o.GetOutput()
 }
 
 func (o *taskQueue) SetOutput(output string) TaskQueueInterface {
@@ -239,8 +281,14 @@ func (o *taskQueue) SetOutput(output string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) Parameters() string {
+func (o *taskQueue) GetParameters() string {
 	return o.Get(COLUMN_PARAMETERS)
+}
+
+// Parameters alias is kept for backwards compatibility.
+// Deprecated: use GetParameters instead. Will be removed after 2026-11-30.
+func (o *taskQueue) Parameters() string {
+	return o.GetParameters()
 }
 
 func (o *taskQueue) SetParameters(parameters string) TaskQueueInterface {
@@ -250,12 +298,12 @@ func (o *taskQueue) SetParameters(parameters string) TaskQueueInterface {
 
 func (o *taskQueue) ParametersMap() (map[string]string, error) {
 	// Handle empty string parameters
-	if o.Parameters() == "" {
+	if o.GetParameters() == "" {
 		return map[string]string{}, nil
 	}
 
 	var parameters map[string]string
-	jsonErr := json.Unmarshal([]byte(o.Parameters()), &parameters)
+	jsonErr := json.Unmarshal([]byte(o.GetParameters()), &parameters)
 	if jsonErr != nil {
 		return map[string]string{}, jsonErr
 	}
@@ -271,12 +319,18 @@ func (o *taskQueue) SetParametersMap(parameters map[string]string) (TaskQueueInt
 	return o.SetParameters(parametersJson), nil
 }
 
-func (o *taskQueue) StartedAt() string {
+func (o *taskQueue) GetStartedAt() string {
 	return o.Get(COLUMN_STARTED_AT)
 }
 
+// StartedAt alias is kept for backwards compatibility.
+// Deprecated: use GetStartedAt instead. Will be removed after 2026-11-30.
+func (o *taskQueue) StartedAt() string {
+	return o.GetStartedAt()
+}
+
 func (o *taskQueue) StartedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.StartedAt(), carbon.UTC)
+	return carbon.Parse(o.GetStartedAt(), carbon.UTC)
 }
 
 func (o *taskQueue) SetStartedAt(startedAt string) TaskQueueInterface {
@@ -284,16 +338,28 @@ func (o *taskQueue) SetStartedAt(startedAt string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) Status() string {
+func (o *taskQueue) GetStatus() string {
 	return o.Get(COLUMN_STATUS)
 }
 
-func (o *taskQueue) SoftDeletedAt() string {
+// Status alias is kept for backwards compatibility.
+// Deprecated: use GetStatus instead. Will be removed after 2026-11-30.
+func (o *taskQueue) Status() string {
+	return o.GetStatus()
+}
+
+func (o *taskQueue) GetSoftDeletedAt() string {
 	return o.Get(COLUMN_SOFT_DELETED_AT)
 }
 
+// SoftDeletedAt alias is kept for backwards compatibility.
+// Deprecated: use GetSoftDeletedAt instead. Will be removed after 2026-11-30.
+func (o *taskQueue) SoftDeletedAt() string {
+	return o.GetSoftDeletedAt()
+}
+
 func (o *taskQueue) SoftDeletedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.SoftDeletedAt(), carbon.UTC)
+	return carbon.Parse(o.GetSoftDeletedAt(), carbon.UTC)
 }
 
 func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
@@ -306,8 +372,14 @@ func (o *taskQueue) SetStatus(status string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) TaskID() string {
+func (o *taskQueue) GetTaskID() string {
 	return o.Get(COLUMN_TASK_ID)
+}
+
+// TaskID alias is kept for backwards compatibility.
+// Deprecated: use GetTaskID instead. Will be removed after 2026-11-30.
+func (o *taskQueue) TaskID() string {
+	return o.GetTaskID()
 }
 
 func (o *taskQueue) SetTaskID(taskID string) TaskQueueInterface {
@@ -315,12 +387,18 @@ func (o *taskQueue) SetTaskID(taskID string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) UpdatedAt() string {
+func (o *taskQueue) GetUpdatedAt() string {
 	return o.Get(COLUMN_UPDATED_AT)
 }
 
+// UpdatedAt alias is kept for backwards compatibility.
+// Deprecated: use GetUpdatedAt instead. Will be removed after 2026-11-30.
+func (o *taskQueue) UpdatedAt() string {
+	return o.GetUpdatedAt()
+}
+
 func (o *taskQueue) UpdatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.Get(COLUMN_UPDATED_AT), carbon.UTC)
+	return carbon.Parse(o.GetUpdatedAt(), carbon.UTC)
 }
 
 func (o *taskQueue) SetUpdatedAt(updatedAt string) TaskQueueInterface {
