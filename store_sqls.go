@@ -151,9 +151,8 @@ func (st *Store) SqlCreateScheduleTable() string {
 			Length: 50,
 		}).
 		Column(sb.Column{
-			Name:   COLUMN_RECURRENCE_RULE,
-			Type:   sb.COLUMN_TYPE_TEXT,
-			Length: 1000,
+			Name: COLUMN_RECURRENCE_RULE,
+			Type: sb.COLUMN_TYPE_TEXT,
 		}).
 		Column(sb.Column{
 			Name:   COLUMN_QUEUE_NAME,
