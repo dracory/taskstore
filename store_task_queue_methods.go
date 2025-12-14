@@ -273,8 +273,6 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 
 	queueName = normalizeQueueName(queueName)
 
-	isPostgres := strings.Contains(strings.ToLower(store.dbDriverName), "postgres")
-
 	// Start a database transaction
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -282,24 +280,18 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	}
 	defer func() { _ = tx.Rollback() }() // Will be a no-op if committed
 
-	// SELECT FOR UPDATE query to lock the row
-	selectSQL := `
-		SELECT *
-		FROM ` + store.taskQueueTableName + `
-		WHERE ` + COLUMN_STATUS + ` = ? 
-		  AND ` + COLUMN_QUEUE_NAME + ` = ?
-		ORDER BY ` + COLUMN_CREATED_AT + ` ASC
-		LIMIT 1`
-
-	params := []interface{}{TaskQueueStatusQueued, queueName}
-	if isPostgres {
-		selectSQL = `
-			SELECT *
-			FROM ` + store.taskQueueTableName + `
-			WHERE ` + COLUMN_STATUS + ` = $1
-			  AND ` + COLUMN_QUEUE_NAME + ` = $2
-			ORDER BY ` + COLUMN_CREATED_AT + ` ASC
-			LIMIT 1`
+	selectSQL, params, err := goqu.Dialect(store.dbDriverName).
+		From(store.taskQueueTableName).
+		Prepared(true).
+		Where(
+			goqu.C(COLUMN_STATUS).Eq(TaskQueueStatusQueued),
+			goqu.C(COLUMN_QUEUE_NAME).Eq(queueName),
+		).
+		Order(goqu.I(COLUMN_CREATED_AT).Asc()).
+		Limit(1).
+		ToSQL()
+	if err != nil {
+		return nil, err
 	}
 
 	if store.dbDriverName != "sqlite" {
@@ -333,23 +325,22 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	id := taskData[COLUMN_ID]
 
 	// Update status to "running" within the same transaction
-	updateSQL := `
-		UPDATE ` + store.taskQueueTableName + `
-		SET ` + COLUMN_STATUS + ` = ?, 
-		    ` + COLUMN_STARTED_AT + ` = ?,
-		    ` + COLUMN_UPDATED_AT + ` = ?
-		WHERE ` + COLUMN_ID + ` = ?`
-	if isPostgres {
-		updateSQL = `
-			UPDATE ` + store.taskQueueTableName + `
-			SET ` + COLUMN_STATUS + ` = $1,
-			    ` + COLUMN_STARTED_AT + ` = $2,
-			    ` + COLUMN_UPDATED_AT + ` = $3
-			WHERE ` + COLUMN_ID + ` = $4`
+	now := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
+	updateSQL, updateParams, err := goqu.Dialect(store.dbDriverName).
+		Update(store.taskQueueTableName).
+		Prepared(true).
+		Set(goqu.Record{
+			COLUMN_STATUS:     TaskQueueStatusRunning,
+			COLUMN_STARTED_AT: now,
+			COLUMN_UPDATED_AT: now,
+		}).
+		Where(goqu.C(COLUMN_ID).Eq(id)).
+		ToSQL()
+	if err != nil {
+		return nil, err
 	}
 
-	now := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
-	_, err = tx.ExecContext(ctx, updateSQL, TaskQueueStatusRunning, now, now, id)
+	_, err = tx.ExecContext(ctx, updateSQL, updateParams...)
 	if err != nil {
 		return nil, err
 	}
