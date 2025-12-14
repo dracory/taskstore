@@ -273,6 +273,8 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 
 	queueName = normalizeQueueName(queueName)
 
+	isPostgres := strings.Contains(strings.ToLower(store.dbDriverName), "postgres")
+
 	// Start a database transaction
 	tx, err := store.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -290,6 +292,15 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 		LIMIT 1`
 
 	params := []interface{}{TaskQueueStatusQueued, queueName}
+	if isPostgres {
+		selectSQL = `
+			SELECT *
+			FROM ` + store.taskQueueTableName + `
+			WHERE ` + COLUMN_STATUS + ` = $1
+			  AND ` + COLUMN_QUEUE_NAME + ` = $2
+			ORDER BY ` + COLUMN_CREATED_AT + ` ASC
+			LIMIT 1`
+	}
 
 	if store.dbDriverName != "sqlite" {
 		// MySQL and PostgreSQL support FOR UPDATE
@@ -328,6 +339,14 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 		    ` + COLUMN_STARTED_AT + ` = ?,
 		    ` + COLUMN_UPDATED_AT + ` = ?
 		WHERE ` + COLUMN_ID + ` = ?`
+	if isPostgres {
+		updateSQL = `
+			UPDATE ` + store.taskQueueTableName + `
+			SET ` + COLUMN_STATUS + ` = $1,
+			    ` + COLUMN_STARTED_AT + ` = $2,
+			    ` + COLUMN_UPDATED_AT + ` = $3
+			WHERE ` + COLUMN_ID + ` = $4`
+	}
 
 	now := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
 	_, err = tx.ExecContext(ctx, updateSQL, TaskQueueStatusRunning, now, now, id)
