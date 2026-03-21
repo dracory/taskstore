@@ -15,7 +15,10 @@ func Test_Store_SqlCreateTaskQueueTable(t *testing.T) {
 		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
 	}
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("SqlCreateTaskQueueTable: Unexpected Query, received [%v]", query)
 	}
@@ -31,7 +34,10 @@ func Test_Store_TaskQueueCreate(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueCreate: UnExpected Query, received [%v]", query)
 	}
@@ -53,7 +59,10 @@ func Test_Store_TaskQueueDeleteByID(t *testing.T) {
 		t.Fatalf("TaskQueueList: Error[%v]", err)
 	}
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueList: UnExpected Query, received [%v]", query)
 	}
@@ -102,7 +111,10 @@ func Test_Store_TaskQueueFail(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueFail: UnExpected Query, received [%v]", query)
 	}
@@ -132,7 +144,10 @@ func Test_Store_TaskQueueFindByID(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueFindByID: UnExpected Query, received [%v]", query)
 	}
@@ -172,7 +187,10 @@ func Test_Store_TaskQueueList(t *testing.T) {
 		SetAttempts(1).
 		SetStatus(TaskQueueStatusQueued)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueList: UnExpected Query, received [%v]", query)
@@ -211,7 +229,10 @@ func Test_Store_TaskQueueFindNextQueuedTaskByQueue(t *testing.T) {
 		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error[%v]", err)
 	}
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: UnExpected Query, received [%v]", query)
 	}
@@ -266,7 +287,10 @@ func Test_Store_TaskQueueSoftDeleteByID(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueSoftDeleteByID: UnExpected Query, received [%v]", query)
 	}
@@ -307,7 +331,10 @@ func Test_Store_TaskQueueSuccess(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueSuccess: UnExpected Query, received [%v]", query)
 	}
@@ -337,7 +364,10 @@ func Test_Store_TaskQueueUpdate(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueUpdate: UnExpected Query, received [%v]", query)
 	}
@@ -387,7 +417,10 @@ func Test_TaskQueue_ParametersMap(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("GetParameters: UnExpected Query, received [%v]", query)
 	}
@@ -425,7 +458,10 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 		t.Fatalf("Failed to create test store: %v", err)
 	}
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("UnExpected Query, received [%v]", query)
 	}
@@ -484,7 +520,10 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 		t.Fatalf("TaskQueueClaimNext: Error[%v]", err)
 	}
 
-	query := store.SqlCreateTaskQueueTable()
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskQueueClaimNext: UnExpected Query, received [%v]", query)
 	}

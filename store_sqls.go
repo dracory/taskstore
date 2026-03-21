@@ -3,7 +3,7 @@ package taskstore
 import "github.com/dracory/sb"
 
 // SqlCreateTaskQueueTable - creates the task queue table
-func (st *Store) SqlCreateTaskQueueTable() string {
+func (st *Store) SqlCreateTaskQueueTable() (string, error) {
 	return sb.NewBuilder(st.dbDriverName).
 		Table(st.taskQueueTableName).
 		Column(sb.Column{
@@ -67,7 +67,7 @@ func (st *Store) SqlCreateTaskQueueTable() string {
 }
 
 // SqlCreateTaskDefinitionTable - creates the task definition table
-func (st *Store) SqlCreateTaskDefinitionTable() string {
+func (st *Store) SqlCreateTaskDefinitionTable() (string, error) {
 	return sb.NewBuilder(st.dbDriverName).
 		Table(st.taskDefinitionTableName).
 		Column(sb.Column{
@@ -126,7 +126,7 @@ func (st *Store) SqlCreateTaskDefinitionTable() string {
 }
 
 // SqlCreateScheduleTable - creates the schedule table
-func (st *Store) SqlCreateScheduleTable() string {
+func (st *Store) SqlCreateScheduleTable() (string, error) {
 	return sb.NewBuilder(st.dbDriverName).
 		Table(st.scheduleTableName).
 		Column(sb.Column{

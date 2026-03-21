@@ -17,7 +17,10 @@ func Test_Store_TaskDefinitionCreate(t *testing.T) {
 		SetTitle("TASK_TITLE_01").
 		SetDescription("TASK_DESCRIPTION_01")
 
-	query := store.SqlCreateTaskDefinitionTable()
+	query, err := store.SqlCreateTaskDefinitionTable()
+	if err != nil {
+		t.Fatalf("TaskDefinitionCreate: Error[%v]", err)
+	}
 	if strings.Contains(query, "unsupported driver") {
 		t.Fatalf("TaskDefinitionCreate: UnExpected Query, received [%v]", query)
 	}

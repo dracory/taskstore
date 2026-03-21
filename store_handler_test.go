@@ -15,7 +15,10 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 		t.Fatal("TaskHandlerAdd: Error in Store init: received ", "[", err, "]")
 	}
 
-	query := store.SqlCreateTaskDefinitionTable()
+	query, err := store.SqlCreateTaskDefinitionTable()
+	if err != nil {
+		t.Fatal("TaskHandlerAdd: Error in SQL generation: ", err)
+	}
 
 	_, err = store.db.Exec(query)
 	if err != nil {

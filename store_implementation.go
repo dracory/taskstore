@@ -105,7 +105,11 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 
 // AutoMigrate migrates the tables
 func (st *Store) AutoMigrate() error {
-	sqlTaskTable := st.SqlCreateTaskDefinitionTable()
+	sqlTaskTable, err := st.SqlCreateTaskDefinitionTable()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
 	if st.debugEnabled {
 		log.Println(sqlTaskTable)
@@ -117,7 +121,11 @@ func (st *Store) AutoMigrate() error {
 		return errTask
 	}
 
-	sqlQueueTable := st.SqlCreateTaskQueueTable()
+	sqlQueueTable, err := st.SqlCreateTaskQueueTable()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
 	if st.debugEnabled {
 		log.Println(sqlQueueTable)
@@ -129,7 +137,11 @@ func (st *Store) AutoMigrate() error {
 		return errQueue
 	}
 
-	sqlScheduleTable := st.SqlCreateScheduleTable()
+	sqlScheduleTable, err := st.SqlCreateScheduleTable()
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 
 	if st.debugEnabled {
 		log.Println(sqlScheduleTable)
