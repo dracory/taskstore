@@ -405,3 +405,7 @@ func (o *taskQueue) SetUpdatedAt(updatedAt string) TaskQueueInterface {
 	o.Set(COLUMN_UPDATED_AT, updatedAt)
 	return o
 }
+
+func (o *taskQueue) MarkAsNotDirty() {
+	o.DataObject.MarkAsNotDirty()
+}

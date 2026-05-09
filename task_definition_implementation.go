@@ -291,3 +291,7 @@ func (o *taskDefinition) SetUpdatedAt(updatedAt string) TaskDefinitionInterface 
 	o.Set(COLUMN_UPDATED_AT, updatedAt)
 	return o
 }
+
+func (o *taskDefinition) MarkAsNotDirty() {
+	o.DataObject.MarkAsNotDirty()
+}
