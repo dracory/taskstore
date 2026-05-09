@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
-	"github.com/mingrammer/cfmt"
 	"github.com/spf13/cast"
 )
 
@@ -566,14 +566,14 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 // - alias "list" is reserved. it lists all the available commands
 func (store *Store) TaskDefinitionExecuteCli(alias string, args []string) bool {
 	argumentsMap := argsToMap(args)
-	_, _ = cfmt.Infoln("Executing task: ", alias, " with arguments: ", argumentsMap)
+	fmt.Println("INFO: Executing task:", alias, "with arguments:", argumentsMap)
 
 	// Lists the available tasks
 	if alias == "list" {
 		for index, taskHandler := range store.TaskHandlerList() {
-			_, _ = cfmt.Warningln(cast.ToString(index+1) + ". Task Alias: " + taskHandler.Alias())
-			_, _ = cfmt.Infoln("    - Task Title: " + taskHandler.Title())
-			_, _ = cfmt.Infoln("    - Task Description: " + taskHandler.Description())
+			fmt.Println("WARNING:", cast.ToString(index+1)+". Task Alias: "+taskHandler.Alias())
+			fmt.Println("INFO:     - Task Title: " + taskHandler.Title())
+			fmt.Println("INFO:     - Task Description: " + taskHandler.Description())
 		}
 
 		return true
@@ -588,7 +588,7 @@ func (store *Store) TaskDefinitionExecuteCli(alias string, args []string) bool {
 		}
 	}
 
-	_, _ = cfmt.Errorln("Unrecognized task alias: ", alias)
+	fmt.Println("ERROR: Unrecognized task alias:", alias)
 	return false
 }
 

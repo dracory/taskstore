@@ -8,14 +8,14 @@ import (
 
 	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
 )
 
 func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 
 	store, err := NewStore(NewStoreOptions{
@@ -25,14 +25,18 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 		DB:                      db,
 		AutomigrateEnabled:      true,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ctx := context.Background()
 
 	taskDef := NewTaskDefinition()
 	taskDef.SetAlias("test-task")
 	err = store.TaskDefinitionCreate(ctx, taskDef)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	schedule := NewSchedule()
 	schedule.SetName("Test Schedule")
@@ -50,30 +54,54 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 	schedule.GetRecurrenceRule().SetStartsAt(past)
 
 	err = store.ScheduleCreate(ctx, schedule)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	runner := NewScheduleRunner(store, ScheduleRunnerOptions{IntervalSeconds: 1})
 
 	err = runner.RunOnce(ctx)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Error(err)
+	}
 
 	queueList, err := store.TaskQueueList(ctx, TaskQueueQuery())
-	assert.NoError(t, err)
-	assert.Len(t, queueList, 1)
-	assert.Equal(t, taskDef.ID(), queueList[0].TaskID())
+	if err != nil {
+		t.Error(err)
+	}
+	if len(queueList) != 1 {
+		t.Errorf("expected 1 queued task, got %d", len(queueList))
+	}
+	if taskDef.ID() != queueList[0].TaskID() {
+		t.Errorf("expected task ID %s, got %s", taskDef.ID(), queueList[0].TaskID())
+	}
 
 	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
-	assert.NoError(t, err)
-	require.NotNil(t, updatedSchedule)
-	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.GetLastRunAt())
-	assert.True(t, carbon.Parse(updatedSchedule.GetNextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)))
-	assert.Equal(t, 1, updatedSchedule.GetExecutionCount())
-	assert.Equal(t, "active", updatedSchedule.GetStatus())
+	if err != nil {
+		t.Error(err)
+	}
+	if updatedSchedule == nil {
+		t.Fatal("expected updatedSchedule to not be nil")
+	}
+	if updatedSchedule.GetLastRunAt() == sb.NULL_DATETIME {
+		t.Error("expected LastRunAt to not be NULL_DATETIME")
+	}
+	if !carbon.Parse(updatedSchedule.GetNextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)) {
+		t.Error("expected NextRunAt to be in the future")
+	}
+	if updatedSchedule.GetExecutionCount() != 1 {
+		t.Errorf("expected execution count 1, got %d", updatedSchedule.GetExecutionCount())
+	}
+	if updatedSchedule.GetStatus() != "active" {
+		t.Errorf("expected status 'active', got %s", updatedSchedule.GetStatus())
+	}
 }
 
 func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 
 	store, err := NewStore(NewStoreOptions{
@@ -83,7 +111,9 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 		DB:                      db,
 		AutomigrateEnabled:      true,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ctx := context.Background()
 
@@ -100,23 +130,37 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 	schedule.GetRecurrenceRule().SetStartsAt(startAt)
 
 	err = store.ScheduleCreate(ctx, schedule)
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	runner := NewScheduleRunner(store, ScheduleRunnerOptions{IntervalSeconds: 1})
 
 	err = runner.SetInitialRuns(ctx)
-	assert.NoError(t, err)
+	if err != nil {
+		t.Error(err)
+	}
 
 	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
-	assert.NoError(t, err)
-	require.NotNil(t, updatedSchedule)
-	assert.NotEqual(t, sb.NULL_DATETIME, updatedSchedule.GetNextRunAt())
-	assert.Equal(t, "active", updatedSchedule.GetStatus())
+	if err != nil {
+		t.Error(err)
+	}
+	if updatedSchedule == nil {
+		t.Fatal("expected updatedSchedule to not be nil")
+	}
+	if updatedSchedule.GetNextRunAt() == sb.NULL_DATETIME {
+		t.Error("expected NextRunAt to not be NULL_DATETIME")
+	}
+	if updatedSchedule.GetStatus() != "active" {
+		t.Errorf("expected status 'active', got %s", updatedSchedule.GetStatus())
+	}
 }
 
 func TestScheduleRunnerStartStop(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer db.Close()
 
 	store, err := NewStore(NewStoreOptions{
@@ -126,7 +170,9 @@ func TestScheduleRunnerStartStop(t *testing.T) {
 		DB:                      db,
 		AutomigrateEnabled:      true,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -135,9 +181,13 @@ func TestScheduleRunnerStartStop(t *testing.T) {
 
 	runner.Start(ctx)
 	time.Sleep(50 * time.Millisecond)
-	assert.True(t, runner.IsRunning())
+	if !runner.IsRunning() {
+		t.Error("expected runner to be running")
+	}
 
 	runner.Stop()
 	time.Sleep(50 * time.Millisecond)
-	assert.False(t, runner.IsRunning())
+	if runner.IsRunning() {
+		t.Error("expected runner to be stopped")
+	}
 }

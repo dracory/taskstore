@@ -1,10 +1,9 @@
 package taskstore
 
 import (
+	"fmt"
 	"strings"
 	"sync"
-
-	"github.com/mingrammer/cfmt"
 )
 
 // TaskHandlerBase alias is kept for backwards compatibility.
@@ -110,7 +109,7 @@ func (handler *TaskDefinitionHandlerBase) HasQueuedTask() bool {
 
 // LogError records an error message for the handler and either appends it to
 // the queued task details (when a queued task is present) or prints it using
-// cfmt.Errorln.
+// fmt.Println.
 func (handler *TaskDefinitionHandlerBase) LogError(message string) {
 	handler.mu.Lock()
 	handler.errorMessage = message
@@ -120,13 +119,13 @@ func (handler *TaskDefinitionHandlerBase) LogError(message string) {
 	if qt != nil {
 		qt.AppendDetails(message)
 	} else {
-		_, _ = cfmt.Errorln(message)
+		fmt.Println("ERROR:", message)
 	}
 }
 
 // LogInfo records an informational message for the handler and either
 // appends it to the queued task details (when a queued task is present) or
-// prints it using cfmt.Infoln.
+// prints it using fmt.Println.
 func (handler *TaskDefinitionHandlerBase) LogInfo(message string) {
 	handler.mu.Lock()
 	handler.infoMessage = message
@@ -136,13 +135,13 @@ func (handler *TaskDefinitionHandlerBase) LogInfo(message string) {
 	if qt != nil {
 		qt.AppendDetails(message)
 	} else {
-		_, _ = cfmt.Infoln(message)
+		fmt.Println("INFO:", message)
 	}
 }
 
 // LogSuccess records a success message for the handler and either appends it
 // to the queued task details (when a queued task is present) or prints it
-// using cfmt.Successln.
+// using fmt.Println.
 func (handler *TaskDefinitionHandlerBase) LogSuccess(message string) {
 	handler.mu.Lock()
 	handler.successMessage = message
@@ -152,7 +151,7 @@ func (handler *TaskDefinitionHandlerBase) LogSuccess(message string) {
 	if qt != nil {
 		qt.AppendDetails(message)
 	} else {
-		_, _ = cfmt.Successln(message)
+		fmt.Println("SUCCESS:", message)
 	}
 }
 
