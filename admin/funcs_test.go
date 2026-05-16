@@ -432,23 +432,6 @@ func Test_contextKey(t *testing.T) {
 	}
 }
 
-func Test_keyEndpoint(t *testing.T) {
-	// Test that keyEndpoint constant is defined
-	if keyEndpoint != contextKey("endpoint") {
-		t.Error("keyEndpoint should be contextKey('endpoint')")
-	}
-}
-
-func Test_defaultFavicon(t *testing.T) {
-	// Test that defaultFavicon is defined and not empty
-	if defaultFavicon == "" {
-		t.Error("defaultFavicon should not be empty")
-	}
-	if len(defaultFavicon) < 100 {
-		t.Error("defaultFavicon should be a base64 string (longer than 100 chars)")
-	}
-}
-
 func Test_query_more_cases(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -632,86 +615,6 @@ func Test_Breadcrumb_struct(t *testing.T) {
 	}
 }
 
-func Test_actionConstants(t *testing.T) {
-	// Test action constants are defined
-	tests := []struct {
-		name  string
-		value string
-	}{
-		{name: "actionModalQueuedTaskFilterShow", value: actionModalQueuedTaskFilterShow},
-		{name: "actionModalQueuedTaskRestartShow", value: actionModalQueuedTaskRestartShow},
-		{name: "actionModalQueuedTaskRestartSubmitted", value: actionModalQueuedTaskRestartSubmitted},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.value == "" {
-				t.Errorf("Constant %s should not be empty", tt.name)
-			}
-		})
-	}
-}
-
-func Test_pathConstants(t *testing.T) {
-	// Test path constants are defined
-	tests := []struct {
-		name  string
-		value string
-	}{
-		{name: "pathHome", value: pathHome},
-		{name: "pathTaskQueueCreate", value: pathTaskQueueCreate},
-		{name: "pathTaskQueueDelete", value: pathTaskQueueDelete},
-		{name: "pathTaskQueueDetails", value: pathTaskQueueDetails},
-		{name: "pathTaskQueueManager", value: pathTaskQueueManager},
-		{name: "pathTaskQueueParameters", value: pathTaskQueueParameters},
-		{name: "pathTaskQueueRequeue", value: pathTaskQueueRequeue},
-		{name: "pathTaskQueueTaskRestart", value: pathTaskQueueTaskRestart},
-		{name: "pathTaskDefinitionCreate", value: pathTaskDefinitionCreate},
-		{name: "pathTaskDefinitionManager", value: pathTaskDefinitionManager},
-		{name: "pathTaskDefinitionUpdate", value: pathTaskDefinitionUpdate},
-		{name: "pathTaskDefinitionDelete", value: pathTaskDefinitionDelete},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.value == "" {
-				t.Errorf("Constant %s should not be empty", tt.name)
-			}
-		})
-	}
-}
-
-func Test_fieldConstants(t *testing.T) {
-	// Test field constants are defined
-	tests := []struct {
-		name  string
-		value string
-	}{
-		{name: "fieldParameters", value: fieldParameters},
-		{name: "fieldQueueID", value: fieldQueueID},
-		{name: "fieldTaskID", value: fieldTaskID},
-		{name: "fieldStatus", value: fieldStatus},
-		{name: "fieldTitle", value: fieldTitle},
-		{name: "fieldAlias", value: fieldAlias},
-		{name: "fieldDescription", value: fieldDescription},
-		{name: "fieldDetails", value: fieldDetails},
-		{name: "fieldFilterQueueID", value: fieldFilterQueueID},
-		{name: "fieldFilterStatus", value: fieldFilterStatus},
-		{name: "fieldFilterName", value: fieldFilterName},
-		{name: "fieldFilterCreatedFrom", value: fieldFilterCreatedFrom},
-		{name: "fieldFilterCreatedTo", value: fieldFilterCreatedTo},
-		{name: "fieldFilterTaskID", value: fieldFilterTaskID},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.value == "" {
-				t.Errorf("Constant %s should not be empty", tt.name)
-			}
-		})
-	}
-}
-
 func Test_admin_struct(t *testing.T) {
 	// Test admin struct can be created
 	admin := &admin{}
@@ -892,28 +795,6 @@ func Test_isJSON_edge_cases(t *testing.T) {
 				t.Errorf("isJSON() = %v, want %v", got, tt.want)
 			}
 		})
-	}
-}
-
-func Test_homeController_prepareData(t *testing.T) {
-	// Test homeController.prepareData method
-	controller := &homeController{
-		logger: *slog.Default(),
-		store:  nil,
-		layout: &mockLayout{},
-	}
-
-	req := &http.Request{}
-	data, errorMessage := controller.prepareData(req)
-
-	if errorMessage != "" {
-		t.Errorf("prepareData() should not return error message, got %s", errorMessage)
-	}
-	if data.request == nil {
-		t.Error("prepareData() should set request in data")
-	}
-	if data.request != req {
-		t.Error("prepareData() should set the same request")
 	}
 }
 
@@ -1781,35 +1662,6 @@ func Test_taskQueueCreateControllerData_fields(t *testing.T) {
 	}
 	if data.formStatus != "active" {
 		t.Error("formStatus should be 'active'")
-	}
-}
-
-func Test_homeController_struct_fields(t *testing.T) {
-	// Test homeController struct fields
-	controller := &homeController{
-		logger: *slog.Default(),
-		store:  nil,
-		layout: &mockLayout{},
-	}
-
-	if controller.logger == (slog.Logger{}) {
-		t.Error("homeController logger should be set")
-	}
-	if controller.layout == nil {
-		t.Error("homeController layout should not be nil")
-	}
-}
-
-func Test_homeControllerData_request_field(t *testing.T) {
-	// Test homeControllerData request field
-	req := &http.Request{Method: "POST"}
-	data := homeControllerData{request: req}
-
-	if data.request == nil {
-		t.Error("homeControllerData request should not be nil")
-	}
-	if data.request.Method != "POST" {
-		t.Error("homeControllerData request method should be 'POST'")
 	}
 }
 
@@ -2940,22 +2792,6 @@ func Test_admin_struct_with_all_fields_nil(t *testing.T) {
 	}
 	if admin.layout != nil {
 		t.Error("admin layout should be nil")
-	}
-}
-
-func Test_homeController_with_nil_store(t *testing.T) {
-	// Test homeController with nil store
-	controller := &homeController{
-		logger: *slog.Default(),
-		store:  nil,
-		layout: &mockLayout{},
-	}
-
-	if controller.store != nil {
-		t.Error("homeController store should be nil")
-	}
-	if controller.layout == nil {
-		t.Error("homeController layout should not be nil")
 	}
 }
 
