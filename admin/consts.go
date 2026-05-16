@@ -2,6 +2,29 @@ package admin
 
 var endpoint = "" // initialized in admin.go
 
+type contextKey string
+
+const keyEndpoint = contextKey("endpoint")
+
+const defaultFavicon = `data:image/x-icon;base64,AAABAAEAEBAQAAEABAAoAQAAFgAAACgAAAAQAAAAIAAAAAEABAAAAAAAgAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAmzKzAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABEQEAAQERAAEAAQABAAEAAQABAQEBEQABAAEREQEAAAERARARAREAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAAi6MAALu7AAC6owAAuC8AAIkjAAD//wAA//8AAP//AAD//wAA`
+
+const fieldParameters = "parameters"
+
+const fieldQueueID = "queue_id"
+const fieldTaskID = "task_id"
+const fieldStatus = "status"
+const fieldTitle = "title"
+const fieldAlias = "alias"
+const fieldDescription = "description"
+const fieldDetails = "details"
+
+const fieldFilterQueueID = "filter_queue_id"
+const fieldFilterStatus = "filter_status"
+const fieldFilterName = "filter_name"
+const fieldFilterCreatedFrom = "filter_created_from"
+const fieldFilterCreatedTo = "filter_created_to"
+const fieldFilterTaskID = "filter_task_id"
+
 const pathHome = "home"
 
 const pathTaskQueueCreate = "task-queue-create"

@@ -101,7 +101,7 @@ func (*taskQueueManagerController) onModalRecordFilterShow(data *taskQueueManage
 
 	fieldQueueID := form.NewField(form.FieldOptions{
 		Label: "Queue ID",
-		Name:  "filter_queue_id",
+		Name:  fieldFilterQueueID,
 		Type:  form.FORM_FIELD_TYPE_STRING,
 		Value: data.formQueueID,
 		Help:  `Find queue by reference number (ID).`,
@@ -114,7 +114,7 @@ func (*taskQueueManagerController) onModalRecordFilterShow(data *taskQueueManage
 		Fields: []form.FieldInterface{
 			form.NewField(form.FieldOptions{
 				Label: "Status",
-				Name:  "filter_status",
+				Name:  fieldFilterStatus,
 				Type:  form.FORM_FIELD_TYPE_SELECT,
 				Help:  `The status of the queue.`,
 				Value: data.formStatus,
@@ -155,21 +155,21 @@ func (*taskQueueManagerController) onModalRecordFilterShow(data *taskQueueManage
 			}),
 			form.NewField(form.FieldOptions{
 				Label: "Name",
-				Name:  "filter_name",
+				Name:  fieldFilterName,
 				Type:  form.FORM_FIELD_TYPE_STRING,
 				Value: data.formName,
 				Help:  `Filter by name.`,
 			}),
 			form.NewField(form.FieldOptions{
 				Label: "Created From",
-				Name:  "filter_created_from",
+				Name:  fieldFilterCreatedFrom,
 				Type:  form.FORM_FIELD_TYPE_DATE,
 				Value: data.formCreatedFrom,
 				Help:  `Filter by creation date.`,
 			}),
 			form.NewField(form.FieldOptions{
 				Label: "Created To",
-				Name:  "filter_created_to",
+				Name:  fieldFilterCreatedTo,
 				Type:  form.FORM_FIELD_TYPE_DATE,
 				Value: data.formCreatedTo,
 				Help:  `Filter by creation date.`,
@@ -574,11 +574,11 @@ func (controller *taskQueueManagerController) prepareData(r *http.Request) (data
 	data.sortOrder = req.GetStringTrimmed(r, "sort")
 	data.sortBy = req.GetStringTrimmed(r, "by")
 
-	data.formCreatedFrom = req.GetStringTrimmed(r, "filter_created_from")
-	data.formCreatedTo = req.GetStringTrimmed(r, "filter_created_to")
-	data.formName = req.GetStringTrimmed(r, "filter_name")
-	data.formQueueID = req.GetStringTrimmed(r, "filter_queue_id")
-	data.formStatus = req.GetStringTrimmed(r, "filter_status")
+	data.formCreatedFrom = req.GetStringTrimmed(r, fieldFilterCreatedFrom)
+	data.formCreatedTo = req.GetStringTrimmed(r, fieldFilterCreatedTo)
+	data.formName = req.GetStringTrimmed(r, fieldFilterName)
+	data.formQueueID = req.GetStringTrimmed(r, fieldFilterQueueID)
+	data.formStatus = req.GetStringTrimmed(r, fieldFilterStatus)
 
 	data.recordList, data.recordCount, err = controller.fetchRecordList(&data)
 

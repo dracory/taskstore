@@ -97,23 +97,23 @@ func (c *taskQueueRequeueController) modal(data taskQueueRequeueControllerData) 
 		Required: true,
 	})
 
-	fieldParameters := form.NewField(form.FieldOptions{
+	fieldParam := form.NewField(form.FieldOptions{
 		Label:    "Parameters",
-		Name:     "parameters",
+		Name:     fieldParameters,
 		Type:     form.FORM_FIELD_TYPE_TEXTAREA,
 		Value:    data.formParameters,
 		Help:     "The parameters of the queued task. Must be valid JSON.",
 		Required: true,
 	})
 
-	fieldParametersSize := form.NewField(form.FieldOptions{
+	fieldParamSize := form.NewField(form.FieldOptions{
 		Type:  form.FORM_FIELD_TYPE_RAW,
-		Value: hb.Style(`#` + formID + ` textarea[name="parameters"] { height: 200px; }`).ToHTML(),
+		Value: hb.Style(`#` + formID + ` textarea[name="` + fieldParameters + `"] { height: 200px; }`).ToHTML(),
 	})
 
 	fieldQueueID := form.NewField(form.FieldOptions{
 		Label:    "Queue ID",
-		Name:     "queue_id",
+		Name:     fieldQueueID,
 		Type:     form.FORM_FIELD_TYPE_HIDDEN,
 		Value:    data.queueID,
 		Required: true,
@@ -124,8 +124,8 @@ func (c *taskQueueRequeueController) modal(data taskQueueRequeueControllerData) 
 		Fields: []form.FieldInterface{
 			fieldQueueID,
 			fieldInfo,
-			fieldParametersSize,
-			fieldParameters,
+			fieldParamSize,
+			fieldParam,
 		},
 	})
 
@@ -189,7 +189,7 @@ func (c *taskQueueRequeueController) modal(data taskQueueRequeueControllerData) 
 
 func (c *taskQueueRequeueController) prepareData(r *http.Request) (data taskQueueRequeueControllerData, err error) {
 	data.request = r
-	data.queueID = req.GetStringTrimmed(r, "queue_id")
+	data.queueID = req.GetStringTrimmed(r, fieldQueueID)
 
 	if data.queueID == "" {
 		return data, errors.New("queue_id is required")
@@ -208,7 +208,7 @@ func (c *taskQueueRequeueController) prepareData(r *http.Request) (data taskQueu
 	}
 
 	if r.Method == http.MethodPost {
-		data.formParameters = req.GetStringTrimmed(r, "parameters")
+		data.formParameters = req.GetStringTrimmed(r, fieldParameters)
 	}
 
 	return data, nil

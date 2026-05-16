@@ -106,7 +106,7 @@ func (c *taskDefinitionDeleteController) modal(data taskDefinitionDeleteControll
 
 	fieldTaskID := form.NewField(form.FieldOptions{
 		Label:    "Task ID",
-		Name:     "task_id",
+		Name:     fieldTaskID,
 		Type:     form.FORM_FIELD_TYPE_HIDDEN,
 		Value:    data.taskID,
 		Required: true,
@@ -180,7 +180,7 @@ func (c *taskDefinitionDeleteController) modal(data taskDefinitionDeleteControll
 func (c *taskDefinitionDeleteController) prepareData(r *http.Request) (data taskDefinitionDeleteControllerData, err error) {
 	data.request = r
 
-	data.taskID = req.GetStringTrimmed(r, "task_id")
+	data.taskID = req.GetStringTrimmed(r, fieldTaskID)
 
 	if data.taskID == "" {
 		return data, errors.New("task_id is required")

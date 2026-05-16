@@ -90,23 +90,23 @@ func (c *taskQueueCreateController) formSubmitted(data *taskQueueCreateControlle
 func (c *taskQueueCreateController) modalQueueCreate(data *taskQueueCreateControllerData) *hb.Tag {
 	modalID := `ModalQueueCreate`
 	formID := modalID + `Form`
-	fieldParameters := form.NewField(form.FieldOptions{
+	fieldParam := form.NewField(form.FieldOptions{
 		Label:    "Parameters",
-		Name:     "parameters",
+		Name:     fieldParameters,
 		Type:     form.FORM_FIELD_TYPE_TEXTAREA,
 		Value:    data.formParameters,
 		Help:     "The parameters of the queued task. Must be valid JSON.",
 		Required: true,
 	})
 
-	fieldParametersSize := form.NewField(form.FieldOptions{
+	fieldParamSize := form.NewField(form.FieldOptions{
 		Type:  form.FORM_FIELD_TYPE_RAW,
-		Value: hb.Style(`#` + formID + ` textarea[name="parameters"] { height: 200px; }`).ToHTML(),
+		Value: hb.Style(`#` + formID + ` textarea[name="` + fieldParameters + `"] { height: 300px; }`).ToHTML(),
 	})
 
 	fieldTaskID := form.NewField(form.FieldOptions{
 		Label:    "Task",
-		Name:     "task_id",
+		Name:     fieldTaskID,
 		Type:     form.FORM_FIELD_TYPE_SELECT,
 		Value:    data.formTaskID,
 		Help:     "The task that will be added to the queue to be executed.",
@@ -131,8 +131,8 @@ func (c *taskQueueCreateController) modalQueueCreate(data *taskQueueCreateContro
 		ID: formID,
 		Fields: []form.FieldInterface{
 			fieldTaskID,
-			fieldParametersSize,
-			fieldParameters,
+			fieldParamSize,
+			fieldParam,
 		},
 	})
 
@@ -194,11 +194,103 @@ func (c *taskQueueCreateController) modalQueueCreate(data *taskQueueCreateContro
 	})
 }
 
+// modalQueueCreateSimple provides a simpler enqueue modal using direct Bootstrap form building
+// This is an alternative to modalQueueCreate for use cases that don't require the form library
+func (c *taskQueueCreateController) modalQueueCreateSimple(data *taskQueueCreateControllerData) *hb.Tag {
+	modalID := `ModalQueueCreateSimple`
+
+	modalCloseScript := `document.getElementById('` + modalID + `').remove();document.getElementById('ModalBackdrop').remove();`
+
+	buttonModalClose := hb.Button().Type("button").
+		Class("btn-close").
+		Data("bs-dismiss", "modal").
+		OnClick(modalCloseScript)
+
+	buttonCancel := hb.Button().
+		Child(hb.I().Class("bi bi-chevron-left me-2")).
+		HTML("Cancel").
+		Class("btn btn-secondary float-start").
+		OnClick(modalCloseScript)
+
+	buttonEnqueue := hb.Button().
+		Child(hb.I().Class("bi bi-play me-2")).
+		HTML("Add to queue").
+		Class("btn btn-primary float-end").
+		HxInclude(`#` + modalID).
+		HxPost(url(data.request, pathTaskQueueCreate, nil)).
+		HxTarget("body").
+		HxSwap("beforeend")
+
+	groupTasks := bs.FormGroup().
+		Class("mb-3").
+		Child(bs.FormLabel("Task").
+			Style(`font-size:18px;color:black;font-weight:bold;`).
+			Child(hb.Sup().Text("*").Class("text-danger"))).
+		Child(bs.FormSelect().
+			Name(fieldTaskID).
+			Child(hb.Option().Value("").Text("- Select Task -")).
+			Children(lo.Map(data.taskList, func(task taskstore.TaskDefinitionInterface, _ int) hb.TagInterface {
+				return hb.Option().
+					Value(task.ID()).
+					Text(task.Title())
+			})))
+
+	groupParameters := bs.FormGroup().
+		Class("mb-3").
+		Child(bs.FormLabel("Task Parameters").
+			Style(`font-size:18px;color:black;font-weight:bold;`).
+			Child(hb.Sup().Text("*").Class("text-danger"))).
+		Child(bs.FormTextArea().
+			Name(fieldParameters).
+			Class("form-control").
+			Style(`height:300px;`).
+			Placeholder("Parameters")).
+		Child(hb.Div().
+			Text("Must be a valid JSON string").
+			Class("form-text text-muted"))
+
+	modal := bs.Modal().
+		ID(modalID).
+		Class("fade show").
+		Style(`display:block;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1051;`).
+		Children([]hb.TagInterface{
+			bs.ModalDialog().Children([]hb.TagInterface{
+				bs.ModalContent().Children([]hb.TagInterface{
+					bs.ModalHeader().Children([]hb.TagInterface{
+						hb.Heading5().
+							Text("New Task Enqueue").
+							Style(`padding: 0px; margin: 0px;`),
+						buttonModalClose,
+					}),
+
+					bs.ModalBody().
+						Child(groupTasks).
+						Child(groupParameters),
+
+					bs.ModalFooter().
+						Style(`display:flex;justify-content:space-between;`).
+						Child(buttonCancel).
+						Child(buttonEnqueue),
+				}),
+			}),
+		})
+
+	backdrop := hb.Div().
+		ID("ModalBackdrop").
+		Class("modal-backdrop fade show").
+		Style("display:block;")
+
+	return hb.Wrap().Children([]hb.TagInterface{
+		modal,
+		backdrop,
+	})
+}
+
 func (c *taskQueueCreateController) prepareData(r *http.Request) (data taskQueueCreateControllerData, err error) {
 	data.request = r
-	data.formParameters = req.GetStringTrimmed(r, "parameters")
+	data.formParameters = req.GetStringTrimmed(r, fieldParameters)
 	data.formStatus = req.GetStringTrimmed(r, "status")
-	data.formTaskID = req.GetStringTrimmed(r, "task_id")
+	data.formTaskID = req.GetStringTrimmed(r, fieldTaskID)
 
 	if data.taskList, err = c.store.TaskDefinitionList(context.Background(), taskstore.TaskDefinitionQuery().
 		SetOrderBy(taskstore.COLUMN_TITLE).

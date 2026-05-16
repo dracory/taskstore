@@ -71,7 +71,7 @@ func (c *taskDefinitionCreateController) formSubmitted(data taskDefinitionCreate
 func (c *taskDefinitionCreateController) modalTaskCreate(data taskDefinitionCreateControllerData) *hb.Tag {
 	fieldTitle := form.NewField(form.FieldOptions{
 		Label:    "Title",
-		Name:     "title",
+		Name:     fieldTitle,
 		Type:     form.FORM_FIELD_TYPE_STRING,
 		Value:    data.formTitle,
 		Help:     "The title of the task as displayed in the dashboard.",
@@ -80,7 +80,7 @@ func (c *taskDefinitionCreateController) modalTaskCreate(data taskDefinitionCrea
 
 	fieldAlias := form.NewField(form.FieldOptions{
 		Label:    "Alias / Command Name",
-		Name:     "alias",
+		Name:     fieldAlias,
 		Type:     form.FORM_FIELD_TYPE_STRING,
 		Value:    data.formAlias,
 		Help:     "The alias / the command name of the task. Should be unique.",
@@ -89,7 +89,7 @@ func (c *taskDefinitionCreateController) modalTaskCreate(data taskDefinitionCrea
 
 	fieldStatus := form.NewField(form.FieldOptions{
 		Label:    "Status",
-		Name:     "status",
+		Name:     fieldStatus,
 		Type:     form.FORM_FIELD_TYPE_SELECT,
 		Value:    data.formStatus,
 		Help:     "The status of the task.",
@@ -178,10 +178,10 @@ func (c *taskDefinitionCreateController) modalTaskCreate(data taskDefinitionCrea
 
 func (c *taskDefinitionCreateController) prepareData(r *http.Request) (data taskDefinitionCreateControllerData, err error) {
 	data.request = r
-	data.formAlias = req.GetStringTrimmed(r, "alias")
-	data.formDescription = req.GetStringTrimmed(r, "description")
-	data.formStatus = req.GetStringTrimmed(r, "status")
-	data.formTitle = req.GetStringTrimmed(r, "title")
+	data.formAlias = req.GetStringTrimmed(r, fieldAlias)
+	data.formDescription = req.GetStringTrimmed(r, fieldDescription)
+	data.formStatus = req.GetStringTrimmed(r, fieldStatus)
+	data.formTitle = req.GetStringTrimmed(r, fieldTitle)
 
 	return data, nil
 }

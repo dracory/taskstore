@@ -48,30 +48,30 @@ func (c *taskQueueDetailsController) modal(data taskQueueDetailsControllerData) 
 
 	fieldQueueID := form.NewField(form.FieldOptions{
 		Label:    "Queue ID",
-		Name:     "queue_id",
+		Name:     fieldQueueID,
 		Type:     form.FORM_FIELD_TYPE_HIDDEN,
 		Value:    data.queueID,
 		Required: true,
 	})
 
-	fieldDetails := form.NewField(form.FieldOptions{
+	fieldDetail := form.NewField(form.FieldOptions{
 		Label:    "Queued Task Details",
-		Name:     "details",
+		Name:     fieldDetails,
 		Type:     form.FORM_FIELD_TYPE_TEXTAREA,
 		Value:    data.queue.Details(),
 		Required: true,
 	})
 
-	fieldDetailsSize := form.NewField(form.FieldOptions{
+	fieldDetailSize := form.NewField(form.FieldOptions{
 		Type:  form.FORM_FIELD_TYPE_RAW,
-		Value: hb.Style(`#` + formID + ` textarea[name="details"] { height: 200px; }`).ToHTML(),
+		Value: hb.Style(`#` + formID + ` textarea[name="` + fieldDetails + `"] { height: 200px; }`).ToHTML(),
 	})
 
 	formUpdate := form.NewForm(form.FormOptions{
 		ID: formID,
 		Fields: []form.FieldInterface{
-			fieldDetailsSize,
-			fieldDetails,
+			fieldDetailSize,
+			fieldDetail,
 			fieldQueueID,
 		},
 	})
@@ -133,7 +133,7 @@ func (c *taskQueueDetailsController) modal(data taskQueueDetailsControllerData) 
 func (c *taskQueueDetailsController) prepareData(r *http.Request) (data taskQueueDetailsControllerData, err error) {
 	data.request = r
 
-	data.queueID = req.GetString(r, "queue_id")
+	data.queueID = req.GetString(r, fieldQueueID)
 
 	if data.queueID == "" {
 		return data, errors.New("queue_id is required")

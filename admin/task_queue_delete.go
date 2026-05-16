@@ -90,7 +90,7 @@ func (c *taskQueueDeleteController) modal(data taskQueueDeleteControllerData) *h
 
 	fieldQueueID := form.NewField(form.FieldOptions{
 		Label:    "Queue ID",
-		Name:     "queue_id",
+		Name:     fieldQueueID,
 		Type:     form.FORM_FIELD_TYPE_HIDDEN,
 		Value:    data.queueID,
 		Required: true,
@@ -164,7 +164,7 @@ func (c *taskQueueDeleteController) modal(data taskQueueDeleteControllerData) *h
 func (c *taskQueueDeleteController) prepareData(r *http.Request) (data taskQueueDeleteControllerData, err error) {
 	data.request = r
 
-	data.queueID = req.GetStringTrimmed(r, "queue_id")
+	data.queueID = req.GetStringTrimmed(r, fieldQueueID)
 
 	if data.queueID == "" {
 		return data, errors.New("queue_id is required")

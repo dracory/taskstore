@@ -110,6 +110,28 @@ func url(r *http.Request, path string, params map[string]string) string {
 	return url
 }
 
+// linkWithContext provides a context-based URL generation alternative
+// This uses context to retrieve the endpoint, useful in complex routing scenarios
+// Usage: Set endpoint in context with keyEndpoint before calling this function
+func linkWithContext(r *http.Request, path string, params map[string]string) string {
+	endpoint := r.URL.Path
+
+	// Try to get endpoint from context first (if set by caller)
+	if ctxEndpoint := r.Context().Value(keyEndpoint); ctxEndpoint != nil {
+		if endpointStr, ok := ctxEndpoint.(string); ok {
+			endpoint = endpointStr
+		}
+	}
+
+	if params == nil {
+		params = map[string]string{}
+	}
+
+	params["controller"] = path
+
+	return endpoint + query(params)
+}
+
 func query(queryData map[string]string) string {
 	queryString := ""
 
@@ -171,4 +193,49 @@ func isJSON(str string) bool {
 	}
 
 	return false
+}
+
+// sortableColumnLabel creates a sortable column label with sorting indicator
+// This is a standalone utility function for better reusability across controllers
+// page parameter defaults to "0" to reset pagination on sort change
+func sortableColumnLabel(r *http.Request, tableLabel, columnName, path string, sortBy, sortOrder, page string) hb.TagInterface {
+	if page == "" {
+		page = "0"
+	}
+
+	isSelected := strings.EqualFold(sortBy, columnName)
+
+	direction := lo.If(sortOrder == "asc", "desc").Else("asc")
+
+	if !isSelected {
+		direction = "asc"
+	}
+
+	linkURL := url(r, path, map[string]string{
+		"page": page,
+		"by":   columnName,
+		"sort": direction,
+	})
+
+	return hb.Hyperlink().
+		HTML(tableLabel).
+		Child(sortingIndicator(columnName, sortBy, sortOrder)).
+		Href(linkURL)
+}
+
+// sortingIndicator returns the sorting indicator (up/down arrow) for a column
+// This is a standalone utility function for better reusability across controllers
+func sortingIndicator(columnName, sortByColumnName, sortOrder string) hb.TagInterface {
+	isSelected := strings.EqualFold(sortByColumnName, columnName)
+
+	direction := lo.If(isSelected && sortOrder == "asc", "up").
+		ElseIf(isSelected && sortOrder == "desc", "down").
+		Else("none")
+
+	sortingIndicator := hb.Span().
+		Class("sorting").
+		HTMLIf(direction == "up", "&#8595;").
+		HTMLIf(direction == "down", "&#8593;")
+
+	return sortingIndicator
 }

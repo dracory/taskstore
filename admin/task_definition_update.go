@@ -112,27 +112,27 @@ func (c *taskDefinitionUpdateController) formSubmitted(data *taskDefinitionUpdat
 }
 
 func (c *taskDefinitionUpdateController) modal(data *taskDefinitionUpdateControllerData) *hb.Tag {
-	fieldTitle := form.NewField(form.FieldOptions{
+	fieldTitleVal := form.NewField(form.FieldOptions{
 		Label:    "Title",
-		Name:     "title",
+		Name:     fieldTitle,
 		Type:     form.FORM_FIELD_TYPE_STRING,
 		Value:    data.formTitle,
 		Help:     "The title of the task as displayed in the dashboard.",
 		Required: true,
 	})
 
-	fieldAlias := form.NewField(form.FieldOptions{
+	fieldAliasVal := form.NewField(form.FieldOptions{
 		Label:    "Alias / Command Name",
-		Name:     "alias",
+		Name:     fieldAlias,
 		Type:     form.FORM_FIELD_TYPE_STRING,
 		Value:    data.formAlias,
 		Help:     "The alias / the command name of the task. Should be unique.",
 		Required: true,
 	})
 
-	fieldStatus := form.NewField(form.FieldOptions{
+	fieldStatusVal := form.NewField(form.FieldOptions{
 		Label:    "Status",
-		Name:     "status",
+		Name:     fieldStatus,
 		Type:     form.FORM_FIELD_TYPE_SELECT,
 		Value:    data.formStatus,
 		Help:     "The status of the task.",
@@ -153,18 +153,18 @@ func (c *taskDefinitionUpdateController) modal(data *taskDefinitionUpdateControl
 		},
 	})
 
-	fieldDescription := form.NewField(form.FieldOptions{
+	fieldDescriptionVal := form.NewField(form.FieldOptions{
 		Label:    "Description",
-		Name:     "description",
+		Name:     fieldDescription,
 		Type:     form.FORM_FIELD_TYPE_TEXTAREA,
 		Value:    data.formDescription,
 		Help:     "The description of the task.",
 		Required: true,
 	})
 
-	fieldTaskID := form.NewField(form.FieldOptions{
+	fieldTaskIDVal := form.NewField(form.FieldOptions{
 		Label:    "Task ID",
-		Name:     "task_id",
+		Name:     fieldTaskID,
 		Type:     form.FORM_FIELD_TYPE_HIDDEN,
 		Value:    data.taskID,
 		Required: true,
@@ -173,11 +173,11 @@ func (c *taskDefinitionUpdateController) modal(data *taskDefinitionUpdateControl
 	formUpdate := form.NewForm(form.FormOptions{
 		ID: "FormTaskUpdate",
 		Fields: []form.FieldInterface{
-			fieldTitle,
-			fieldAlias,
-			fieldStatus,
-			fieldDescription,
-			fieldTaskID,
+			fieldTitleVal,
+			fieldAliasVal,
+			fieldStatusVal,
+			fieldDescriptionVal,
+			fieldTaskIDVal,
 		},
 	})
 
@@ -241,7 +241,7 @@ func (c *taskDefinitionUpdateController) modal(data *taskDefinitionUpdateControl
 func (c *taskDefinitionUpdateController) prepareData(r *http.Request) (data taskDefinitionUpdateControllerData, err error) {
 	data.request = r
 
-	data.taskID = req.GetStringTrimmed(r, "task_id")
+	data.taskID = req.GetStringTrimmed(r, fieldTaskID)
 
 	if data.taskID == "" {
 		return data, errors.New("task_id is required")
@@ -265,10 +265,10 @@ func (c *taskDefinitionUpdateController) prepareData(r *http.Request) (data task
 	}
 
 	if r.Method == http.MethodPost {
-		data.formAlias = req.GetStringTrimmed(r, "alias")
-		data.formDescription = req.GetStringTrimmed(r, "description")
-		data.formStatus = req.GetStringTrimmed(r, "status")
-		data.formTitle = req.GetStringTrimmed(r, "title")
+		data.formAlias = req.GetStringTrimmed(r, fieldAlias)
+		data.formDescription = req.GetStringTrimmed(r, fieldDescription)
+		data.formStatus = req.GetStringTrimmed(r, fieldStatus)
+		data.formTitle = req.GetStringTrimmed(r, fieldTitle)
 	}
 
 	return data, nil
