@@ -2816,18 +2816,6 @@ func Test_taskQueueCreateControllerData_with_nil_request(t *testing.T) {
 	}
 }
 
-func Test_taskQueueCreateController_with_nil_store(t *testing.T) {
-	// Test taskQueueCreateController with nil store
-	controller := &taskQueueCreateController{
-		logger: *slog.Default(),
-		store:  nil,
-	}
-
-	if controller.store != nil {
-		t.Error("taskQueueCreateController store should be nil")
-	}
-}
-
 func Test_containsString_with_empty_search_string(t *testing.T) {
 	// Test strings.Contains with empty search string
 	result := strings.Contains("hello world", "")
