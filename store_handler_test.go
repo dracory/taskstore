@@ -5,6 +5,48 @@ import (
 	"testing"
 )
 
+func Test_Store_TaskHandlerList(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("TaskHandlerList: Error[%v]", err)
+	}
+	defer store.db.Close()
+
+	ctx := context.Background()
+
+	// Initially empty
+	handlers := store.TaskHandlerList()
+	if len(handlers) != 0 {
+		t.Errorf("TaskHandlerList() should return empty list initially, got %d handlers", len(handlers))
+	}
+
+	// Add a handler
+	handler := newTestTaskHandler()
+	err = store.TaskHandlerAdd(ctx, handler, true)
+	if err != nil {
+		t.Fatalf("TaskHandlerAdd: Error[%v]", err)
+	}
+
+	// Should have one handler
+	handlers = store.TaskHandlerList()
+	if len(handlers) != 1 {
+		t.Errorf("TaskHandlerList() should return 1 handler, got %d", len(handlers))
+	}
+
+	// Add another handler
+	handler2 := &testHandler2{}
+	err = store.TaskHandlerAdd(ctx, handler2, true)
+	if err != nil {
+		t.Fatalf("TaskHandlerAdd: Error[%v]", err)
+	}
+
+	// Should have two handlers
+	handlers = store.TaskHandlerList()
+	if len(handlers) != 2 {
+		t.Errorf("TaskHandlerList() should return 2 handlers, got %d", len(handlers))
+	}
+}
+
 func Test_Store_TaskHandlerAdd(t *testing.T) {
 
 	handler := new(testHandler)

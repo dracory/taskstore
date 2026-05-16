@@ -3,6 +3,7 @@ package taskstore
 import (
 	"context"
 	"database/sql"
+	"log"
 	"testing"
 	"time"
 
@@ -154,6 +155,90 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 	if updatedSchedule.GetStatus() != "active" {
 		t.Errorf("expected status 'active', got %s", updatedSchedule.GetStatus())
 	}
+}
+
+func TestScheduleRunner_shouldContinue(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+
+	runner := NewScheduleRunner(store, ScheduleRunnerOptions{IntervalSeconds: 1})
+
+	// Test with running state
+	tests := []struct {
+		name     string
+		running  bool
+		ctx      context.Context
+		expected bool
+	}{
+		{
+			name:     "running with valid context",
+			running:  true,
+			ctx:      context.Background(),
+			expected: true,
+		},
+		{
+			name:     "not running",
+			running:  false,
+			ctx:      context.Background(),
+			expected: false,
+		},
+		{
+			name:    "running with cancelled context",
+			running: true,
+			ctx: func() context.Context {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				return ctx
+			}(),
+			expected: false,
+		},
+		{
+			name:     "running with nil context",
+			running:  true,
+			ctx:      nil,
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := runner.(*scheduleRunner)
+			r.running.Store(tt.running)
+			got := r.shouldContinue(tt.ctx)
+			if got != tt.expected {
+				t.Errorf("shouldContinue() = %v, want %v", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestScheduleRunner_logf(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+
+	// Test with nil logger (should not panic)
+	runner := NewScheduleRunner(store, ScheduleRunnerOptions{IntervalSeconds: 1})
+	r := runner.(*scheduleRunner)
+	r.logf("test message %s", "arg") // Should not panic
+
+	// Test with logger (should not panic)
+	logger := log.New(&testLoggerWriter{}, "", 0)
+	runnerWithLogger := NewScheduleRunner(store, ScheduleRunnerOptions{IntervalSeconds: 1, Logger: logger})
+	rWithLogger := runnerWithLogger.(*scheduleRunner)
+	rWithLogger.logf("test message %s", "arg") // Should not panic
+}
+
+// testLoggerWriter is a simple io.Writer for testing
+type testLoggerWriter struct{}
+
+func (w *testLoggerWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
 }
 
 func TestScheduleRunnerStartStop(t *testing.T) {

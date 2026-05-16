@@ -97,6 +97,153 @@ func TestScheduleCRUD(t *testing.T) {
 	}
 }
 
+func TestScheduleCount(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+
+	ctx := context.Background()
+
+	// Create tables
+	_, err = store.SqlCreateTaskDefinitionTable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = store.SqlCreateScheduleTable()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Initially count should be 0
+	count, err := store.ScheduleCount(ctx, NewScheduleQuery())
+	if err != nil {
+		t.Errorf("ScheduleCount() error = %v", err)
+	}
+	if count != 0 {
+		t.Errorf("ScheduleCount() = %v, want 0", count)
+	}
+
+	// Create a schedule
+	schedule := NewSchedule().
+		SetName("Test Schedule").
+		SetStatus("active").
+		SetQueueName("default").
+		SetTaskDefinitionID("task_def_1").
+		SetRecurrenceRule(NewRecurrenceRule().SetFrequency(FrequencyDaily))
+
+	err = store.ScheduleCreate(ctx, schedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Count should be 1
+	count, err = store.ScheduleCount(ctx, NewScheduleQuery())
+	if err != nil {
+		t.Errorf("ScheduleCount() error = %v", err)
+	}
+	if count != 1 {
+		t.Errorf("ScheduleCount() = %v, want 1", count)
+	}
+}
+
+func TestScheduleDelete(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+
+	ctx := context.Background()
+
+	// Create tables
+	_, err = store.SqlCreateTaskDefinitionTable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = store.SqlCreateScheduleTable()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a schedule
+	schedule := NewSchedule().
+		SetName("Test Schedule").
+		SetStatus("active").
+		SetQueueName("default").
+		SetTaskDefinitionID("task_def_1").
+		SetRecurrenceRule(NewRecurrenceRule().SetFrequency(FrequencyDaily))
+
+	err = store.ScheduleCreate(ctx, schedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Delete the schedule
+	err = store.ScheduleDelete(ctx, schedule)
+	if err != nil {
+		t.Errorf("ScheduleDelete() error = %v", err)
+	}
+
+	// Verify it's deleted
+	found, err := store.ScheduleFindByID(ctx, schedule.GetID())
+	if err != nil {
+		t.Errorf("ScheduleFindByID() error = %v", err)
+	}
+	if found != nil {
+		t.Error("Schedule should be deleted")
+	}
+}
+
+func TestScheduleSoftDelete(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.db.Close()
+
+	ctx := context.Background()
+
+	// Create tables
+	_, err = store.SqlCreateTaskDefinitionTable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = store.SqlCreateScheduleTable()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a schedule
+	schedule := NewSchedule().
+		SetName("Test Schedule").
+		SetStatus("active").
+		SetQueueName("default").
+		SetTaskDefinitionID("task_def_1").
+		SetRecurrenceRule(NewRecurrenceRule().SetFrequency(FrequencyDaily))
+
+	err = store.ScheduleCreate(ctx, schedule)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Soft delete the schedule
+	err = store.ScheduleSoftDelete(ctx, schedule)
+	if err != nil {
+		t.Errorf("ScheduleSoftDelete() error = %v", err)
+	}
+
+	// Verify it's soft deleted (should not appear in normal queries)
+	list, err := store.ScheduleList(ctx, NewScheduleQuery())
+	if err != nil {
+		t.Errorf("ScheduleList() error = %v", err)
+	}
+	if len(list) != 0 {
+		t.Error("Soft deleted schedule should not appear in normal queries")
+	}
+}
+
 func TestScheduleRun(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {

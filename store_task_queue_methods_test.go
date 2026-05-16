@@ -9,6 +9,55 @@ import (
 	"github.com/dracory/sb"
 )
 
+func Test_Store_TaskQueueCount(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("TaskQueueCount: Error[%v]", err)
+	}
+	defer store.db.Close()
+
+	ctx := context.Background()
+
+	// Create table
+	query, err := store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
+	if _, err := store.db.Exec(query); err != nil {
+		t.Fatalf("Exec: Error[%v]", err)
+	}
+
+	// Initially count should be 0
+	count, err := store.TaskQueueCount(ctx, TaskQueueQuery())
+	if err != nil {
+		t.Errorf("TaskQueueCount() error = %v", err)
+	}
+	if count != 0 {
+		t.Errorf("TaskQueueCount() = %v, want 0", count)
+	}
+
+	// Create a task queue
+	task := NewTaskQueue().
+		SetTaskID("task_1").
+		SetQueueName("default").
+		SetStatus(TaskQueueStatusQueued).
+		SetParameters(`{"key":"value"}`)
+
+	err = store.TaskQueueCreate(ctx, task)
+	if err != nil {
+		t.Fatalf("TaskQueueCreate: Error[%v]", err)
+	}
+
+	// Count should be 1
+	count, err = store.TaskQueueCount(ctx, TaskQueueQuery())
+	if err != nil {
+		t.Errorf("TaskQueueCount() error = %v", err)
+	}
+	if count != 1 {
+		t.Errorf("TaskQueueCount() = %v, want 1", count)
+	}
+}
+
 func Test_Store_SqlCreateTaskQueueTable(t *testing.T) {
 	store, err := initStore()
 	if err != nil {
@@ -512,6 +561,89 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 			t.Errorf("Expected status to remain 'queued', got '%s'", queue.Status())
 		}
 	})
+}
+
+func Test_Store_TaskQueueProcessNextByQueue(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("TaskQueueProcessNextByQueue: Error[%v]", err)
+	}
+	defer store.db.Close()
+
+	ctx := context.Background()
+
+	// Create tables
+	query, err := store.SqlCreateTaskDefinitionTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskDefinitionTable: Error[%v]", err)
+	}
+	if _, err := store.db.Exec(query); err != nil {
+		t.Fatalf("Exec: Error[%v]", err)
+	}
+
+	query, err = store.SqlCreateTaskQueueTable()
+	if err != nil {
+		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
+	}
+	if _, err := store.db.Exec(query); err != nil {
+		t.Fatalf("Exec: Error[%v]", err)
+	}
+
+	// Add a handler
+	handler := newTestTaskHandler()
+	err = store.TaskHandlerAdd(ctx, handler, true)
+	if err != nil {
+		t.Fatalf("TaskHandlerAdd: Error[%v]", err)
+	}
+
+	// Enqueue a task to custom queue
+	_, err = store.TaskDefinitionEnqueueByAlias(ctx, "custom_queue", handler.Alias(), map[string]any{})
+	if err != nil {
+		t.Fatalf("TaskDefinitionEnqueueByAlias: Error[%v]", err)
+	}
+
+	// Process next task from custom queue
+	err = store.TaskQueueProcessNextByQueue(ctx, "custom_queue")
+	if err != nil {
+		t.Errorf("TaskQueueProcessNextByQueue() error = %v", err)
+	}
+}
+
+func Test_normalizeQueueName(t *testing.T) {
+	tests := []struct {
+		name      string
+		queueName string
+		want      string
+	}{
+		{
+			name:      "empty queue name returns default",
+			queueName: "",
+			want:      DefaultQueueName,
+		},
+		{
+			name:      "non-empty queue name returns as is",
+			queueName: "custom_queue",
+			want:      "custom_queue",
+		},
+		{
+			name:      "queue name with spaces",
+			queueName: "my queue",
+			want:      "my queue",
+		},
+		{
+			name:      "default queue name",
+			queueName: DefaultQueueName,
+			want:      DefaultQueueName,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := normalizeQueueName(tt.queueName); got != tt.want {
+				t.Errorf("normalizeQueueName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func Test_Store_TaskQueueClaimNext(t *testing.T) {
