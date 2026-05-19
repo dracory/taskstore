@@ -95,14 +95,14 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 	}
 
 	if store.automigrateEnabled {
-		store.MigrateUp()
+		store.MigrateUp(context.Background())
 	}
 
 	return store, nil
 }
 
 // MigrateUp creates all tables
-func (st *Store) MigrateUp(tx ...*sql.Tx) error {
+func (st *Store) MigrateUp(ctx context.Context, tx ...*sql.Tx) error {
 	var txToUse *sql.Tx
 	if len(tx) > 0 {
 		txToUse = tx[0]
@@ -121,9 +121,9 @@ func (st *Store) MigrateUp(tx ...*sql.Tx) error {
 
 	var errTask error
 	if txToUse != nil {
-		_, errTask = txToUse.Exec(sqlTaskTable)
+		_, errTask = txToUse.ExecContext(ctx, sqlTaskTable)
 	} else {
-		_, errTask = st.db.Exec(sqlTaskTable)
+		_, errTask = st.db.ExecContext(ctx, sqlTaskTable)
 	}
 
 	if errTask != nil {
@@ -144,9 +144,9 @@ func (st *Store) MigrateUp(tx ...*sql.Tx) error {
 
 	var errQueue error
 	if txToUse != nil {
-		_, errQueue = txToUse.Exec(sqlQueueTable)
+		_, errQueue = txToUse.ExecContext(ctx, sqlQueueTable)
 	} else {
-		_, errQueue = st.db.Exec(sqlQueueTable)
+		_, errQueue = st.db.ExecContext(ctx, sqlQueueTable)
 	}
 
 	if errQueue != nil {
@@ -167,9 +167,9 @@ func (st *Store) MigrateUp(tx ...*sql.Tx) error {
 
 	var errSchedule error
 	if txToUse != nil {
-		_, errSchedule = txToUse.Exec(sqlScheduleTable)
+		_, errSchedule = txToUse.ExecContext(ctx, sqlScheduleTable)
 	} else {
-		_, errSchedule = st.db.Exec(sqlScheduleTable)
+		_, errSchedule = st.db.ExecContext(ctx, sqlScheduleTable)
 	}
 
 	if errSchedule != nil {
@@ -181,7 +181,7 @@ func (st *Store) MigrateUp(tx ...*sql.Tx) error {
 }
 
 // MigrateDown drops all tables
-func (st *Store) MigrateDown(tx ...*sql.Tx) error {
+func (st *Store) MigrateDown(ctx context.Context, tx ...*sql.Tx) error {
 	var txToUse *sql.Tx
 	if len(tx) > 0 {
 		txToUse = tx[0]
@@ -206,9 +206,9 @@ func (st *Store) MigrateDown(tx ...*sql.Tx) error {
 
 		var errExec error
 		if txToUse != nil {
-			_, errExec = txToUse.Exec(sql)
+			_, errExec = txToUse.ExecContext(ctx, sql)
 		} else {
-			_, errExec = st.db.Exec(sql)
+			_, errExec = st.db.ExecContext(ctx, sql)
 		}
 
 		if errExec != nil {
@@ -222,7 +222,7 @@ func (st *Store) MigrateDown(tx ...*sql.Tx) error {
 
 // AutoMigrate migrates the tables (deprecated - use MigrateUp)
 func (st *Store) AutoMigrate() error {
-	return st.MigrateUp()
+	return st.MigrateUp(context.Background())
 }
 
 // EnableDebug - enables the debug option

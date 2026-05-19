@@ -20,10 +20,10 @@ type StoreInterface interface {
 	SetScheduleTableName(tableName string)
 
 	// MigrateDown drops all tables
-	MigrateDown(tx ...*sql.Tx) error
+	MigrateDown(ctx context.Context, tx ...*sql.Tx) error
 
 	// MigrateUp creates all tables
-	MigrateUp(tx ...*sql.Tx) error
+	MigrateUp(ctx context.Context, tx ...*sql.Tx) error
 
 	// EnableDebug enables debug mode
 	EnableDebug(debug bool) StoreInterface
