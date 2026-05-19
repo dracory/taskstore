@@ -206,3 +206,24 @@ func (st *Store) SqlCreateScheduleTable() (string, error) {
 		}).
 		CreateIfNotExists()
 }
+
+// SqlDropTaskQueueTable drops the task queue table
+func (st *Store) SqlDropTaskQueueTable() (string, error) {
+	return sb.NewBuilder(st.dbDriverName).
+		Table(st.taskQueueTableName).
+		Drop()
+}
+
+// SqlDropTaskDefinitionTable drops the task definition table
+func (st *Store) SqlDropTaskDefinitionTable() (string, error) {
+	return sb.NewBuilder(st.dbDriverName).
+		Table(st.taskDefinitionTableName).
+		Drop()
+}
+
+// SqlDropScheduleTable drops the schedule table
+func (st *Store) SqlDropScheduleTable() (string, error) {
+	return sb.NewBuilder(st.dbDriverName).
+		Table(st.scheduleTableName).
+		Drop()
+}

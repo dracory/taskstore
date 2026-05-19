@@ -1,10 +1,34 @@
 package taskstore
 
-import "context"
+import (
+	"context"
+	"database/sql"
+)
 
 type StoreInterface interface {
-	AutoMigrate() error
+	// GetTaskDefinitionTableName returns the task definition table name
+	GetTaskDefinitionTableName() string
+	// SetTaskDefinitionTableName sets the task definition table name
+	SetTaskDefinitionTableName(tableName string)
+	// GetTaskQueueTableName returns the task queue table name
+	GetTaskQueueTableName() string
+	// SetTaskQueueTableName sets the task queue table name
+	SetTaskQueueTableName(tableName string)
+	// GetScheduleTableName returns the schedule table name
+	GetScheduleTableName() string
+	// SetScheduleTableName sets the schedule table name
+	SetScheduleTableName(tableName string)
+
+	// MigrateDown drops all tables
+	MigrateDown(tx ...*sql.Tx) error
+
+	// MigrateUp creates all tables
+	MigrateUp(tx ...*sql.Tx) error
+
+	// EnableDebug enables debug mode
 	EnableDebug(debug bool) StoreInterface
+
+	// SetErrorHandler sets the error handler
 	SetErrorHandler(handler func(queueName, taskID string, err error)) StoreInterface
 
 	// == TaskQueue Methods ==

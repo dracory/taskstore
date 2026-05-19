@@ -95,16 +95,20 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 	}
 
 	if store.automigrateEnabled {
-		if err := store.AutoMigrate(); err != nil {
-			return nil, err
-		}
+		store.MigrateUp()
 	}
 
 	return store, nil
 }
 
-// AutoMigrate migrates the tables
-func (st *Store) AutoMigrate() error {
+// MigrateUp creates all tables
+func (st *Store) MigrateUp(tx ...*sql.Tx) error {
+	var txToUse *sql.Tx
+	if len(tx) > 0 {
+		txToUse = tx[0]
+	}
+
+	// Create task definition table
 	sqlTaskTable, err := st.SqlCreateTaskDefinitionTable()
 	if err != nil {
 		log.Println(err)
@@ -115,12 +119,19 @@ func (st *Store) AutoMigrate() error {
 		log.Println(sqlTaskTable)
 	}
 
-	_, errTask := st.db.Exec(sqlTaskTable)
+	var errTask error
+	if txToUse != nil {
+		_, errTask = txToUse.Exec(sqlTaskTable)
+	} else {
+		_, errTask = st.db.Exec(sqlTaskTable)
+	}
+
 	if errTask != nil {
 		log.Println(errTask)
 		return errTask
 	}
 
+	// Create task queue table
 	sqlQueueTable, err := st.SqlCreateTaskQueueTable()
 	if err != nil {
 		log.Println(err)
@@ -131,12 +142,19 @@ func (st *Store) AutoMigrate() error {
 		log.Println(sqlQueueTable)
 	}
 
-	_, errQueue := st.db.Exec(sqlQueueTable)
+	var errQueue error
+	if txToUse != nil {
+		_, errQueue = txToUse.Exec(sqlQueueTable)
+	} else {
+		_, errQueue = st.db.Exec(sqlQueueTable)
+	}
+
 	if errQueue != nil {
 		log.Println(errQueue)
 		return errQueue
 	}
 
+	// Create schedule table
 	sqlScheduleTable, err := st.SqlCreateScheduleTable()
 	if err != nil {
 		log.Println(err)
@@ -147,7 +165,13 @@ func (st *Store) AutoMigrate() error {
 		log.Println(sqlScheduleTable)
 	}
 
-	_, errSchedule := st.db.Exec(sqlScheduleTable)
+	var errSchedule error
+	if txToUse != nil {
+		_, errSchedule = txToUse.Exec(sqlScheduleTable)
+	} else {
+		_, errSchedule = st.db.Exec(sqlScheduleTable)
+	}
+
 	if errSchedule != nil {
 		log.Println(errSchedule)
 		return errSchedule
@@ -156,10 +180,85 @@ func (st *Store) AutoMigrate() error {
 	return nil
 }
 
+// MigrateDown drops all tables
+func (st *Store) MigrateDown(tx ...*sql.Tx) error {
+	var txToUse *sql.Tx
+	if len(tx) > 0 {
+		txToUse = tx[0]
+	}
+
+	// Drop tables in reverse order to avoid foreign key constraints
+	tables := []struct {
+		name string
+		drop func() (string, error)
+	}{
+		{st.scheduleTableName, st.SqlDropScheduleTable},
+		{st.taskQueueTableName, st.SqlDropTaskQueueTable},
+		{st.taskDefinitionTableName, st.SqlDropTaskDefinitionTable},
+	}
+
+	for _, table := range tables {
+		sql, err := table.drop()
+		if err != nil {
+			log.Printf("Error generating drop SQL for table %s: %v", table.name, err)
+			return err
+		}
+
+		var errExec error
+		if txToUse != nil {
+			_, errExec = txToUse.Exec(sql)
+		} else {
+			_, errExec = st.db.Exec(sql)
+		}
+
+		if errExec != nil {
+			log.Printf("Error dropping table %s: %v", table.name, errExec)
+			return errExec
+		}
+	}
+
+	return nil
+}
+
+// AutoMigrate migrates the tables (deprecated - use MigrateUp)
+func (st *Store) AutoMigrate() error {
+	return st.MigrateUp()
+}
+
 // EnableDebug - enables the debug option
 func (st *Store) EnableDebug(debugEnabled bool) StoreInterface {
 	st.debugEnabled = debugEnabled
 	return st
+}
+
+// GetTaskDefinitionTableName returns the task definition table name
+func (st *Store) GetTaskDefinitionTableName() string {
+	return st.taskDefinitionTableName
+}
+
+// SetTaskDefinitionTableName sets the task definition table name
+func (st *Store) SetTaskDefinitionTableName(tableName string) {
+	st.taskDefinitionTableName = tableName
+}
+
+// GetTaskQueueTableName returns the task queue table name
+func (st *Store) GetTaskQueueTableName() string {
+	return st.taskQueueTableName
+}
+
+// SetTaskQueueTableName sets the task queue table name
+func (st *Store) SetTaskQueueTableName(tableName string) {
+	st.taskQueueTableName = tableName
+}
+
+// GetScheduleTableName returns the schedule table name
+func (st *Store) GetScheduleTableName() string {
+	return st.scheduleTableName
+}
+
+// SetScheduleTableName sets the schedule table name
+func (st *Store) SetScheduleTableName(tableName string) {
+	st.scheduleTableName = tableName
 }
 
 // SetErrorHandler - sets a custom error handler for queue processing errors
