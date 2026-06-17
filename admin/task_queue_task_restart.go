@@ -40,7 +40,7 @@ func (c *taskQueueTaskRestartController) ToTag(w http.ResponseWriter, r *http.Re
 }
 
 func (c *taskQueueTaskRestartController) formSubmitted(data taskQueueTaskRestartControllerData) hb.TagInterface {
-	task, err := c.store.TaskDefinitionFindByID(context.Background(), data.queue.TaskID())
+	task, err := c.store.TaskDefinitionFindByID(context.Background(), data.queue.GetTaskID())
 
 	if err != nil {
 		c.logger.Error("At taskQueueTaskRestartController > formSubmitted", "error", err.Error())

@@ -134,7 +134,7 @@ func (r *taskQueueRunner) runOnceSerial(ctx context.Context) error {
 
 		_, err = r.store.TaskQueueProcessTask(ctx, queuedTask)
 		if err != nil {
-			r.logf("TaskQueueRunner: error processing task %s: %v", queuedTask.ID(), err)
+			r.logf("TaskQueueRunner: error processing task %s: %v", queuedTask.GetID(), err)
 		}
 	}
 }
@@ -181,7 +181,7 @@ func (r *taskQueueRunner) runOnceConcurrent(ctx context.Context) error {
 
 			_, processErr := r.store.TaskQueueProcessTask(ctx, task)
 			if processErr != nil {
-				r.logf("TaskQueueRunner: error processing task %s: %v", task.ID(), processErr)
+				r.logf("TaskQueueRunner: error processing task %s: %v", task.GetID(), processErr)
 			}
 		}(queuedTask)
 	}

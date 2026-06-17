@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-
-	"github.com/dracory/sb"
 )
 
 func Test_Store_TaskQueueCount(t *testing.T) {
@@ -14,18 +12,9 @@ func Test_Store_TaskQueueCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskQueueCount: Error[%v]", err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
-
-	// Create table
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if _, err := store.db.Exec(query); err != nil {
-		t.Fatalf("Exec: Error[%v]", err)
-	}
 
 	// Initially count should be 0
 	count, err := store.TaskQueueCount(ctx, TaskQueueQuery())
@@ -58,21 +47,6 @@ func Test_Store_TaskQueueCount(t *testing.T) {
 	}
 }
 
-func Test_Store_SqlCreateTaskQueueTable(t *testing.T) {
-	store, err := initStore()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("SqlCreateTaskQueueTable: Unexpected Query, received [%v]", query)
-	}
-}
-
 func Test_Store_TaskQueueCreate(t *testing.T) {
 	store, err := initStore()
 	if err != nil {
@@ -82,19 +56,6 @@ func Test_Store_TaskQueueCreate(t *testing.T) {
 	task := NewTaskQueue().
 		SetTaskID("TASK_01").
 		SetAttempts(1)
-
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueCreate: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueCreate: Table creation error: [%v]", err)
-	}
 
 	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
@@ -108,19 +69,6 @@ func Test_Store_TaskQueueDeleteByID(t *testing.T) {
 		t.Fatalf("TaskQueueList: Error[%v]", err)
 	}
 
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueList: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueList: Table creation error: [%v]", err)
-	}
-
 	queuedTask := NewTaskQueue().
 		SetTaskID("TASK_01").
 		SetAttempts(1).
@@ -132,7 +80,7 @@ func Test_Store_TaskQueueDeleteByID(t *testing.T) {
 		t.Fatal("TaskQueueList: Error in creating queued task:", err.Error())
 	}
 
-	foundQueuedTask, err := store.TaskQueueFindByID(context.Background(), queuedTask.ID())
+	foundQueuedTask, err := store.TaskQueueFindByID(context.Background(), queuedTask.GetID())
 
 	if err != nil {
 		t.Fatal("TaskQueueDeletedByID: Error in creating queued task:", err.Error())
@@ -142,7 +90,7 @@ func Test_Store_TaskQueueDeleteByID(t *testing.T) {
 		t.Fatal("TaskQueueDeletedByID: queued task not found:")
 	}
 
-	err = store.TaskQueueDeleteByID(context.Background(), queuedTask.ID())
+	err = store.TaskQueueDeleteByID(context.Background(), queuedTask.GetID())
 
 	if err != nil {
 		t.Error("TaskQueueDeletedByID: Error deleting queued task:", err.Error())
@@ -159,19 +107,6 @@ func Test_Store_TaskQueueFail(t *testing.T) {
 	queuedTask := NewTaskQueue().
 		SetTaskID("TASK_01").
 		SetAttempts(1)
-
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueFail: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueFail: Table creation error: [%v]", err)
-	}
 
 	err = store.TaskQueueCreate(context.Background(), queuedTask)
 	if err != nil {
@@ -193,25 +128,12 @@ func Test_Store_TaskQueueFindByID(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueFindByID: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueFindByID: Table creation error: [%v]", err)
-	}
-
 	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueFindByID: Error in Creating TaskQueue: received [%v]", err)
 	}
 
-	id := task.ID()
+	id := task.GetID()
 	queue, err := store.TaskQueueFindByID(context.Background(), id)
 	if err != nil {
 		t.Fatalf("TaskQueueFindByID: Error in TaskQueueFindByID: received [%v]", err)
@@ -220,8 +142,8 @@ func Test_Store_TaskQueueFindByID(t *testing.T) {
 	if queue == nil {
 		t.Fatalf("TaskQueueFindByID: Error in Finding TaskQueue: ID [%v]", id)
 	}
-	if queue.ID() != id {
-		t.Fatalf("TaskQueueFindByID: ID not matching, Expected[%v], Received[%v]", id, queue.ID())
+	if queue.GetID() != id {
+		t.Fatalf("TaskQueueFindByID: ID not matching, Expected[%v], Received[%v]", id, queue.GetID())
 	}
 }
 
@@ -235,21 +157,6 @@ func Test_Store_TaskQueueList(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1).
 		SetStatus(TaskQueueStatusQueued)
-
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueList: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-
-	if err != nil {
-		t.Fatalf("TaskQueueList: Table creation error: [%v]", err)
-	}
 
 	err = store.TaskQueueCreate(context.Background(), task)
 
@@ -276,19 +183,6 @@ func Test_Store_TaskQueueFindNextQueuedTaskByQueue(t *testing.T) {
 	store, err := initStore()
 	if err != nil {
 		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Error[%v]", err)
-	}
-
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Table creation error: [%v]", err)
 	}
 
 	// default queue task
@@ -321,8 +215,8 @@ func Test_Store_TaskQueueFindNextQueuedTaskByQueue(t *testing.T) {
 		t.Fatal("TaskQueueFindNextQueuedTaskByQueue: Expected a queued task for 'emails' queue, got nil")
 	}
 
-	if q.TaskID() != "TASK_EMAILS" {
-		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Expected TASK_EMAILS, got %s", q.TaskID())
+	if q.GetTaskID() != "TASK_EMAILS" {
+		t.Fatalf("TaskQueueFindNextQueuedTaskByQueue: Expected TASK_EMAILS, got %s", q.GetTaskID())
 	}
 }
 
@@ -336,30 +230,17 @@ func Test_Store_TaskQueueSoftDeleteByID(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueSoftDeleteByID: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueSoftDeleteByID: Table creation error: [%v]", err)
-	}
-
 	err = store.TaskQueueCreate(context.Background(), queuedTask)
 	if err != nil {
 		t.Fatalf("TaskQueueSoftDeleteByID: Error in Creating TaskQueue: received [%v]", err)
 	}
 
-	err = store.TaskQueueSoftDeleteByID(context.Background(), queuedTask.ID())
+	err = store.TaskQueueSoftDeleteByID(context.Background(), queuedTask.GetID())
 	if err != nil {
 		t.Fatalf("TaskQueueSoftDeleteByID: Error in Fail TaskQueue: received [%v]", err)
 	}
 
-	queueFound, err := store.TaskQueueFindByID(context.Background(), queuedTask.ID())
+	queueFound, err := store.TaskQueueFindByID(context.Background(), queuedTask.GetID())
 
 	if err != nil {
 		t.Fatal("TaskQueueSoftDeleteByID: Error in TaskQueueFindByID: received:", err)
@@ -379,18 +260,6 @@ func Test_Store_TaskQueueSuccess(t *testing.T) {
 	task := NewTaskQueue().
 		SetTaskID("TASK_01").
 		SetAttempts(1)
-
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueSuccess: UnExpected Query, received [%v]", query)
-	}
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueSuccess: Table creation error: [%v]", err)
-	}
 
 	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
@@ -413,18 +282,6 @@ func Test_Store_TaskQueueUpdate(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueUpdate: UnExpected Query, received [%v]", query)
-	}
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueUpdate: Table creation error: [%v]", err)
-	}
-
 	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("TaskQueueUpdate: Error in Creating TaskQueue: received [%v]", err)
@@ -444,8 +301,8 @@ func Test_Store_TaskQueue_AppendDetails(t *testing.T) {
 	str := "Test1"
 	task.AppendDetails(str)
 
-	if !strings.Contains(task.Details(), str) {
-		t.Fatalf("AppendDetails: Failed Details[%v]", task.Details())
+	if !strings.Contains(task.GetDetails(), str) {
+		t.Fatalf("AppendDetails: Failed Details[%v]", task.GetDetails())
 	}
 }
 
@@ -466,19 +323,6 @@ func Test_TaskQueue_ParametersMap(t *testing.T) {
 		SetTaskID("TASK_01").
 		SetAttempts(1)
 
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("GetParameters: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("GetParameters: Table creation error: [%v]", err)
-	}
-
 	err = store.TaskQueueCreate(context.Background(), task)
 	if err != nil {
 		t.Fatalf("GetParameters: Error in Creating TaskQueue: received [%v]", err)
@@ -492,14 +336,14 @@ func Test_TaskQueue_ParametersMap(t *testing.T) {
 
 	task.SetParameters(string(u))
 
-	err = json.Unmarshal([]byte(task.Parameters()), &Temp{})
+	err = json.Unmarshal([]byte(task.GetParameters()), &Temp{})
 	if err != nil {
 		t.Fatalf("GetParameters: Error[%v]", err)
 	}
 }
 
 // TestQueuedTaskForceFail_WithNullDateTime verifies that tasks with
-// started_at set to sb.NULL_DATETIME are not incorrectly marked as failed
+// started_at set to NULL_DATETIME are not incorrectly marked as failed
 func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 	// Setup: Create a test store
 	store, err := initStore()
@@ -507,25 +351,12 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 		t.Fatalf("Failed to create test store: %v", err)
 	}
 
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("Table creation error: [%v]", err)
-	}
-
 	// Test Case 1: Task with NULL_DATETIME should NOT be force-failed
 	t.Run("TaskWithNullDateTime_ShouldNotBeFailed", func(t *testing.T) {
 		queue := NewTaskQueue()
 		queue.SetTaskID("test-task-1")
 		queue.SetStatus(TaskQueueStatusQueued)
-		// started_at and completed_at are already set to sb.NULL_DATETIME by NewTaskQueue
+		// started_at and completed_at are already set to NULL_DATETIME by NewTaskQueue
 
 		err := store.TaskQueueCreate(context.Background(), queue)
 		if err != nil {
@@ -539,8 +370,8 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 		}
 
 		// Verify status is still queued (not failed)
-		if queue.Status() != TaskQueueStatusQueued {
-			t.Errorf("Expected status to remain 'queued', got '%s'", queue.Status())
+		if queue.GetStatus() != TaskQueueStatusQueued {
+			t.Errorf("Expected status to remain 'queued', got '%s'", queue.GetStatus())
 		}
 	})
 
@@ -557,8 +388,8 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 		}
 
 		// Verify status is still queued (not failed)
-		if queue.Status() != TaskQueueStatusQueued {
-			t.Errorf("Expected status to remain 'queued', got '%s'", queue.Status())
+		if queue.GetStatus() != TaskQueueStatusQueued {
+			t.Errorf("Expected status to remain 'queued', got '%s'", queue.GetStatus())
 		}
 	})
 }
@@ -568,26 +399,9 @@ func Test_Store_TaskQueueProcessNextByQueue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskQueueProcessNextByQueue: Error[%v]", err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
-
-	// Create tables
-	query, err := store.SqlCreateTaskDefinitionTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskDefinitionTable: Error[%v]", err)
-	}
-	if _, err := store.db.Exec(query); err != nil {
-		t.Fatalf("Exec: Error[%v]", err)
-	}
-
-	query, err = store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if _, err := store.db.Exec(query); err != nil {
-		t.Fatalf("Exec: Error[%v]", err)
-	}
 
 	// Add a handler
 	handler := newTestTaskHandler()
@@ -652,19 +466,6 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 		t.Fatalf("TaskQueueClaimNext: Error[%v]", err)
 	}
 
-	query, err := store.SqlCreateTaskQueueTable()
-	if err != nil {
-		t.Fatalf("SqlCreateTaskQueueTable: Error[%v]", err)
-	}
-	if strings.Contains(query, "unsupported driver") {
-		t.Fatalf("TaskQueueClaimNext: UnExpected Query, received [%v]", query)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatalf("TaskQueueClaimNext: Table creation error: [%v]", err)
-	}
-
 	// Create a queued task
 	queueName := "test-queue"
 	task := NewTaskQueue().
@@ -689,20 +490,20 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 	}
 
 	// Verify the claimed task properties
-	if claimedTask.ID() != task.ID() {
-		t.Errorf("TaskQueueClaimNext: Expected task ID %s, got %s", task.ID(), claimedTask.ID())
+	if claimedTask.GetID() != task.GetID() {
+		t.Errorf("TaskQueueClaimNext: Expected task ID %s, got %s", task.GetID(), claimedTask.GetID())
 	}
 
-	if claimedTask.Status() != TaskQueueStatusRunning {
-		t.Errorf("TaskQueueClaimNext: Expected status %s, got %s", TaskQueueStatusRunning, claimedTask.Status())
+	if claimedTask.GetStatus() != TaskQueueStatusRunning {
+		t.Errorf("TaskQueueClaimNext: Expected status %s, got %s", TaskQueueStatusRunning, claimedTask.GetStatus())
 	}
 
-	if claimedTask.StartedAt() == "" || claimedTask.StartedAt() == sb.NULL_DATETIME {
+	if claimedTask.GetStartedAt() == "" || claimedTask.GetStartedAt() == NULL_DATETIME {
 		t.Error("TaskQueueClaimNext: Expected StartedAt to be set")
 	}
 
 	// Verify database state
-	dbTask, err := store.TaskQueueFindByID(context.Background(), task.ID())
+	dbTask, err := store.TaskQueueFindByID(context.Background(), task.GetID())
 	if err != nil {
 		t.Fatalf("TaskQueueClaimNext: Error finding task: [%v]", err)
 	}
@@ -711,7 +512,7 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 		t.Fatal("TaskQueueClaimNext: Expected to find task in database, got nil")
 	}
 
-	if dbTask.Status() != TaskQueueStatusRunning {
-		t.Errorf("TaskQueueClaimNext: Database status expected %s, got %s", TaskQueueStatusRunning, dbTask.Status())
+	if dbTask.GetStatus() != TaskQueueStatusRunning {
+		t.Errorf("TaskQueueClaimNext: Database status expected %s, got %s", TaskQueueStatusRunning, dbTask.GetStatus())
 	}
 }

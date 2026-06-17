@@ -36,8 +36,8 @@ func (controller *taskQueueManagerController) modalTaskFilters(data *taskQueueMa
 
 	aliasOptions := lo.Map(data.taskList, func(task taskstore.TaskDefinitionInterface, _ int) form.FieldOption {
 		return form.FieldOption{
-			Value: task.Title(),
-			Key:   task.ID(),
+			Value: task.GetTitle(),
+			Key:   task.GetID(),
 		}
 	})
 

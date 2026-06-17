@@ -10,7 +10,7 @@ func Test_Store_TaskHandlerList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskHandlerList: Error[%v]", err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
 
@@ -55,16 +55,6 @@ func Test_Store_TaskHandlerAdd(t *testing.T) {
 	store, err := initStore()
 	if err != nil {
 		t.Fatal("TaskHandlerAdd: Error in Store init: received ", "[", err, "]")
-	}
-
-	query, err := store.SqlCreateTaskDefinitionTable()
-	if err != nil {
-		t.Fatal("TaskHandlerAdd: Error in SQL generation: ", err)
-	}
-
-	_, err = store.db.Exec(query)
-	if err != nil {
-		t.Fatal("TaskHandlerAdd: Table creation error: ", "[", err, "]")
 	}
 
 	err = store.TaskHandlerAdd(context.Background(), handler, true)

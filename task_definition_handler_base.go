@@ -82,7 +82,7 @@ func (handler *TaskDefinitionHandlerBase) GetOutput() string {
 	handler.mu.RUnlock()
 
 	if qt != nil {
-		return qt.Output()
+		return qt.GetOutput()
 	}
 
 	return output

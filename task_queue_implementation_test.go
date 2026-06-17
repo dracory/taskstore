@@ -5,7 +5,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
 )
 
@@ -16,24 +15,24 @@ func TestNewTaskQueue(t *testing.T) {
 		t.Fatal("NewTaskQueue: Expected queue to be created, got nil")
 	}
 
-	if queue.ID() == "" {
+	if queue.GetID() == "" {
 		t.Error("NewTaskQueue: Expected ID to be set")
 	}
 
-	if queue.Status() != TaskQueueStatusQueued {
-		t.Errorf("NewTaskQueue: Expected status to be %s, got %s", TaskQueueStatusQueued, queue.Status())
+	if queue.GetStatus() != TaskQueueStatusQueued {
+		t.Errorf("NewTaskQueue: Expected status to be %s, got %s", TaskQueueStatusQueued, queue.GetStatus())
 	}
 
-	if queue.CreatedAt() == "" {
+	if queue.GetCreatedAt() == "" {
 		t.Error("NewTaskQueue: Expected CreatedAt to be set")
 	}
 
-	if queue.UpdatedAt() == "" {
+	if queue.GetUpdatedAt() == "" {
 		t.Error("NewTaskQueue: Expected UpdatedAt to be set")
 	}
 
-	if queue.SoftDeletedAt() != sb.MAX_DATETIME {
-		t.Errorf("NewTaskQueue: Expected SoftDeletedAt to be %s, got %s", sb.MAX_DATETIME, queue.SoftDeletedAt())
+	if queue.GetSoftDeletedAt() != MAX_DATETIME {
+		t.Errorf("NewTaskQueue: Expected SoftDeletedAt to be %s, got %s", MAX_DATETIME, queue.GetSoftDeletedAt())
 	}
 }
 
@@ -56,36 +55,36 @@ func TestNewTaskQueueFromExistingData(t *testing.T) {
 
 	queue := NewTaskQueueFromExistingData(data)
 
-	if queue.ID() != "test-queue-id" {
-		t.Errorf("NewTaskQueueFromExistingData: Expected ID to be 'test-queue-id', got %s", queue.ID())
+	if queue.GetID() != "test-queue-id" {
+		t.Errorf("NewTaskQueueFromExistingData: Expected ID to be 'test-queue-id', got %s", queue.GetID())
 	}
 
-	if queue.TaskID() != "test-task-id" {
-		t.Errorf("NewTaskQueueFromExistingData: Expected TaskID to be 'test-task-id', got %s", queue.TaskID())
+	if queue.GetTaskID() != "test-task-id" {
+		t.Errorf("NewTaskQueueFromExistingData: Expected TaskID to be 'test-task-id', got %s", queue.GetTaskID())
 	}
 
-	if queue.Status() != TaskQueueStatusRunning {
-		t.Errorf("NewTaskQueueFromExistingData: Expected Status to be %s, got %s", TaskQueueStatusRunning, queue.Status())
+	if queue.GetStatus() != TaskQueueStatusRunning {
+		t.Errorf("NewTaskQueueFromExistingData: Expected Status to be %s, got %s", TaskQueueStatusRunning, queue.GetStatus())
 	}
 
-	if queue.Attempts() != 3 {
-		t.Errorf("NewTaskQueueFromExistingData: Expected Attempts to be 3, got %d", queue.Attempts())
+	if queue.GetAttempts() != 3 {
+		t.Errorf("NewTaskQueueFromExistingData: Expected Attempts to be 3, got %d", queue.GetAttempts())
 	}
 
-	if queue.Parameters() != `{"key":"value"}` {
-		t.Errorf("NewTaskQueueFromExistingData: Expected Parameters to be '{\"key\":\"value\"}', got %s", queue.Parameters())
+	if queue.GetParameters() != `{"key":"value"}` {
+		t.Errorf("NewTaskQueueFromExistingData: Expected Parameters to be '{\"key\":\"value\"}', got %s", queue.GetParameters())
 	}
 
-	if queue.Output() != "test output" {
-		t.Errorf("NewTaskQueueFromExistingData: Expected Output to be 'test output', got %s", queue.Output())
+	if queue.GetOutput() != "test output" {
+		t.Errorf("NewTaskQueueFromExistingData: Expected Output to be 'test output', got %s", queue.GetOutput())
 	}
 
-	if queue.Details() != "test details" {
-		t.Errorf("NewTaskQueueFromExistingData: Expected Details to be 'test details', got %s", queue.Details())
+	if queue.GetDetails() != "test details" {
+		t.Errorf("NewTaskQueueFromExistingData: Expected Details to be 'test details', got %s", queue.GetDetails())
 	}
 
-	if queue.QueueName() != "test-queue" {
-		t.Errorf("NewTaskQueueFromExistingData: Expected QueueName to be 'test-queue', got %s", queue.QueueName())
+	if queue.GetQueueName() != "test-queue" {
+		t.Errorf("NewTaskQueueFromExistingData: Expected QueueName to be 'test-queue', got %s", queue.GetQueueName())
 	}
 }
 
@@ -184,7 +183,7 @@ func TestTaskQueue_AppendDetails(t *testing.T) {
 
 	// Test appending to empty details
 	queue.AppendDetails("First detail")
-	details := queue.Details()
+	details := queue.GetDetails()
 	if !strings.Contains(details, "First detail") {
 		t.Error("AppendDetails: Expected details to contain 'First detail'")
 	}
@@ -194,7 +193,7 @@ func TestTaskQueue_AppendDetails(t *testing.T) {
 
 	// Test appending to existing details
 	queue.AppendDetails("Second detail")
-	details = queue.Details()
+	details = queue.GetDetails()
 	if !strings.Contains(details, "First detail") {
 		t.Error("AppendDetails: Expected details to still contain 'First detail'")
 	}
@@ -301,7 +300,7 @@ func TestTaskQueue_SetParametersMap(t *testing.T) {
 	}
 
 	// Verify the JSON string is valid
-	parametersJSON := queue.Parameters()
+	parametersJSON := queue.GetParameters()
 	var jsonTest map[string]string
 	err = json.Unmarshal([]byte(parametersJSON), &jsonTest)
 	if err != nil {
@@ -373,20 +372,20 @@ func TestTaskQueue_AttemptsHandling(t *testing.T) {
 
 	// Test setting and getting attempts
 	queue.SetAttempts(5)
-	if queue.Attempts() != 5 {
-		t.Errorf("Attempts: Expected 5, got %d", queue.Attempts())
+	if queue.GetAttempts() != 5 {
+		t.Errorf("Attempts: Expected 5, got %d", queue.GetAttempts())
 	}
 
 	// Test with zero attempts
 	queue.SetAttempts(0)
-	if queue.Attempts() != 0 {
-		t.Errorf("Attempts: Expected 0, got %d", queue.Attempts())
+	if queue.GetAttempts() != 0 {
+		t.Errorf("Attempts: Expected 0, got %d", queue.GetAttempts())
 	}
 
 	// Test with negative attempts (edge case)
 	queue.SetAttempts(-1)
-	if queue.Attempts() != -1 {
-		t.Errorf("Attempts: Expected -1, got %d", queue.Attempts())
+	if queue.GetAttempts() != -1 {
+		t.Errorf("Attempts: Expected -1, got %d", queue.GetAttempts())
 	}
 }
 
@@ -396,80 +395,80 @@ func TestTaskQueue_SettersAndGetters(t *testing.T) {
 	// Test ID
 	testID := "test-queue-id"
 	queue.SetID(testID)
-	if queue.ID() != testID {
-		t.Errorf("ID: Expected %s, got %s", testID, queue.ID())
+	if queue.GetID() != testID {
+		t.Errorf("ID: Expected %s, got %s", testID, queue.GetID())
 	}
 
 	// Test TaskID
 	testTaskID := "test-task-id"
 	queue.SetTaskID(testTaskID)
-	if queue.TaskID() != testTaskID {
-		t.Errorf("TaskID: Expected %s, got %s", testTaskID, queue.TaskID())
+	if queue.GetTaskID() != testTaskID {
+		t.Errorf("TaskID: Expected %s, got %s", testTaskID, queue.GetTaskID())
 	}
 
 	// Test Status
 	queue.SetStatus(TaskQueueStatusRunning)
-	if queue.Status() != TaskQueueStatusRunning {
-		t.Errorf("Status: Expected %s, got %s", TaskQueueStatusRunning, queue.Status())
+	if queue.GetStatus() != TaskQueueStatusRunning {
+		t.Errorf("Status: Expected %s, got %s", TaskQueueStatusRunning, queue.GetStatus())
 	}
 
 	// Test Output
 	testOutput := "Test output message"
 	queue.SetOutput(testOutput)
-	if queue.Output() != testOutput {
-		t.Errorf("Output: Expected %s, got %s", testOutput, queue.Output())
+	if queue.GetOutput() != testOutput {
+		t.Errorf("Output: Expected %s, got %s", testOutput, queue.GetOutput())
 	}
 
 	// Test Details
 	testDetails := "Test details message"
 	queue.SetDetails(testDetails)
-	if queue.Details() != testDetails {
-		t.Errorf("Details: Expected %s, got %s", testDetails, queue.Details())
+	if queue.GetDetails() != testDetails {
+		t.Errorf("Details: Expected %s, got %s", testDetails, queue.GetDetails())
 	}
 
 	// Test QueueName
 	testQueueName := "my-queue"
 	queue.SetQueueName(testQueueName)
-	if queue.QueueName() != testQueueName {
-		t.Errorf("QueueName: Expected %s, got %s", testQueueName, queue.QueueName())
+	if queue.GetQueueName() != testQueueName {
+		t.Errorf("QueueName: Expected %s, got %s", testQueueName, queue.GetQueueName())
 	}
 
 	// Test Parameters
 	testParameters := `{"key":"value"}`
 	queue.SetParameters(testParameters)
-	if queue.Parameters() != testParameters {
-		t.Errorf("Parameters: Expected %s, got %s", testParameters, queue.Parameters())
+	if queue.GetParameters() != testParameters {
+		t.Errorf("Parameters: Expected %s, got %s", testParameters, queue.GetParameters())
 	}
 
 	// Test timestamps
 	testCreatedAt := "2023-01-01 10:00:00"
 	queue.SetCreatedAt(testCreatedAt)
-	if queue.CreatedAt() != testCreatedAt {
-		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, queue.CreatedAt())
+	if queue.GetCreatedAt() != testCreatedAt {
+		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, queue.GetCreatedAt())
 	}
 
 	testUpdatedAt := "2023-01-02 11:00:00"
 	queue.SetUpdatedAt(testUpdatedAt)
-	if queue.UpdatedAt() != testUpdatedAt {
-		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, queue.UpdatedAt())
+	if queue.GetUpdatedAt() != testUpdatedAt {
+		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, queue.GetUpdatedAt())
 	}
 
 	testStartedAt := "2023-01-01 10:30:00"
 	queue.SetStartedAt(testStartedAt)
-	if queue.StartedAt() != testStartedAt {
-		t.Errorf("StartedAt: Expected %s, got %s", testStartedAt, queue.StartedAt())
+	if queue.GetStartedAt() != testStartedAt {
+		t.Errorf("StartedAt: Expected %s, got %s", testStartedAt, queue.GetStartedAt())
 	}
 
 	testCompletedAt := "2023-01-01 11:30:00"
 	queue.SetCompletedAt(testCompletedAt)
-	if queue.CompletedAt() != testCompletedAt {
-		t.Errorf("CompletedAt: Expected %s, got %s", testCompletedAt, queue.CompletedAt())
+	if queue.GetCompletedAt() != testCompletedAt {
+		t.Errorf("CompletedAt: Expected %s, got %s", testCompletedAt, queue.GetCompletedAt())
 	}
 
 	testDeletedAt := "2023-01-03 12:00:00"
 	queue.SetSoftDeletedAt(testDeletedAt)
-	if queue.SoftDeletedAt() != testDeletedAt {
-		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, queue.SoftDeletedAt())
+	if queue.GetSoftDeletedAt() != testDeletedAt {
+		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, queue.GetSoftDeletedAt())
 	}
 }
 
@@ -496,41 +495,41 @@ func TestTaskQueue_ChainedSetters(t *testing.T) {
 	}
 
 	// Verify all values were set correctly
-	if queue.ID() != "test-id" {
+	if queue.GetID() != "test-id" {
 		t.Error("ChainedSetters: ID not set correctly")
 	}
-	if queue.TaskID() != "test-task-id" {
+	if queue.GetTaskID() != "test-task-id" {
 		t.Error("ChainedSetters: TaskID not set correctly")
 	}
-	if queue.Status() != TaskQueueStatusRunning {
+	if queue.GetStatus() != TaskQueueStatusRunning {
 		t.Error("ChainedSetters: Status not set correctly")
 	}
-	if queue.Attempts() != 3 {
+	if queue.GetAttempts() != 3 {
 		t.Error("ChainedSetters: Attempts not set correctly")
 	}
-	if queue.Output() != "test output" {
+	if queue.GetOutput() != "test output" {
 		t.Error("ChainedSetters: Output not set correctly")
 	}
-	if queue.Details() != "test details" {
+	if queue.GetDetails() != "test details" {
 		t.Error("ChainedSetters: Details not set correctly")
 	}
-	if queue.Parameters() != `{"key":"value"}` {
+	if queue.GetParameters() != `{"key":"value"}` {
 		t.Error("ChainedSetters: Parameters not set correctly")
 	}
-	if queue.QueueName() != "chained-queue" {
+	if queue.GetQueueName() != "chained-queue" {
 		t.Error("ChainedSetters: QueueName not set correctly")
 	}
 }
 
 func TestTaskQueue_StartedAt_WithNullDateTime(t *testing.T) {
 	queue := NewTaskQueue()
-	// NewTaskQueue sets StartedAt to sb.NULL_DATETIME
+	// NewTaskQueue sets StartedAt to NULL_DATETIME
 
-	startedAt := queue.StartedAt()
+	startedAt := queue.GetStartedAt()
 	t.Logf("StartedAt: %s", startedAt)
 
-	if startedAt != sb.NULL_DATETIME {
-		t.Errorf("StartedAt: Expected %s, got %s", sb.NULL_DATETIME, startedAt)
+	if startedAt != NULL_DATETIME {
+		t.Errorf("StartedAt: Expected %s, got %s", NULL_DATETIME, startedAt)
 	}
 
 	// Check if carbon parse handles it without panicking
@@ -538,7 +537,7 @@ func TestTaskQueue_StartedAt_WithNullDateTime(t *testing.T) {
 	t.Logf("Carbon: %v, IsZero: %v", c, c.IsZero())
 
 	// Verify that Carbon handles NULL_DATETIME gracefully
-	// If sb.NULL_DATETIME is "0000-00-00...", Carbon might parse it as year 0 or invalid.
+	// If NULL_DATETIME is "0000-00-00...", Carbon might parse it as year 0 or invalid.
 	// We want to ensure it doesn't panic and behaves reasonably (e.g. IsZero or IsInvalid).
 	if c == nil {
 		t.Error("StartedAtCarbon: Expected carbon instance, got nil")

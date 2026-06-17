@@ -49,7 +49,7 @@ func (c *taskDefinitionDeleteController) ToTag(w http.ResponseWriter, r *http.Re
 
 func (c *taskDefinitionDeleteController) formSubmitted(data taskDefinitionDeleteControllerData) hb.TagInterface {
 	for _, queuedTask := range data.relatedQueuesToDelete {
-		if err := c.store.TaskQueueSoftDeleteByID(context.Background(), queuedTask.ID()); err != nil {
+		if err := c.store.TaskQueueSoftDeleteByID(context.Background(), queuedTask.GetID()); err != nil {
 			return hb.Swal(hb.SwalOptions{
 				Icon:              "error",
 				Title:             "Error",
@@ -92,7 +92,7 @@ func (c *taskDefinitionDeleteController) modal(data taskDefinitionDeleteControll
 				Child(hb.Text(`You are about to permanently delete this task definition:`))).
 			Child(hb.Paragraph().
 				Style("font-weight: bold;").
-				Child(hb.Text(`"` + data.task.Title() + `"`))).
+				Child(hb.Text(`"` + data.task.GetTitle() + `"`))).
 			Child(hb.Paragraph().
 				Child(hb.Text(`This will also delete all the tasks created from this definition, including ` + cast.ToString(data.relatedQueuedQueuesCount) + ` pending tasks.`))).
 			Child(hb.Paragraph().
@@ -198,7 +198,7 @@ func (c *taskDefinitionDeleteController) prepareData(r *http.Request) (data task
 
 	if r.Method == http.MethodPost {
 		data.relatedQueuesToDelete, err = c.store.TaskQueueList(context.Background(), taskstore.TaskQueueQuery().
-			SetTaskID(data.task.ID()).
+			SetTaskID(data.task.GetID()).
 			SetColumns([]string{taskstore.COLUMN_ID}))
 
 		if err != nil {
@@ -208,7 +208,7 @@ func (c *taskDefinitionDeleteController) prepareData(r *http.Request) (data task
 
 	if r.Method == http.MethodGet {
 		data.relatedQueuedQueuesCount, err = c.store.TaskQueueCount(context.Background(), taskstore.TaskQueueQuery().
-			SetTaskID(data.task.ID()).
+			SetTaskID(data.task.GetID()).
 			SetColumns([]string{taskstore.COLUMN_ID}))
 
 		if err != nil {

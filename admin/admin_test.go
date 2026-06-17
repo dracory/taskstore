@@ -216,8 +216,8 @@ func Test_Store_task_definition_crud(t *testing.T) {
 	if found == nil {
 		t.Error("TaskDefinitionFindByAlias() should find the task")
 	}
-	if found.Title() != "Test Task" {
-		t.Errorf("TaskDefinitionFindByAlias() title = %v, want Test Task", found.Title())
+	if found.GetTitle() != "Test Task" {
+		t.Errorf("TaskDefinitionFindByAlias() title = %v, want Test Task", found.GetTitle())
 	}
 
 	// Update task definition
@@ -232,8 +232,8 @@ func Test_Store_task_definition_crud(t *testing.T) {
 	if err != nil {
 		t.Fatalf("TaskDefinitionFindByAlias() after update failed: %v", err)
 	}
-	if found.Description() != "Updated description" {
-		t.Errorf("TaskDefinitionUpdate() description = %v, want Updated description", found.Description())
+	if found.GetDescription() != "Updated description" {
+		t.Errorf("TaskDefinitionUpdate() description = %v, want Updated description", found.GetDescription())
 	}
 
 	// Delete task definition

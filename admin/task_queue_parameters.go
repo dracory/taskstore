@@ -58,7 +58,7 @@ func (c *taskQueueParametersController) modal(data taskQueueParametersController
 		Label:    "Queued Task Parameters",
 		Name:     fieldParameters,
 		Type:     form.FORM_FIELD_TYPE_TEXTAREA,
-		Value:    data.queue.Parameters(),
+		Value:    data.queue.GetParameters(),
 		Required: true,
 	})
 

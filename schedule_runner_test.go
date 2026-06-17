@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
 	_ "modernc.org/sqlite"
 )
@@ -43,7 +42,7 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 	schedule.SetName("Test Schedule")
 	schedule.SetStatus("active")
 	schedule.SetQueueName("default")
-	schedule.SetTaskDefinitionID(taskDef.ID())
+	schedule.SetTaskDefinitionID(taskDef.GetID())
 
 	now := carbon.Now(carbon.UTC)
 	past := now.AddMinutes(-1).ToDateTimeString(carbon.UTC)
@@ -73,8 +72,8 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 	if len(queueList) != 1 {
 		t.Errorf("expected 1 queued task, got %d", len(queueList))
 	}
-	if taskDef.ID() != queueList[0].TaskID() {
-		t.Errorf("expected task ID %s, got %s", taskDef.ID(), queueList[0].TaskID())
+	if taskDef.GetID() != queueList[0].GetTaskID() {
+		t.Errorf("expected task ID %s, got %s", taskDef.GetID(), queueList[0].GetTaskID())
 	}
 
 	updatedSchedule, err := store.ScheduleFindByID(ctx, schedule.GetID())
@@ -84,7 +83,7 @@ func TestScheduleRunnerRunOnceEnqueuesDueSchedule(t *testing.T) {
 	if updatedSchedule == nil {
 		t.Fatal("expected updatedSchedule to not be nil")
 	}
-	if updatedSchedule.GetLastRunAt() == sb.NULL_DATETIME {
+	if updatedSchedule.GetLastRunAt() == NULL_DATETIME {
 		t.Error("expected LastRunAt to not be NULL_DATETIME")
 	}
 	if !carbon.Parse(updatedSchedule.GetNextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)) {
@@ -125,7 +124,7 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 
 	startAt := carbon.Now(carbon.UTC).AddMinutes(5).ToDateTimeString(carbon.UTC)
 	schedule.SetStartAt(startAt)
-	schedule.SetNextRunAt(sb.NULL_DATETIME)
+	schedule.SetNextRunAt(NULL_DATETIME)
 	schedule.GetRecurrenceRule().SetFrequency(FrequencyDaily)
 	schedule.GetRecurrenceRule().SetInterval(1)
 	schedule.GetRecurrenceRule().SetStartsAt(startAt)
@@ -149,7 +148,7 @@ func TestScheduleRunnerSetInitialRuns(t *testing.T) {
 	if updatedSchedule == nil {
 		t.Fatal("expected updatedSchedule to not be nil")
 	}
-	if updatedSchedule.GetNextRunAt() == sb.NULL_DATETIME {
+	if updatedSchedule.GetNextRunAt() == NULL_DATETIME {
 		t.Error("expected NextRunAt to not be NULL_DATETIME")
 	}
 	if updatedSchedule.GetStatus() != "active" {
@@ -162,7 +161,7 @@ func TestScheduleRunner_shouldContinue(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	runner := NewScheduleRunner(store, ScheduleRunnerOptions{IntervalSeconds: 1})
 
@@ -220,7 +219,7 @@ func TestScheduleRunner_logf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	// Test with nil logger (should not panic)
 	runner := NewScheduleRunner(store, ScheduleRunnerOptions{IntervalSeconds: 1})

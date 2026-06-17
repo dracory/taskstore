@@ -3,7 +3,6 @@ package taskstore
 import (
 	"testing"
 
-	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
 )
 
@@ -14,28 +13,28 @@ func TestNewTaskDefinition(t *testing.T) {
 		t.Fatal("NewTaskDefinition: Expected task to be created, got nil")
 	}
 
-	if task.ID() == "" {
+	if task.GetID() == "" {
 		t.Error("NewTaskDefinition: Expected ID to be set")
 	}
 
-	if task.Status() != TaskDefinitionStatusActive {
-		t.Errorf("NewTaskDefinition: Expected status to be %s, got %s", TaskDefinitionStatusActive, task.Status())
+	if task.GetStatus() != TaskDefinitionStatusActive {
+		t.Errorf("NewTaskDefinition: Expected status to be %s, got %s", TaskDefinitionStatusActive, task.GetStatus())
 	}
 
-	if task.Memo() != "" {
-		t.Errorf("NewTaskDefinition: Expected memo to be empty, got %s", task.Memo())
+	if task.GetMemo() != "" {
+		t.Errorf("NewTaskDefinition: Expected memo to be empty, got %s", task.GetMemo())
 	}
 
-	if task.CreatedAt() == "" {
+	if task.GetCreatedAt() == "" {
 		t.Error("NewTaskDefinition: Expected CreatedAt to be set")
 	}
 
-	if task.UpdatedAt() == "" {
+	if task.GetUpdatedAt() == "" {
 		t.Error("NewTaskDefinition: Expected UpdatedAt to be set")
 	}
 
-	if task.SoftDeletedAt() != sb.MAX_DATETIME {
-		t.Errorf("NewTaskDefinition: Expected SoftDeletedAt to be %s, got %s", sb.MAX_DATETIME, task.SoftDeletedAt())
+	if task.GetSoftDeletedAt() != MAX_DATETIME {
+		t.Errorf("NewTaskDefinition: Expected SoftDeletedAt to be %s, got %s", MAX_DATETIME, task.GetSoftDeletedAt())
 	}
 }
 
@@ -54,28 +53,28 @@ func TestNewTaskDefinitionFromExistingData(t *testing.T) {
 
 	task := NewTaskDefinitionFromExistingData(data)
 
-	if task.ID() != "test-id" {
-		t.Errorf("NewTaskDefinitionFromExistingData: Expected ID to be 'test-id', got %s", task.ID())
+	if task.GetID() != "test-id" {
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected ID to be 'test-id', got %s", task.GetID())
 	}
 
-	if task.Alias() != "test-alias" {
-		t.Errorf("NewTaskDefinitionFromExistingData: Expected Alias to be 'test-alias', got %s", task.Alias())
+	if task.GetAlias() != "test-alias" {
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Alias to be 'test-alias', got %s", task.GetAlias())
 	}
 
-	if task.Title() != "Test Title" {
-		t.Errorf("NewTaskDefinitionFromExistingData: Expected Title to be 'Test Title', got %s", task.Title())
+	if task.GetTitle() != "Test Title" {
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Title to be 'Test Title', got %s", task.GetTitle())
 	}
 
-	if task.Description() != "Test Description" {
-		t.Errorf("NewTaskDefinitionFromExistingData: Expected Description to be 'Test Description', got %s", task.Description())
+	if task.GetDescription() != "Test Description" {
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Description to be 'Test Description', got %s", task.GetDescription())
 	}
 
-	if task.Status() != TaskDefinitionStatusCanceled {
-		t.Errorf("NewTaskDefinitionFromExistingData: Expected Status to be %s, got %s", TaskDefinitionStatusCanceled, task.Status())
+	if task.GetStatus() != TaskDefinitionStatusCanceled {
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Status to be %s, got %s", TaskDefinitionStatusCanceled, task.GetStatus())
 	}
 
-	if task.Memo() != "Test Memo" {
-		t.Errorf("NewTaskDefinitionFromExistingData: Expected Memo to be 'Test Memo', got %s", task.Memo())
+	if task.GetMemo() != "Test Memo" {
+		t.Errorf("NewTaskDefinitionFromExistingData: Expected Memo to be 'Test Memo', got %s", task.GetMemo())
 	}
 }
 
@@ -185,63 +184,63 @@ func TestTaskDefinition_SettersAndGetters(t *testing.T) {
 	// Test ID
 	testID := "test-task-id"
 	task.SetID(testID)
-	if task.ID() != testID {
-		t.Errorf("ID: Expected %s, got %s", testID, task.ID())
+	if task.GetID() != testID {
+		t.Errorf("ID: Expected %s, got %s", testID, task.GetID())
 	}
 
 	// Test Alias
 	testAlias := "test-alias"
 	task.SetAlias(testAlias)
-	if task.Alias() != testAlias {
-		t.Errorf("Alias: Expected %s, got %s", testAlias, task.Alias())
+	if task.GetAlias() != testAlias {
+		t.Errorf("Alias: Expected %s, got %s", testAlias, task.GetAlias())
 	}
 
 	// Test Title
 	testTitle := "Test Task Title"
 	task.SetTitle(testTitle)
-	if task.Title() != testTitle {
-		t.Errorf("Title: Expected %s, got %s", testTitle, task.Title())
+	if task.GetTitle() != testTitle {
+		t.Errorf("Title: Expected %s, got %s", testTitle, task.GetTitle())
 	}
 
 	// Test Description
 	testDescription := "Test task description"
 	task.SetDescription(testDescription)
-	if task.Description() != testDescription {
-		t.Errorf("Description: Expected %s, got %s", testDescription, task.Description())
+	if task.GetDescription() != testDescription {
+		t.Errorf("Description: Expected %s, got %s", testDescription, task.GetDescription())
 	}
 
 	// Test Memo
 	testMemo := "Test memo"
 	task.SetMemo(testMemo)
-	if task.Memo() != testMemo {
-		t.Errorf("Memo: Expected %s, got %s", testMemo, task.Memo())
+	if task.GetMemo() != testMemo {
+		t.Errorf("Memo: Expected %s, got %s", testMemo, task.GetMemo())
 	}
 
 	// Test Status
 	task.SetStatus(TaskDefinitionStatusCanceled)
-	if task.Status() != TaskDefinitionStatusCanceled {
-		t.Errorf("Status: Expected %s, got %s", TaskDefinitionStatusCanceled, task.Status())
+	if task.GetStatus() != TaskDefinitionStatusCanceled {
+		t.Errorf("Status: Expected %s, got %s", TaskDefinitionStatusCanceled, task.GetStatus())
 	}
 
 	// Test CreatedAt
 	testCreatedAt := "2023-01-01 10:00:00"
 	task.SetCreatedAt(testCreatedAt)
-	if task.CreatedAt() != testCreatedAt {
-		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, task.CreatedAt())
+	if task.GetCreatedAt() != testCreatedAt {
+		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, task.GetCreatedAt())
 	}
 
 	// Test UpdatedAt
 	testUpdatedAt := "2023-01-02 11:00:00"
 	task.SetUpdatedAt(testUpdatedAt)
-	if task.UpdatedAt() != testUpdatedAt {
-		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, task.UpdatedAt())
+	if task.GetUpdatedAt() != testUpdatedAt {
+		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, task.GetUpdatedAt())
 	}
 
 	// Test SoftDeletedAt
 	testDeletedAt := "2023-01-03 12:00:00"
 	task.SetSoftDeletedAt(testDeletedAt)
-	if task.SoftDeletedAt() != testDeletedAt {
-		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, task.SoftDeletedAt())
+	if task.GetSoftDeletedAt() != testDeletedAt {
+		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, task.GetSoftDeletedAt())
 	}
 }
 
@@ -264,22 +263,22 @@ func TestTaskDefinition_ChainedSetters(t *testing.T) {
 	}
 
 	// Verify all values were set correctly
-	if task.ID() != "test-id" {
+	if task.GetID() != "test-id" {
 		t.Error("ChainedSetters: ID not set correctly")
 	}
-	if task.Alias() != "test-alias" {
+	if task.GetAlias() != "test-alias" {
 		t.Error("ChainedSetters: Alias not set correctly")
 	}
-	if task.Title() != "Test Title" {
+	if task.GetTitle() != "Test Title" {
 		t.Error("ChainedSetters: Title not set correctly")
 	}
-	if task.Description() != "Test Description" {
+	if task.GetDescription() != "Test Description" {
 		t.Error("ChainedSetters: Description not set correctly")
 	}
-	if task.Memo() != "Test Memo" {
+	if task.GetMemo() != "Test Memo" {
 		t.Error("ChainedSetters: Memo not set correctly")
 	}
-	if task.Status() != TaskDefinitionStatusCanceled {
+	if task.GetStatus() != TaskDefinitionStatusCanceled {
 		t.Error("ChainedSetters: Status not set correctly")
 	}
 }

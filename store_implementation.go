@@ -6,11 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/dracory/sb"
+	"github.com/dracory/neat"
+	contractsschema "github.com/dracory/neat/contracts/database/schema"
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
@@ -21,14 +24,15 @@ type Store struct {
 	taskQueueTableName      string
 	scheduleTableName       string
 	taskHandlers            []TaskDefinitionHandlerInterface
-	db                      *sql.DB
-	dbDriverName            string
+	db                      *neat.Database
 	automigrateEnabled      bool
 	debugEnabled            bool
 	queueMu                 sync.Mutex
 	queueRunners            map[string]*queueRunner
 	maxConcurrency          int // Max concurrent tasks in async mode (default: 10)
 	errorHandler            func(queueName, taskID string, err error)
+	logger                  *slog.Logger
+	isSQLite                bool
 }
 
 type queueRunner struct {
@@ -47,7 +51,6 @@ type NewStoreOptions struct {
 	TaskQueueTableName      string
 	ScheduleTableName       string
 	DB                      *sql.DB
-	DbDriverName            string
 	AutomigrateEnabled      bool
 	DebugEnabled            bool
 	MaxConcurrency          int                                       // Max concurrent tasks (default: 10, 0 = unlimited)
@@ -56,17 +59,40 @@ type NewStoreOptions struct {
 
 // NewStore creates a new task store
 func NewStore(opts NewStoreOptions) (*Store, error) {
+	if opts.DB == nil {
+		return nil, errors.New("task store: DB is required")
+	}
+
+	if opts.TaskDefinitionTableName == "" {
+		return nil, errors.New("task store: TaskDefinitionTableName is required")
+	}
+
+	if opts.TaskQueueTableName == "" {
+		return nil, errors.New("task store: TaskQueueTableName is required")
+	}
+
+	if opts.ScheduleTableName == "" {
+		return nil, errors.New("task store: ScheduleTableName is required")
+	}
+
+	neatDB, err := neat.NewFromSQLDB(opts.DB)
+	if err != nil {
+		return nil, err
+	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	store := &Store{
 		taskDefinitionTableName: opts.TaskDefinitionTableName,
 		taskQueueTableName:      opts.TaskQueueTableName,
 		scheduleTableName:       opts.ScheduleTableName,
 		automigrateEnabled:      opts.AutomigrateEnabled,
-		db:                      opts.DB,
-		dbDriverName:            opts.DbDriverName,
+		db:                      neatDB,
 		debugEnabled:            opts.DebugEnabled,
 		queueRunners:            map[string]*queueRunner{},
 		maxConcurrency:          opts.MaxConcurrency,
 		errorHandler:            opts.ErrorHandler,
+		logger:                  logger,
+		isSQLite:                strings.Contains(fmt.Sprintf("%T", opts.DB.Driver()), "sqlite"),
 	}
 
 	// Set default max concurrency if not specified
@@ -74,28 +100,10 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 		store.maxConcurrency = 10
 	}
 
-	if store.taskDefinitionTableName == "" {
-		return nil, errors.New("task store: TaskDefinitionTableName is required")
-	}
-
-	if store.taskQueueTableName == "" {
-		return nil, errors.New("task store: TaskQueueTableName is required")
-	}
-
-	if store.scheduleTableName == "" {
-		return nil, errors.New("task store: ScheduleTableName is required")
-	}
-
-	if store.db == nil {
-		return nil, errors.New("task store: DB is required")
-	}
-
-	if store.dbDriverName == "" {
-		store.dbDriverName = sb.DatabaseDriverName(store.db)
-	}
-
 	if store.automigrateEnabled {
-		store.MigrateUp(context.Background())
+		if err := store.MigrateUp(context.Background()); err != nil {
+			return nil, err
+		}
 	}
 
 	return store, nil
@@ -103,78 +111,94 @@ func NewStore(opts NewStoreOptions) (*Store, error) {
 
 // MigrateUp creates all tables
 func (st *Store) MigrateUp(ctx context.Context, tx ...*sql.Tx) error {
-	var txToUse *sql.Tx
-	if len(tx) > 0 {
-		txToUse = tx[0]
-	}
-
-	// Create task definition table
-	sqlTaskTable, err := st.SqlCreateTaskDefinitionTable()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	if st.debugEnabled {
-		log.Println(sqlTaskTable)
-	}
-
-	var errTask error
-	if txToUse != nil {
-		_, errTask = txToUse.ExecContext(ctx, sqlTaskTable)
+	if st.db.Schema().HasTable(st.taskDefinitionTableName) {
+		if st.debugEnabled {
+			st.logger.Info("MigrateUp: task_definition table already exists", "table", st.taskDefinitionTableName)
+		}
 	} else {
-		_, errTask = st.db.ExecContext(ctx, sqlTaskTable)
+		err := st.db.Schema().Create(st.taskDefinitionTableName, func(table contractsschema.Blueprint) {
+			table.String(COLUMN_ID, 50)
+			table.Primary(COLUMN_ID)
+			table.String(COLUMN_STATUS, 50)
+			table.String(COLUMN_ALIAS, 100)
+			table.Unique(COLUMN_ALIAS)
+			table.String(COLUMN_TITLE, 255)
+			table.Text(COLUMN_MEMO)
+			table.String(COLUMN_DESCRIPTION, 255)
+			table.Integer(COLUMN_IS_RECURRING)
+			table.String(COLUMN_RECURRENCE_RULE, 500)
+			table.DateTime(COLUMN_CREATED_AT)
+			table.DateTime(COLUMN_UPDATED_AT)
+			table.DateTime(COLUMN_SOFT_DELETED_AT)
+		})
+		if err != nil {
+			if st.debugEnabled {
+				st.logger.Error("MigrateUp failed for task_definition", "error", err)
+			}
+			return err
+		}
 	}
 
-	if errTask != nil {
-		log.Println(errTask)
-		return errTask
-	}
-
-	// Create task queue table
-	sqlQueueTable, err := st.SqlCreateTaskQueueTable()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	if st.debugEnabled {
-		log.Println(sqlQueueTable)
-	}
-
-	var errQueue error
-	if txToUse != nil {
-		_, errQueue = txToUse.ExecContext(ctx, sqlQueueTable)
+	if st.db.Schema().HasTable(st.taskQueueTableName) {
+		if st.debugEnabled {
+			st.logger.Info("MigrateUp: task_queue table already exists", "table", st.taskQueueTableName)
+		}
 	} else {
-		_, errQueue = st.db.ExecContext(ctx, sqlQueueTable)
+		err := st.db.Schema().Create(st.taskQueueTableName, func(table contractsschema.Blueprint) {
+			table.String(COLUMN_ID, 50)
+			table.Primary(COLUMN_ID)
+			table.String(COLUMN_QUEUE_NAME, 100)
+			table.String(COLUMN_TASK_ID, 50)
+			table.Text(COLUMN_PARAMETERS)
+			table.String(COLUMN_STATUS, 50)
+			table.Text(COLUMN_OUTPUT)
+			table.Text(COLUMN_DETAILS)
+			table.Integer(COLUMN_ATTEMPTS)
+			table.DateTime(COLUMN_STARTED_AT)
+			table.DateTime(COLUMN_COMPLETED_AT)
+			table.DateTime(COLUMN_CREATED_AT)
+			table.DateTime(COLUMN_UPDATED_AT)
+			table.DateTime(COLUMN_SOFT_DELETED_AT)
+		})
+		if err != nil {
+			if st.debugEnabled {
+				st.logger.Error("MigrateUp failed for task_queue", "error", err)
+			}
+			return err
+		}
 	}
 
-	if errQueue != nil {
-		log.Println(errQueue)
-		return errQueue
-	}
-
-	// Create schedule table
-	sqlScheduleTable, err := st.SqlCreateScheduleTable()
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-
-	if st.debugEnabled {
-		log.Println(sqlScheduleTable)
-	}
-
-	var errSchedule error
-	if txToUse != nil {
-		_, errSchedule = txToUse.ExecContext(ctx, sqlScheduleTable)
+	if st.db.Schema().HasTable(st.scheduleTableName) {
+		if st.debugEnabled {
+			st.logger.Info("MigrateUp: schedule table already exists", "table", st.scheduleTableName)
+		}
 	} else {
-		_, errSchedule = st.db.ExecContext(ctx, sqlScheduleTable)
-	}
-
-	if errSchedule != nil {
-		log.Println(errSchedule)
-		return errSchedule
+		err := st.db.Schema().Create(st.scheduleTableName, func(table contractsschema.Blueprint) {
+			table.String(COLUMN_ID, 50)
+			table.Primary(COLUMN_ID)
+			table.String(COLUMN_NAME, 100)
+			table.String(COLUMN_DESCRIPTION, 255)
+			table.String(COLUMN_STATUS, 50)
+			table.Text(COLUMN_RECURRENCE_RULE)
+			table.String(COLUMN_QUEUE_NAME, 100)
+			table.String(COLUMN_TASK_DEFINITION_ID, 50)
+			table.Text(COLUMN_PARAMETERS)
+			table.DateTime(COLUMN_START_AT)
+			table.DateTime(COLUMN_END_AT)
+			table.Integer(COLUMN_EXECUTION_COUNT)
+			table.Integer(COLUMN_MAX_EXECUTION_COUNT)
+			table.DateTime(COLUMN_LAST_RUN_AT)
+			table.DateTime(COLUMN_NEXT_RUN_AT)
+			table.DateTime(COLUMN_CREATED_AT)
+			table.DateTime(COLUMN_UPDATED_AT)
+			table.DateTime(COLUMN_SOFT_DELETED_AT)
+		})
+		if err != nil {
+			if st.debugEnabled {
+				st.logger.Error("MigrateUp failed for schedule", "error", err)
+			}
+			return err
+		}
 	}
 
 	return nil
@@ -182,53 +206,53 @@ func (st *Store) MigrateUp(ctx context.Context, tx ...*sql.Tx) error {
 
 // MigrateDown drops all tables
 func (st *Store) MigrateDown(ctx context.Context, tx ...*sql.Tx) error {
-	var txToUse *sql.Tx
-	if len(tx) > 0 {
-		txToUse = tx[0]
-	}
-
-	// Drop tables in reverse order to avoid foreign key constraints
-	tables := []struct {
-		name string
-		drop func() (string, error)
-	}{
-		{st.scheduleTableName, st.SqlDropScheduleTable},
-		{st.taskQueueTableName, st.SqlDropTaskQueueTable},
-		{st.taskDefinitionTableName, st.SqlDropTaskDefinitionTable},
-	}
-
-	for _, table := range tables {
-		sql, err := table.drop()
-		if err != nil {
-			log.Printf("Error generating drop SQL for table %s: %v", table.name, err)
+	if st.db.Schema().HasTable(st.scheduleTableName) {
+		if err := st.db.Schema().Drop(st.scheduleTableName); err != nil {
+			if st.debugEnabled {
+				st.logger.Error("MigrateDown failed for schedule", "error", err)
+			}
 			return err
 		}
+	}
 
-		var errExec error
-		if txToUse != nil {
-			_, errExec = txToUse.ExecContext(ctx, sql)
-		} else {
-			_, errExec = st.db.ExecContext(ctx, sql)
+	if st.db.Schema().HasTable(st.taskQueueTableName) {
+		if err := st.db.Schema().Drop(st.taskQueueTableName); err != nil {
+			if st.debugEnabled {
+				st.logger.Error("MigrateDown failed for task_queue", "error", err)
+			}
+			return err
 		}
+	}
 
-		if errExec != nil {
-			log.Printf("Error dropping table %s: %v", table.name, errExec)
-			return errExec
+	if st.db.Schema().HasTable(st.taskDefinitionTableName) {
+		if err := st.db.Schema().Drop(st.taskDefinitionTableName); err != nil {
+			if st.debugEnabled {
+				st.logger.Error("MigrateDown failed for task_definition", "error", err)
+			}
+			return err
 		}
 	}
 
 	return nil
 }
 
-// AutoMigrate migrates the tables (deprecated - use MigrateUp)
-func (st *Store) AutoMigrate() error {
-	return st.MigrateUp(context.Background())
-}
-
 // EnableDebug - enables the debug option
 func (st *Store) EnableDebug(debugEnabled bool) StoreInterface {
 	st.debugEnabled = debugEnabled
+	if debugEnabled {
+		st.db.EnableDebug()
+		st.logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+	} else {
+		st.db.DisableDebug()
+		st.logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
+	}
 	return st
+}
+
+// GetDB returns the underlying *sql.DB.
+func (st *Store) GetDB() *sql.DB {
+	db, _ := st.db.DB()
+	return db
 }
 
 // GetTaskDefinitionTableName returns the task definition table name
@@ -485,7 +509,7 @@ func (store *Store) queueRunLoopAsync(
 			if processErr != nil {
 				// Call error handler if configured
 				if store.errorHandler != nil {
-					store.errorHandler(queueName, task.ID(), processErr)
+					store.errorHandler(queueName, task.GetID(), processErr)
 				} else if store.debugEnabled {
 					log.Println("QueuedTaskProcess error:", processErr)
 				}
@@ -595,8 +619,11 @@ func (store *Store) TaskQueueProcessTask(ctx context.Context, queuedTask TaskQue
 // It checks if the handler implements TaskHandlerWithContext and uses that if available,
 // otherwise falls back to the standard Handle() method for backward compatibility.
 func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask TaskQueueInterface) (bool, error) {
-	// 1. Start queued task
-	attempts := queuedTask.Attempts() + 1
+	if queuedTask == nil {
+		return false, errors.New("queued task is nil")
+	}
+
+	attempts := queuedTask.GetAttempts() + 1
 
 	queuedTask.AppendDetails("Task started")
 	queuedTask.SetStatus(TaskQueueStatusRunning)
@@ -610,7 +637,7 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 	}
 
 	// 2. Find task definition
-	task, err := store.TaskDefinitionFindByID(ctx, queuedTask.TaskID())
+	task, err := store.TaskDefinitionFindByID(ctx, queuedTask.GetTaskID())
 
 	if err != nil {
 		return false, err
@@ -634,7 +661,7 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 	}
 
 	// 3. Get handler and check if it supports context
-	handlerFunc := store.taskHandlerFuncWithContext(task.Alias(), ctx)
+	handlerFunc := store.taskHandlerFuncWithContext(task.GetAlias(), ctx)
 
 	result := handlerFunc(queuedTask)
 

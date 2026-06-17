@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
 )
 
@@ -20,19 +19,19 @@ func TestNewSchedule(t *testing.T) {
 	if schedule.GetStatus() != "draft" {
 		t.Errorf("expected status 'draft', got %s", schedule.GetStatus())
 	}
-	if schedule.GetStartAt() != sb.NULL_DATETIME {
+	if schedule.GetStartAt() != NULL_DATETIME {
 		t.Error("expected StartAt to be NULL_DATETIME")
 	}
-	if schedule.GetEndAt() != sb.MAX_DATETIME {
+	if schedule.GetEndAt() != MAX_DATETIME {
 		t.Error("expected EndAt to be MAX_DATETIME")
 	}
-	if schedule.GetLastRunAt() != sb.NULL_DATETIME {
+	if schedule.GetLastRunAt() != NULL_DATETIME {
 		t.Error("expected LastRunAt to be NULL_DATETIME")
 	}
-	if schedule.GetNextRunAt() != sb.NULL_DATETIME {
+	if schedule.GetNextRunAt() != NULL_DATETIME {
 		t.Error("expected NextRunAt to be NULL_DATETIME")
 	}
-	if schedule.GetSoftDeletedAt() != sb.MAX_DATETIME {
+	if schedule.GetSoftDeletedAt() != MAX_DATETIME {
 		t.Error("expected SoftDeletedAt to be MAX_DATETIME")
 	}
 	if schedule.GetRecurrenceRule() == nil {
@@ -86,7 +85,7 @@ func TestScheduleGettersAndSetters(t *testing.T) {
 	}
 
 	// Test TaskParameters
-	params := map[string]any{"key": "value", "count": 42}
+	params := map[string]any{"key": "value", "count": float64(42)}
 	schedule.SetTaskParameters(params)
 	gotParams := schedule.GetTaskParameters()
 	if gotParams["key"] != params["key"] || gotParams["count"] != params["count"] {

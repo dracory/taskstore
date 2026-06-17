@@ -285,11 +285,11 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 			}),
 			hb.Tbody().Children(lo.Map(data.recordList, func(queuedTask taskstore.TaskQueueInterface, _ int) hb.TagInterface {
 				task, taskExists := lo.Find(data.taskList, func(t taskstore.TaskDefinitionInterface) bool {
-					return t.ID() == queuedTask.TaskID()
+					return t.GetID() == queuedTask.GetTaskID()
 				})
 
-				taskName := lo.IfF(taskExists, func() string { return task.Title() }).Else("Unknown")
-				taskAlias := lo.IfF(taskExists, func() string { return task.Alias() }).Else("Unknown")
+				taskName := lo.IfF(taskExists, func() string { return task.GetTitle() }).Else("Unknown")
+				taskAlias := lo.IfF(taskExists, func() string { return task.GetAlias() }).Else("Unknown")
 
 				buttonDelete := hb.Button().
 					Class("btn btn-sm btn-danger").
@@ -297,7 +297,7 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 					Child(hb.I().Class("bi bi-trash")).
 					Title("Delete task from queue").
 					HxGet(url(data.request, pathTaskQueueDelete, map[string]string{
-						"queue_id": queuedTask.ID(),
+						"queue_id": queuedTask.GetID(),
 					})).
 					HxTarget("body").
 					HxSwap("beforeend")
@@ -308,7 +308,7 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 					Child(hb.I().Class("bi bi-list-stars")).
 					Title("See queued task parameters").
 					HxGet(url(data.request, pathTaskQueueParameters, map[string]string{
-						"queue_id": queuedTask.ID(),
+						"queue_id": queuedTask.GetID(),
 					})).
 					HxTarget("body").
 					HxSwap("beforeend")
@@ -319,7 +319,7 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 					Child(hb.I().Class("bi bi-info-circle-fill")).
 					Title("See the details of the job run").
 					HxGet(url(data.request, pathTaskQueueDetails, map[string]string{
-						"queue_id": queuedTask.ID(),
+						"queue_id": queuedTask.GetID(),
 					})).
 					HxTarget("body").
 					HxSwap("beforeend")
@@ -330,7 +330,7 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 					Child(hb.I().Class("bi bi-database-add")).
 					Title("Add as new task to the queue").
 					HxGet(url(data.request, pathTaskQueueRequeue, map[string]string{
-						"queue_id": queuedTask.ID(),
+						"queue_id": queuedTask.GetID(),
 					})).
 					HxTarget("body").
 					HxSwap("beforeend")
@@ -341,25 +341,25 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 					Child(hb.I().Class("bi bi-arrow-clockwise")).
 					Title("Restart this job").
 					HxGet(url(data.request, pathTaskQueueTaskRestart, map[string]string{
-						"queue_id": queuedTask.ID(),
+						"queue_id": queuedTask.GetID(),
 					})).
 					HxTarget("body").
 					HxSwap("beforeend")
 
-				startedAtDate := lo.IfF(queuedTask.StartedAt() != "", func() string {
+				startedAtDate := lo.IfF(queuedTask.GetStartedAt() != "", func() string {
 					return queuedTask.StartedAtCarbon().Format("d M Y")
 				}).Else("-")
-				startedAtTime := lo.IfF(queuedTask.StartedAt() != "", func() string {
+				startedAtTime := lo.IfF(queuedTask.GetStartedAt() != "", func() string {
 					return queuedTask.StartedAtCarbon().ToTimeString()
 				}).Else("-")
-				completeddAtDate := lo.IfF(queuedTask.CompletedAt() != "", func() string {
+				completeddAtDate := lo.IfF(queuedTask.GetCompletedAt() != "", func() string {
 					return queuedTask.CompletedAtCarbon().Format("d M Y")
 				}).Else("-")
-				completeddAtTime := lo.IfF(queuedTask.CompletedAt() != "", func() string {
+				completeddAtTime := lo.IfF(queuedTask.GetCompletedAt() != "", func() string {
 					return queuedTask.CompletedAtCarbon().ToTimeString()
 				}).Else("-")
 
-				elapsedTime := lo.IfF(queuedTask.StartedAt() != "" && queuedTask.CompletedAt() != "", func() string {
+				elapsedTime := lo.IfF(queuedTask.GetStartedAt() != "" && queuedTask.GetCompletedAt() != "", func() string {
 					diffSeconds := queuedTask.CompletedAtCarbon().DiffAbsInSeconds(queuedTask.StartedAtCarbon())
 					return cast.ToString(diffSeconds) + "s"
 				}).Else("-")
@@ -373,7 +373,7 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 					StyleIf(queuedTask.IsRunning(), `color:silver;`).
 					StyleIf(queuedTask.IsQueued(), `color:blue;`).
 					StyleIf(queuedTask.IsFailed(), `color:red;`).
-					HTML(queuedTask.Status())
+					HTML(queuedTask.GetStatus())
 
 				return hb.TR().
 					// Name, Alias, Ref
@@ -386,7 +386,7 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 						Child(hb.Div().
 							Style("font-size: 11px;").
 							Text("Ref: ").
-							Text(queuedTask.ID()))).
+							Text(queuedTask.GetID()))).
 
 					// Status
 					Child(hb.TD().

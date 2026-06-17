@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
 	"github.com/teambition/rrule-go"
 )
@@ -113,7 +112,7 @@ func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon
 
 	// If end time has passed, return max datetime to indicate no more runs
 	if now.Gt(endsAt) {
-		return carbon.Parse(sb.MAX_DATETIME, carbon.UTC), nil
+		return carbon.Parse(MAX_DATETIME, carbon.UTC), nil
 	}
 
 	if interval := rule.GetInterval(); interval <= 0 {
@@ -182,7 +181,7 @@ func NewRecurrenceRule() RecurrenceRuleInterface {
 	r := recurrenceRule{}
 
 	// By default, it does not have an end time
-	r.SetEndsAt(sb.MAX_DATETIME)
+	r.SetEndsAt(MAX_DATETIME)
 
 	// By default, the interval is 1
 	r.SetInterval(1)

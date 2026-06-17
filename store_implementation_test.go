@@ -235,8 +235,8 @@ func initStore(filename ...string) (*Store, error) {
 		TaskQueueTableName:      "task_queue",
 		ScheduleTableName:       "schedules",
 		DB:                      db,
-		DbDriverName:            "sqlite",
-		AutomigrateEnabled:      true, // Enable automigration for tests
-		DebugEnabled:            false,
+
+		AutomigrateEnabled: true, // Enable automigration for tests
+		DebugEnabled:       false,
 	})
 }

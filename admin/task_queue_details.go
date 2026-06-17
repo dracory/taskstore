@@ -58,7 +58,7 @@ func (c *taskQueueDetailsController) modal(data taskQueueDetailsControllerData) 
 		Label:    "Queued Task Details",
 		Name:     fieldDetails,
 		Type:     form.FORM_FIELD_TYPE_TEXTAREA,
-		Value:    data.queue.Details(),
+		Value:    data.queue.GetDetails(),
 		Required: true,
 	})
 

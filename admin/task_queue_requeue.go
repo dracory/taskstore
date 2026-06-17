@@ -51,7 +51,7 @@ func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControll
 		return hb.Swal(hb.SwalOptions{Icon: "error", Title: "Error", Text: "Task Parameters is not valid JSON", Position: "top-right"})
 	}
 
-	task, err := c.store.TaskDefinitionFindByID(context.Background(), data.queue.TaskID())
+	task, err := c.store.TaskDefinitionFindByID(context.Background(), data.queue.GetTaskID())
 
 	if err != nil {
 		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
@@ -70,7 +70,7 @@ func (c *taskQueueRequeueController) formSubmitted(data taskQueueRequeueControll
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), taskstore.DefaultQueueName, task.Alias(), taskParametersMap)
+	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), taskstore.DefaultQueueName, task.GetAlias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueRequeueController > formSubmitted", "error", err.Error())
@@ -204,7 +204,7 @@ func (c *taskQueueRequeueController) prepareData(r *http.Request) (data taskQueu
 	}
 
 	if r.Method == http.MethodGet {
-		data.formParameters = data.queue.Parameters()
+		data.formParameters = data.queue.GetParameters()
 	}
 
 	if r.Method == http.MethodPost {

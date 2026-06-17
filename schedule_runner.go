@@ -5,8 +5,6 @@ import (
 	"log"
 	"sync/atomic"
 	"time"
-
-	"github.com/dracory/sb"
 )
 
 type ScheduleRunnerOptions struct {
@@ -110,7 +108,7 @@ func (r *scheduleRunner) SetInitialRuns(ctx context.Context) error {
 	}
 
 	for _, s := range schedules {
-		if s.GetNextRunAt() != sb.NULL_DATETIME {
+		if s.GetNextRunAt() != NULL_DATETIME {
 			continue
 		}
 
@@ -161,7 +159,7 @@ func (r *scheduleRunner) findActiveSchedulesToBeRun(ctx context.Context) ([]Sche
 		}
 
 		// Initialize next run if needed
-		if s.GetNextRunAt() == sb.NULL_DATETIME {
+		if s.GetNextRunAt() == NULL_DATETIME {
 			s.UpdateNextRunAt()
 			if err := r.store.ScheduleUpdate(ctx, s); err != nil {
 				r.logf("ScheduleRunner: error initializing next run for schedule %s: %v", s.GetID(), err)
@@ -197,7 +195,7 @@ func (r *scheduleRunner) runSchedule(ctx context.Context, s ScheduleInterface) e
 		return nil
 	}
 
-	_, err = r.store.TaskDefinitionEnqueueByAlias(ctx, s.GetQueueName(), taskDef.Alias(), s.GetTaskParameters())
+	_, err = r.store.TaskDefinitionEnqueueByAlias(ctx, s.GetQueueName(), taskDef.GetAlias(), s.GetTaskParameters())
 	if err != nil {
 		return err
 	}

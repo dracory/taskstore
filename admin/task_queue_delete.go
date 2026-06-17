@@ -78,7 +78,7 @@ func (c *taskQueueDeleteController) modal(data taskQueueDeleteControllerData) *h
 				Child(hb.Text(`You are about to permanently delete this queued task:`))).
 			Child(hb.Paragraph().
 				Style("font-weight: bold;").
-				Child(hb.Text(`Ref. "` + data.queue.ID() + `"`))).
+				Child(hb.Text(`Ref. "` + data.queue.GetID() + `"`))).
 			Child(hb.Paragraph().
 				Child(hb.Text(`Are you sure you want to proceed?`))).
 			Child(hb.Paragraph().

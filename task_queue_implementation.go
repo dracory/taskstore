@@ -2,23 +2,38 @@ package taskstore
 
 import (
 	"encoding/json"
+	"time"
 
-	"github.com/dracory/dataobject"
-	"github.com/dracory/sb"
-	"github.com/dracory/uid"
+	"github.com/dracory/neat/database/orm"
+	"github.com/dracory/neat/database/soft_delete"
+	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
 
-// == CLASS ===================================================================
+// == TYPE =====================================================================
 
 type taskQueue struct {
-	dataobject.DataObject
+	orm.ShortID
+
+	QueueNameField   string    `db:"queue_name"`
+	TaskIDField      string    `db:"task_id"`
+	ParametersField  string    `db:"parameters"`
+	StatusField      string    `db:"status"`
+	OutputField      string    `db:"output"`
+	DetailsField     string    `db:"details"`
+	AttemptsField    int       `db:"attempts"`
+	StartedAtField   time.Time `db:"started_at"`
+	CompletedAtField time.Time `db:"completed_at"`
+
+	CreatedAtField orm.CreatedAt
+	UpdatedAtField orm.UpdatedAt
+	soft_delete.SoftDeletesMaxDate
 }
 
 var _ TaskQueueInterface = (*taskQueue)(nil)
 
-// == CONSTRUCTORS ============================================================
+// == CONSTRUCTORS =============================================================
 
 // NewTaskQueue creates a new task queue
 // If a queue name is provided, it will be used; otherwise DefaultQueueName is used.
@@ -30,133 +45,139 @@ func NewTaskQueue(queueName ...string) TaskQueueInterface {
 
 	o := &taskQueue{}
 
-	o.SetID(uid.HumanUid()).
+	o.SetID(neatuid.GenerateShortID()).
 		SetStatus(TaskQueueStatusQueued).
 		SetQueueName(name).
 		SetAttempts(0).
 		SetOutput("").
 		SetDetails("").
 		SetParameters("{}").
-		SetStartedAt(sb.NULL_DATETIME).
-		SetCompletedAt(sb.NULL_DATETIME).
+		SetStartedAt(NULL_DATETIME).
+		SetCompletedAt(NULL_DATETIME).
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
-		SetSoftDeletedAt(sb.MAX_DATETIME)
+		SetSoftDeletedAt(MAX_DATETIME)
 
 	return o
 }
 
 func NewTaskQueueFromExistingData(data map[string]string) TaskQueueInterface {
 	o := &taskQueue{}
-	o.Hydrate(data)
+	o.SetID(data[COLUMN_ID])
+	o.SetQueueName(data[COLUMN_QUEUE_NAME])
+	o.SetTaskID(data[COLUMN_TASK_ID])
+	o.SetParameters(data[COLUMN_PARAMETERS])
+	o.SetStatus(data[COLUMN_STATUS])
+	o.SetOutput(data[COLUMN_OUTPUT])
+	o.SetDetails(data[COLUMN_DETAILS])
+	o.SetAttempts(cast.ToInt(data[COLUMN_ATTEMPTS]))
+	if v, ok := data[COLUMN_STARTED_AT]; ok {
+		o.SetStartedAt(v)
+	}
+	if v, ok := data[COLUMN_COMPLETED_AT]; ok {
+		o.SetCompletedAt(v)
+	}
+	if v, ok := data[COLUMN_CREATED_AT]; ok {
+		o.SetCreatedAt(v)
+	}
+	if v, ok := data[COLUMN_UPDATED_AT]; ok {
+		o.SetUpdatedAt(v)
+	}
+	if v, ok := data[COLUMN_SOFT_DELETED_AT]; ok {
+		o.SetSoftDeletedAt(v)
+	}
 	return o
 }
 
-// == METHODS =================================================================
+// == METHODS ==================================================================
 
 func (o *taskQueue) IsCanceled() bool {
-	return o.Status() == TaskQueueStatusCanceled
+	return o.GetStatus() == TaskQueueStatusCanceled
 }
 
 func (o *taskQueue) IsDeleted() bool {
-	return o.Status() == TaskQueueStatusDeleted
+	return o.GetStatus() == TaskQueueStatusDeleted
 }
 
 func (o *taskQueue) IsFailed() bool {
-	return o.Status() == TaskQueueStatusFailed
+	return o.GetStatus() == TaskQueueStatusFailed
 }
 
 func (o *taskQueue) IsQueued() bool {
-	return o.Status() == TaskQueueStatusQueued
+	return o.GetStatus() == TaskQueueStatusQueued
 }
 
 func (o *taskQueue) IsPaused() bool {
-	return o.Status() == TaskQueueStatusPaused
+	return o.GetStatus() == TaskQueueStatusPaused
 }
 
 func (o *taskQueue) IsRunning() bool {
-	return o.Status() == TaskQueueStatusRunning
+	return o.GetStatus() == TaskQueueStatusRunning
 }
 
 func (o *taskQueue) IsSuccess() bool {
-	return o.Status() == TaskQueueStatusSuccess
+	return o.GetStatus() == TaskQueueStatusSuccess
 }
 
 func (o *taskQueue) IsSoftDeleted() bool {
-	return o.SoftDeletedAtCarbon().Compare("<", carbon.Now(carbon.UTC))
+	return o.SoftDeletesMaxDate.IsSoftDeleted()
 }
 
-// == SETTERS AND GETTERS =====================================================
+// == SETTERS AND GETTERS ======================================================
 
 func (o *taskQueue) GetAttempts() int {
-	attempts := o.Get(COLUMN_ATTEMPTS)
-	return cast.ToInt(attempts)
-}
-
-// Attempts alias is kept for backwards compatibility.
-// Deprecated: use GetAttempts instead. Will be removed after 2026-11-30.
-func (o *taskQueue) Attempts() int {
-	return o.GetAttempts()
+	return o.AttemptsField
 }
 
 func (o *taskQueue) SetAttempts(attempts int) TaskQueueInterface {
-	o.Set(COLUMN_ATTEMPTS, cast.ToString(attempts))
+	o.AttemptsField = attempts
 	return o
 }
 
 func (o *taskQueue) GetCompletedAt() string {
-	return o.Get(COLUMN_COMPLETED_AT)
-}
-
-// CompletedAt alias is kept for backwards compatibility.
-// Deprecated: use GetCompletedAt instead. Will be removed after 2026-11-30.
-func (o *taskQueue) CompletedAt() string {
-	return o.GetCompletedAt()
+	if o.CompletedAtField.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.CompletedAtField).ToDateTimeString()
 }
 
 func (o *taskQueue) CompletedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetCompletedAt(), carbon.UTC)
+	return carbon.CreateFromStdTime(o.CompletedAtField)
 }
 
 func (o *taskQueue) SetCompletedAt(completedAt string) TaskQueueInterface {
-	o.Set(COLUMN_COMPLETED_AT, completedAt)
+	if completedAt == "" || completedAt == NULL_DATETIME {
+		o.CompletedAtField = time.Time{}
+		return o
+	}
+	o.CompletedAtField = carbon.Parse(completedAt, carbon.UTC).StdTime()
 	return o
 }
 
 func (o *taskQueue) GetCreatedAt() string {
-	return o.Get(COLUMN_CREATED_AT)
-}
-
-// CreatedAt alias is kept for backwards compatibility.
-// Deprecated: use GetCreatedAt instead. Will be removed after 2026-11-30.
-func (o *taskQueue) CreatedAt() string {
-	return o.GetCreatedAt()
+	if o.CreatedAtField.CreatedAt.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt).ToDateTimeString()
 }
 
 func (o *taskQueue) CreatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetCreatedAt(), carbon.UTC)
+	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt)
 }
 
 func (o *taskQueue) SetCreatedAt(createdAt string) TaskQueueInterface {
-	o.Set(COLUMN_CREATED_AT, createdAt)
+	if createdAt == "" {
+		return o
+	}
+	o.CreatedAtField.CreatedAt = carbon.Parse(createdAt, carbon.UTC).StdTime()
 	return o
-}
-
-func (o *taskQueue) GetID() string {
-	return o.Get(COLUMN_ID)
-}
-
-// ID alias is kept for backwards compatibility.
-// Deprecated: use GetID instead. Will be removed after 2026-11-30.
-func (o *taskQueue) ID() string {
-	return o.GetID()
 }
 
 // AppendDetails appends details to the queued task
 // !!! warning does not auto-save it for performance reasons
 func (o *taskQueue) AppendDetails(details string) TaskQueueInterface {
 	ts := carbon.Now().Format("Y-m-d H:i:s")
-	text := o.Details()
+	text := o.GetDetails()
 	if text != "" {
 		text += "\n"
 	}
@@ -165,134 +186,47 @@ func (o *taskQueue) AppendDetails(details string) TaskQueueInterface {
 }
 
 func (o *taskQueue) GetDetails() string {
-	return o.Get(COLUMN_DETAILS)
-}
-
-// Details alias is kept for backwards compatibility.
-// Deprecated: use GetDetails instead. Will be removed after 2026-11-30.
-func (o *taskQueue) Details() string {
-	return o.GetDetails()
+	return o.DetailsField
 }
 
 func (o *taskQueue) SetDetails(details string) TaskQueueInterface {
-	o.Set(COLUMN_DETAILS, details)
+	o.DetailsField = details
 	return o
 }
 
 func (o *taskQueue) GetQueueName() string {
-	return o.Get(COLUMN_QUEUE_NAME)
-}
-
-// QueueName alias is kept for backwards compatibility.
-// Deprecated: use GetQueueName instead. Will be removed after 2026-11-30.
-func (o *taskQueue) QueueName() string {
-	return o.GetQueueName()
+	return o.QueueNameField
 }
 
 func (o *taskQueue) SetQueueName(queueName string) TaskQueueInterface {
-	o.Set(COLUMN_QUEUE_NAME, queueName)
+	o.QueueNameField = queueName
 	return o
+}
+
+func (o *taskQueue) GetID() string {
+	return o.ShortID.ID
 }
 
 func (o *taskQueue) SetID(id string) TaskQueueInterface {
-	o.Set(COLUMN_ID, id)
+	o.ShortID.ID = id
 	return o
 }
 
-// func (o *taskQueue) Memo() string {
-// 	return o.Get(COLUMN_MEMO)
-// }
-
-// func (o *taskQueue) SetMemo(memo string) TaskQueueInterface {
-// 	o.Set(COLUMN_MEMO, memo)
-// 	return o
-// }
-
-// func (o *taskQueue) Metas() (map[string]string, error) {
-// 	metasStr := o.Get(COLUMN_METAS)
-
-// 	if metasStr == "" {
-// 		metasStr = "{}"
-// 	}
-
-// 	metasJson, errJson := utils.FromJSON(metasStr, map[string]string{})
-// 	if errJson != nil {
-// 		return map[string]string{}, errJson
-// 	}
-
-// 	return maputils.MapStringAnyToMapStringString(metasJson.(map[string]any)), nil
-// }
-
-// func (o *taskQueue) Meta(name string) string {
-// 	metas, err := o.Metas()
-
-// 	if err != nil {
-// 		return ""
-// 	}
-
-// 	if value, exists := metas[name]; exists {
-// 		return value
-// 	}
-
-// 	return ""
-// }
-
-// func (o *taskQueue) SetMeta(name string, value string) error {
-// 	return o.UpsertMetas(map[string]string{name: value})
-// }
-
-// // SetMetas stores metas as json string
-// // Warning: it overwrites any existing metas
-// func (o *taskQueue) SetMetas(metas map[string]string) error {
-// 	mapString, err := utils.ToJSON(metas)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	o.Set(COLUMN_METAS, mapString)
-// 	return nil
-// }
-
-// func (o *taskQueue) UpsertMetas(metas map[string]string) error {
-// 	currentMetas, err := o.Metas()
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for k, v := range metas {
-// 		currentMetas[k] = v
-// 	}
-
-// 	return o.SetMetas(currentMetas)
-// }
-
 func (o *taskQueue) GetOutput() string {
-	return o.Get(COLUMN_OUTPUT)
-}
-
-// Output alias is kept for backwards compatibility.
-// Deprecated: use GetOutput instead. Will be removed after 2026-11-30.
-func (o *taskQueue) Output() string {
-	return o.GetOutput()
+	return o.OutputField
 }
 
 func (o *taskQueue) SetOutput(output string) TaskQueueInterface {
-	o.Set(COLUMN_OUTPUT, output)
+	o.OutputField = output
 	return o
 }
 
 func (o *taskQueue) GetParameters() string {
-	return o.Get(COLUMN_PARAMETERS)
-}
-
-// Parameters alias is kept for backwards compatibility.
-// Deprecated: use GetParameters instead. Will be removed after 2026-11-30.
-func (o *taskQueue) Parameters() string {
-	return o.GetParameters()
+	return o.ParametersField
 }
 
 func (o *taskQueue) SetParameters(parameters string) TaskQueueInterface {
-	o.Set(COLUMN_PARAMETERS, parameters)
+	o.ParametersField = parameters
 	return o
 }
 
@@ -311,101 +245,85 @@ func (o *taskQueue) ParametersMap() (map[string]string, error) {
 }
 
 func (o *taskQueue) SetParametersMap(parameters map[string]string) (TaskQueueInterface, error) {
-	parametersJsonBytes, jsonErr := json.Marshal(parameters)
+	parametersBytes, jsonErr := json.Marshal(parameters)
 	if jsonErr != nil {
 		return o, jsonErr
 	}
-	parametersJson := string(parametersJsonBytes)
-	return o.SetParameters(parametersJson), nil
+	return o.SetParameters(string(parametersBytes)), nil
+}
+
+func (o *taskQueue) GetSoftDeletedAt() string {
+	if o.SoftDeletesMaxDate.SoftDeletedAt.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt).ToDateTimeString()
+}
+
+func (o *taskQueue) SoftDeletedAtCarbon() *carbon.Carbon {
+	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt)
+}
+
+func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
+	if deletedAt == "" {
+		return o
+	}
+	o.SoftDeletesMaxDate.SoftDeletedAt = carbon.Parse(deletedAt, carbon.UTC).StdTime()
+	return o
 }
 
 func (o *taskQueue) GetStartedAt() string {
-	return o.Get(COLUMN_STARTED_AT)
-}
-
-// StartedAt alias is kept for backwards compatibility.
-// Deprecated: use GetStartedAt instead. Will be removed after 2026-11-30.
-func (o *taskQueue) StartedAt() string {
-	return o.GetStartedAt()
+	if o.StartedAtField.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.StartedAtField).ToDateTimeString()
 }
 
 func (o *taskQueue) StartedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetStartedAt(), carbon.UTC)
+	return carbon.CreateFromStdTime(o.StartedAtField)
 }
 
 func (o *taskQueue) SetStartedAt(startedAt string) TaskQueueInterface {
-	o.Set(COLUMN_STARTED_AT, startedAt)
+	if startedAt == "" || startedAt == NULL_DATETIME {
+		o.StartedAtField = time.Time{}
+		return o
+	}
+	o.StartedAtField = carbon.Parse(startedAt, carbon.UTC).StdTime()
 	return o
 }
 
 func (o *taskQueue) GetStatus() string {
-	return o.Get(COLUMN_STATUS)
-}
-
-// Status alias is kept for backwards compatibility.
-// Deprecated: use GetStatus instead. Will be removed after 2026-11-30.
-func (o *taskQueue) Status() string {
-	return o.GetStatus()
-}
-
-func (o *taskQueue) GetSoftDeletedAt() string {
-	return o.Get(COLUMN_SOFT_DELETED_AT)
-}
-
-// SoftDeletedAt alias is kept for backwards compatibility.
-// Deprecated: use GetSoftDeletedAt instead. Will be removed after 2026-11-30.
-func (o *taskQueue) SoftDeletedAt() string {
-	return o.GetSoftDeletedAt()
-}
-
-func (o *taskQueue) SoftDeletedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetSoftDeletedAt(), carbon.UTC)
-}
-
-func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
-	o.Set(COLUMN_SOFT_DELETED_AT, deletedAt)
-	return o
+	return o.StatusField
 }
 
 func (o *taskQueue) SetStatus(status string) TaskQueueInterface {
-	o.Set(COLUMN_STATUS, status)
+	o.StatusField = status
 	return o
 }
 
 func (o *taskQueue) GetTaskID() string {
-	return o.Get(COLUMN_TASK_ID)
-}
-
-// TaskID alias is kept for backwards compatibility.
-// Deprecated: use GetTaskID instead. Will be removed after 2026-11-30.
-func (o *taskQueue) TaskID() string {
-	return o.GetTaskID()
+	return o.TaskIDField
 }
 
 func (o *taskQueue) SetTaskID(taskID string) TaskQueueInterface {
-	o.Set(COLUMN_TASK_ID, taskID)
+	o.TaskIDField = taskID
 	return o
 }
 
 func (o *taskQueue) GetUpdatedAt() string {
-	return o.Get(COLUMN_UPDATED_AT)
-}
-
-// UpdatedAt alias is kept for backwards compatibility.
-// Deprecated: use GetUpdatedAt instead. Will be removed after 2026-11-30.
-func (o *taskQueue) UpdatedAt() string {
-	return o.GetUpdatedAt()
+	if o.UpdatedAtField.UpdatedAt.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt).ToDateTimeString()
 }
 
 func (o *taskQueue) UpdatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetUpdatedAt(), carbon.UTC)
+	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt)
 }
 
 func (o *taskQueue) SetUpdatedAt(updatedAt string) TaskQueueInterface {
-	o.Set(COLUMN_UPDATED_AT, updatedAt)
+	if updatedAt == "" {
+		return o
+	}
+	o.UpdatedAtField.UpdatedAt = carbon.Parse(updatedAt, carbon.UTC).StdTime()
 	return o
-}
-
-func (o *taskQueue) MarkAsNotDirty() {
-	o.DataObject.MarkAsNotDirty()
 }

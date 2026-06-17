@@ -127,8 +127,8 @@ func (controller *taskDefinitionManagerController) tableRecords(data *taskDefini
 				}),
 			}),
 			hb.Tbody().Children(lo.Map(data.recordList, func(task taskstore.TaskDefinitionInterface, _ int) hb.TagInterface {
-				taskName := task.Title()
-				taskAlias := task.Alias()
+				taskName := task.GetTitle()
+				taskAlias := task.GetAlias()
 
 				buttonDelete := hb.Button().
 					Class("btn btn-sm btn-danger").
@@ -136,7 +136,7 @@ func (controller *taskDefinitionManagerController) tableRecords(data *taskDefini
 					Child(hb.I().Class("bi bi-trash")).
 					Title("Delete task").
 					HxGet(url(data.request, pathTaskDefinitionDelete, map[string]string{
-						"task_id": task.ID(),
+						"task_id": task.GetID(),
 					})).
 					HxTarget("body").
 					HxSwap("beforeend")
@@ -147,7 +147,7 @@ func (controller *taskDefinitionManagerController) tableRecords(data *taskDefini
 					Child(hb.I().Class("bi bi-pencil-square")).
 					Title("Edit task").
 					HxGet(url(data.request, pathTaskDefinitionUpdate, map[string]string{
-						"task_id": task.ID(),
+						"task_id": task.GetID(),
 					})).
 					HxTarget("body").
 					HxSwap("beforeend")
@@ -160,7 +160,7 @@ func (controller *taskDefinitionManagerController) tableRecords(data *taskDefini
 				status := hb.Span().
 					Style(`font-weight: bold;`).
 					// StyleIf(taskdTask.IsFailed(), `color:red;`).
-					HTML(task.Status())
+					HTML(task.GetStatus())
 
 				return hb.TR().Children([]hb.TagInterface{
 					hb.TD().
@@ -172,7 +172,7 @@ func (controller *taskDefinitionManagerController) tableRecords(data *taskDefini
 						Child(hb.Div().
 							Style("font-size: 11px;").
 							Text("Ref: ").
-							Text(task.ID())),
+							Text(task.GetID())),
 					hb.TD().
 						Child(status),
 					hb.TD().

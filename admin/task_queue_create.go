@@ -75,7 +75,7 @@ func (c *taskQueueCreateController) formSubmitted(data *taskQueueCreateControlle
 
 	taskParametersMap := cast.ToStringMap(taskParametersAny)
 
-	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), taskstore.DefaultQueueName, task.Alias(), taskParametersMap)
+	_, err = c.store.TaskDefinitionEnqueueByAlias(context.Background(), taskstore.DefaultQueueName, task.GetAlias(), taskParametersMap)
 
 	if err != nil {
 		c.logger.Error("At queueCreateController > formSubmitted", "error", err.Error())
@@ -118,8 +118,8 @@ func (c *taskQueueCreateController) modalQueueCreate(data *taskQueueCreateContro
 			}}
 			lo.Map(data.taskList, func(task taskstore.TaskDefinitionInterface, _ int) form.FieldOption {
 				options = append(options, form.FieldOption{
-					Value: task.Title(),
-					Key:   task.ID(),
+					Value: task.GetTitle(),
+					Key:   task.GetID(),
 				})
 				return form.FieldOption{}
 			})
@@ -231,8 +231,8 @@ func (c *taskQueueCreateController) modalQueueCreateSimple(data *taskQueueCreate
 			Child(hb.Option().Value("").Text("- Select Task -")).
 			Children(lo.Map(data.taskList, func(task taskstore.TaskDefinitionInterface, _ int) hb.TagInterface {
 				return hb.Option().
-					Value(task.ID()).
-					Text(task.Title())
+					Value(task.GetID()).
+					Text(task.GetTitle())
 			})))
 
 	groupParameters := bs.FormGroup().

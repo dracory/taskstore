@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"testing"
 
-	"github.com/dracory/sb"
 	"github.com/dromara/carbon/v2"
 	_ "modernc.org/sqlite"
 )
@@ -102,19 +101,9 @@ func TestScheduleCount(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
-
-	// Create tables
-	_, err = store.SqlCreateTaskDefinitionTable()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = store.SqlCreateScheduleTable()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Initially count should be 0
 	count, err := store.ScheduleCount(ctx, NewScheduleQuery())
@@ -153,19 +142,9 @@ func TestScheduleDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
-
-	// Create tables
-	_, err = store.SqlCreateTaskDefinitionTable()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = store.SqlCreateScheduleTable()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Create a schedule
 	schedule := NewSchedule().
@@ -201,19 +180,9 @@ func TestScheduleSoftDelete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
-
-	// Create tables
-	_, err = store.SqlCreateTaskDefinitionTable()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = store.SqlCreateScheduleTable()
-	if err != nil {
-		t.Fatal(err)
-	}
 
 	// Create a schedule
 	schedule := NewSchedule().
@@ -277,7 +246,7 @@ func TestScheduleRun(t *testing.T) {
 	schedule.SetName("Test Schedule")
 	schedule.SetStatus("active")
 	schedule.SetQueueName("default")
-	schedule.SetTaskDefinitionID(taskDef.ID())
+	schedule.SetTaskDefinitionID(taskDef.GetID())
 	schedule.SetStartAt(carbon.Now(carbon.UTC).AddMinutes(-1).ToDateTimeString(carbon.UTC))
 	schedule.SetNextRunAt(carbon.Now(carbon.UTC).AddMinutes(-1).ToDateTimeString(carbon.UTC))
 	schedule.GetRecurrenceRule().SetFrequency(FrequencyMinutely)
@@ -302,8 +271,8 @@ func TestScheduleRun(t *testing.T) {
 	if len(queueList) != 1 {
 		t.Errorf("expected 1 queued task, got %d", len(queueList))
 	}
-	if taskDef.ID() != queueList[0].TaskID() {
-		t.Errorf("expected task ID %s, got %s", taskDef.ID(), queueList[0].TaskID())
+	if taskDef.GetID() != queueList[0].GetTaskID() {
+		t.Errorf("expected task ID %s, got %s", taskDef.GetID(), queueList[0].GetTaskID())
 	}
 
 	// Verify Schedule Updated
@@ -314,7 +283,7 @@ func TestScheduleRun(t *testing.T) {
 	if updatedSchedule == nil {
 		t.Fatal("expected updatedSchedule to not be nil")
 	}
-	if updatedSchedule.GetLastRunAt() == sb.NULL_DATETIME {
+	if updatedSchedule.GetLastRunAt() == NULL_DATETIME {
 		t.Error("expected LastRunAt to not be NULL_DATETIME")
 	}
 	if !carbon.Parse(updatedSchedule.GetNextRunAt(), carbon.UTC).Gt(carbon.Now(carbon.UTC)) {

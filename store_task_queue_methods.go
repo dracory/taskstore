@@ -3,146 +3,85 @@ package taskstore
 import (
 	"context"
 	"errors"
-	"log"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/doug-martin/goqu/v9"
-	"github.com/dracory/database"
-	"github.com/dracory/sb"
-	"github.com/dracory/uid"
+	contractsorm "github.com/dracory/neat/contracts/database/orm"
+	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
-	"github.com/samber/lo"
 	"github.com/spf13/cast"
 )
 
 func (store *Store) TaskQueueCount(ctx context.Context, options TaskQueueQueryInterface) (int64, error) {
-	options.SetCountOnly(true)
-
-	q, _, err := store.taskQueueSelectQuery(options)
-
-	if err != nil {
-		return -1, err
+	if options == nil {
+		return 0, errors.New("task queue query: cannot be nil")
 	}
-
-	sqlStr, params, errSql := q.Prepared(true).
-		Limit(1).
-		Select(goqu.COUNT(goqu.Star()).As("count")).
-		ToSQL()
-
-	if errSql != nil {
-		return -1, nil
+	if err := options.Validate(); err != nil {
+		return 0, err
 	}
-
-	if store.debugEnabled {
-		log.Println(sqlStr)
-	}
-
-	queryable := database.NewQueryableContext(ctx, store.db)
-	mapped, err := database.SelectToMapString(queryable, sqlStr, params...)
-	if err != nil {
-		return -1, err
-	}
-
-	if len(mapped) < 1 {
-		return -1, nil
-	}
-
-	countStr := mapped[0]["count"]
-
-	i, err := strconv.ParseInt(countStr, 10, 64)
-
-	if err != nil {
-		return -1, err
-
-	}
-
-	return i, nil
+	q := store.buildTaskQueueQuery(options)
+	var count int64
+	err := q.Table(store.taskQueueTableName).Count(&count)
+	return count, err
 }
 
 // TaskQueueCreate creates a queued task
 func (store *Store) TaskQueueCreate(ctx context.Context, queue TaskQueueInterface) error {
-	if queue.ID() == "" {
-		time.Sleep(1 * time.Millisecond) // !!! important
-		queue.SetID(uid.MicroUid())
+	if queue == nil {
+		return errors.New("taskstore: queue is nil")
 	}
-	if queue.CreatedAt() == "" {
+	if queue.GetID() == "" {
+		time.Sleep(1 * time.Millisecond) // !!! important
+		queue.SetID(neatuid.GenerateShortID())
+	}
+	if queue.GetCreatedAt() == "" {
 		queue.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	}
-	if queue.UpdatedAt() == "" {
+	if queue.GetUpdatedAt() == "" {
 		queue.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	}
 
-	data := queue.Data()
-
-	sqlStr, params, errSql := goqu.Dialect(store.dbDriverName).
-		Insert(store.taskQueueTableName).
-		Prepared(true).
-		Rows(data).
-		ToSQL()
-
-	if errSql != nil {
-		return errSql
+	row := map[string]any{
+		COLUMN_ID:              queue.GetID(),
+		COLUMN_QUEUE_NAME:      queue.GetQueueName(),
+		COLUMN_TASK_ID:         queue.GetTaskID(),
+		COLUMN_PARAMETERS:      queue.GetParameters(),
+		COLUMN_STATUS:          queue.GetStatus(),
+		COLUMN_OUTPUT:          queue.GetOutput(),
+		COLUMN_DETAILS:         queue.GetDetails(),
+		COLUMN_ATTEMPTS:        queue.GetAttempts(),
+		COLUMN_STARTED_AT:      queue.StartedAtCarbon().StdTime(),
+		COLUMN_COMPLETED_AT:    queue.CompletedAtCarbon().StdTime(),
+		COLUMN_CREATED_AT:      queue.CreatedAtCarbon().StdTime(),
+		COLUMN_UPDATED_AT:      queue.UpdatedAtCarbon().StdTime(),
+		COLUMN_SOFT_DELETED_AT: queue.SoftDeletedAtCarbon().StdTime(),
 	}
 
-	if store.debugEnabled {
-		log.Println(sqlStr)
-	}
-
-	if store.db == nil {
-		return errors.New("taskstore: database is nil")
-	}
-
-	_, err := store.db.ExecContext(ctx, sqlStr, params...)
-
-	if err != nil {
-		return err
-	}
-
-	queue.MarkAsNotDirty()
-
-	return nil
+	return store.db.Query().Table(store.taskQueueTableName).Create(row)
 }
 
 func (store *Store) TaskQueueDelete(ctx context.Context, queue TaskQueueInterface) error {
 	if queue == nil {
 		return errors.New("queue is nil")
 	}
-
-	return store.TaskQueueDeleteByID(ctx, queue.ID())
+	return store.TaskQueueDeleteByID(ctx, queue.GetID())
 }
 
-func (st *Store) TaskQueueDeleteByID(ctx context.Context, id string) error {
+func (store *Store) TaskQueueDeleteByID(ctx context.Context, id string) error {
 	if id == "" {
 		return errors.New("queue id is empty")
 	}
-
-	sqlStr, preparedArgs, err := goqu.Dialect(st.dbDriverName).
-		From(st.taskQueueTableName).
-		Prepared(true).
-		Where(goqu.C(COLUMN_ID).Eq(id)).
-		Delete().
-		ToSQL()
-
-	if err != nil {
-		return err
-	}
-
-	if st.debugEnabled {
-		log.Println(sqlStr)
-	}
-
-	_, err = st.db.ExecContext(ctx, sqlStr, preparedArgs...)
-
+	_, err := store.db.Query().
+		Table(store.taskQueueTableName).
+		Where(COLUMN_ID+" = ?", id).
+		Delete()
 	return err
 }
 
 // TaskQueueFail fails a queued task
-func (st *Store) TaskQueueFail(ctx context.Context, queue TaskQueueInterface) error {
+func (store *Store) TaskQueueFail(ctx context.Context, queue TaskQueueInterface) error {
 	queue.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	queue.SetStatus(TaskQueueStatusFailed)
-	return st.TaskQueueUpdate(ctx, queue)
+	return store.TaskQueueUpdate(ctx, queue)
 }
 
 // TaskQueueFindByID finds a Queue by ID
@@ -150,19 +89,14 @@ func (store *Store) TaskQueueFindByID(ctx context.Context, id string) (TaskQueue
 	if id == "" {
 		return nil, errors.New("queue id is empty")
 	}
-
 	query := TaskQueueQuery().SetID(id).SetLimit(1)
-
 	list, err := store.TaskQueueList(ctx, query)
-
 	if err != nil {
 		return nil, err
 	}
-
 	if len(list) > 0 {
 		return list[0], nil
 	}
-
 	return nil, nil
 }
 
@@ -174,38 +108,23 @@ func (store *Store) TaskQueueFindNextQueuedTask(ctx context.Context) (TaskQueueI
 	return store.TaskQueueFindNextQueuedTaskByQueue(ctx, DefaultQueueName)
 }
 
-func (store *Store) TaskQueueList(ctx context.Context, query TaskQueueQueryInterface) ([]TaskQueueInterface, error) {
-	q, columns, err := store.taskQueueSelectQuery(query)
-
-	if err != nil {
+func (store *Store) TaskQueueList(ctx context.Context, options TaskQueueQueryInterface) ([]TaskQueueInterface, error) {
+	if options == nil {
+		return []TaskQueueInterface{}, errors.New("task queue query: cannot be nil")
+	}
+	if err := options.Validate(); err != nil {
 		return []TaskQueueInterface{}, err
 	}
-
-	sqlStr, _, errSql := q.Select(columns...).ToSQL()
-
-	if store.debugEnabled {
-		log.Println(sqlStr)
-	}
-
-	if errSql != nil {
-		return []TaskQueueInterface{}, errSql
-	}
-
-	// Use database.SelectToMapString for consistency
-	queryable := database.NewQueryableContext(ctx, store.db)
-	modelMaps, err := database.SelectToMapString(queryable, sqlStr)
-
-	if err != nil {
+	q := store.buildTaskQueueQuery(options)
+	var queues []taskQueue
+	if err := q.Table(store.taskQueueTableName).Get(&queues); err != nil {
 		return []TaskQueueInterface{}, err
 	}
-
-	list := []TaskQueueInterface{}
-
-	lo.ForEach(modelMaps, func(modelMap map[string]string, index int) {
-		model := NewTaskQueueFromExistingData(modelMap)
-		list = append(list, model)
-	})
-
+	list := make([]TaskQueueInterface, len(queues))
+	for i, que := range queues {
+		queue := que
+		list[i] = &queue
+	}
 	return list, nil
 }
 
@@ -222,38 +141,31 @@ func normalizeQueueName(queueName string) string {
 
 func (store *Store) TaskQueueFindRunningByQueue(ctx context.Context, queueName string, limit int) []TaskQueueInterface {
 	queueName = normalizeQueueName(queueName)
-
 	runningTasks, errList := store.TaskQueueList(ctx, TaskQueueQuery().
 		SetStatus(TaskQueueStatusRunning).
 		SetQueueName(queueName).
 		SetLimit(limit).
 		SetOrderBy(COLUMN_CREATED_AT).
 		SetSortOrder(ASC))
-
 	if errList != nil {
 		return nil
 	}
-
 	return runningTasks
 }
 
 func (store *Store) TaskQueueFindNextQueuedTaskByQueue(ctx context.Context, queueName string) (TaskQueueInterface, error) {
 	queueName = normalizeQueueName(queueName)
-
 	queuedTasks, errList := store.TaskQueueList(ctx, TaskQueueQuery().SetStatus(TaskQueueStatusQueued).
 		SetQueueName(queueName).
 		SetLimit(1).
 		SetOrderBy(COLUMN_CREATED_AT).
 		SetSortOrder(ASC))
-
 	if errList != nil {
 		return nil, errList
 	}
-
 	if len(queuedTasks) < 1 {
 		return nil, nil
 	}
-
 	return queuedTasks[0], nil
 }
 
@@ -270,143 +182,83 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
 	queueName = normalizeQueueName(queueName)
 
-	// Start a database transaction
-	tx, err := store.db.BeginTx(ctx, nil)
+	tx, err := store.db.Query().Begin()
 	if err != nil {
 		return nil, err
 	}
-	defer func() { _ = tx.Rollback() }() // Will be a no-op if committed
+	defer tx.Rollback()
 
-	selectSQL, params, err := goqu.Dialect(store.dbDriverName).
-		From(store.taskQueueTableName).
-		Prepared(true).
-		Where(
-			goqu.C(COLUMN_STATUS).Eq(TaskQueueStatusQueued),
-			goqu.C(COLUMN_QUEUE_NAME).Eq(queueName),
-		).
-		Order(goqu.I(COLUMN_CREATED_AT).Asc()).
-		Limit(1).
-		ToSQL()
-	if err != nil {
+	q := tx.Table(store.taskQueueTableName).
+		Where(COLUMN_STATUS+" = ?", TaskQueueStatusQueued).
+		Where(COLUMN_QUEUE_NAME+" = ?", queueName).
+		OrderBy(COLUMN_CREATED_AT, ASC).
+		Limit(1)
+	if !store.isSQLite {
+		q = q.LockForUpdate()
+	}
+
+	var tasks []taskQueue
+	if err := q.Find(&tasks); err != nil {
 		return nil, err
 	}
-
-	if store.dbDriverName != "sqlite" {
-		// MySQL and PostgreSQL support FOR UPDATE
-		// Note: SKIP LOCKED removed for MySQL 5.7 compatibility (only available in MySQL 8.0+)
-		selectSQL += " FOR UPDATE"
-	}
-
-	if store.debugEnabled {
-		log.Println("TaskQueueClaimNext SELECT:", selectSQL)
-	}
-
-	queryable := database.NewQueryableContext(ctx, tx)
-	taskMaps, err := database.SelectToMapAny(queryable, selectSQL, params...)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(taskMaps) == 0 {
-		// No tasks available - this is normal
+	if len(tasks) == 0 {
 		return nil, nil
 	}
+	task := tasks[0]
 
-	// Convert map[string]any to map[string]string
-	taskDataAny := taskMaps[0]
-	taskData := make(map[string]string)
-	for k, v := range taskDataAny {
-		taskData[k] = cast.ToString(v)
-	}
-
-	id := taskData[COLUMN_ID]
-
-	// Update status to "running" within the same transaction
 	now := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
-	updateSQL, updateParams, err := goqu.Dialect(store.dbDriverName).
-		Update(store.taskQueueTableName).
-		Prepared(true).
-		Set(goqu.Record{
+	_, err = tx.Table(store.taskQueueTableName).
+		Where(COLUMN_ID+" = ?", task.ShortID.ID).
+		Update(map[string]any{
 			COLUMN_STATUS:     TaskQueueStatusRunning,
-			COLUMN_STARTED_AT: now,
-			COLUMN_UPDATED_AT: now,
-		}).
-		Where(goqu.C(COLUMN_ID).Eq(id)).
-		ToSQL()
+			COLUMN_STARTED_AT: carbon.Parse(now, carbon.UTC).StdTime(),
+			COLUMN_UPDATED_AT: carbon.Parse(now, carbon.UTC).StdTime(),
+		})
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = tx.ExecContext(ctx, updateSQL, updateParams...)
-	if err != nil {
-		return nil, err
-	}
-
-	// Commit the transaction
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	// Create task object from data
-	task := NewTaskQueueFromExistingData(taskData)
-	// Update the task object to reflect the new status
-	task.SetStatus(TaskQueueStatusRunning)
-	task.SetStartedAt(now)
-	task.SetUpdatedAt(now)
-	task.MarkAsNotDirty() // Since we just updated it in DB
+	task.StatusField = TaskQueueStatusRunning
+	task.StartedAtField = carbon.Parse(now, carbon.UTC).StdTime()
+	task.UpdatedAtField.UpdatedAt = carbon.Parse(now, carbon.UTC).StdTime()
 
-	return task, nil
+	return &task, nil
 }
 
 func (store *Store) TaskQueueProcessNextByQueue(ctx context.Context, queueName string) error {
 	queueName = normalizeQueueName(queueName)
-
-	// Atomically claim the next task
-	// Note: Old implementation checked for running tasks which was too restrictive
-	// The atomic claim handles concurrency properly
 	nextQueuedTask, err := store.TaskQueueClaimNext(ctx, queueName)
-
 	if err != nil {
 		return err
 	}
-
 	if nextQueuedTask == nil {
-		// No tasks available
 		return nil
 	}
-
-	// Process the claimed task synchronously
 	_, err = store.TaskQueueProcessTask(ctx, nextQueuedTask)
-
 	return err
 }
 
 func (store *Store) TaskQueueProcessNextAsyncByQueue(ctx context.Context, queueName string) error {
 	queueName = normalizeQueueName(queueName)
-
-	// Atomically claim the next task (fixes race condition)
 	nextQueuedTask, err := store.TaskQueueClaimNext(ctx, queueName)
-
 	if err != nil {
 		return err
 	}
-
 	if nextQueuedTask == nil {
-		// No tasks available - this is normal
 		return nil
 	}
-
-	// Spawn goroutine to process the claimed task
 	go func(q TaskQueueInterface) {
 		_, err := store.TaskQueueProcessTask(ctx, q)
 		if err != nil && store.debugEnabled {
-			log.Println("TaskQueueProcessTask error:", err)
+			store.logger.Error("TaskQueueProcessTask error", "error", err)
 		}
 	}(nextQueuedTask)
-
 	return nil
 }
 
@@ -414,171 +266,140 @@ func (store *Store) TaskQueueSoftDelete(ctx context.Context, queue TaskQueueInte
 	if queue == nil {
 		return errors.New("queue is nil")
 	}
-
 	queue.SetSoftDeletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
-
 	return store.TaskQueueUpdate(ctx, queue)
 }
 
 func (store *Store) TaskQueueSoftDeleteByID(ctx context.Context, id string) error {
 	queue, err := store.TaskQueueFindByID(ctx, id)
-
 	if err != nil {
 		return err
 	}
-
+	if queue == nil {
+		return errors.New("queue not found")
+	}
 	return store.TaskQueueSoftDelete(ctx, queue)
 }
 
-// TaskQueueSuccess completes a queued task  successfully
-func (st *Store) TaskQueueSuccess(ctx context.Context, queue TaskQueueInterface) error {
+// TaskQueueSuccess completes a queued task successfully
+func (store *Store) TaskQueueSuccess(ctx context.Context, queue TaskQueueInterface) error {
 	queue.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 	queue.SetStatus(TaskQueueStatusSuccess)
-	return st.TaskQueueUpdate(ctx, queue)
+	return store.TaskQueueUpdate(ctx, queue)
 }
 
 func (store *Store) QueuedTaskForceFail(ctx context.Context, queuedTask TaskQueueInterface, waitMinutes int) error {
-	startedAt := queuedTask.StartedAt()
-
-	// Skip tasks that haven't actually started yet
-	// This includes empty strings and NULL_DATETIME values
-	if startedAt == "" || startedAt == sb.NULL_DATETIME {
+	startedAt := queuedTask.GetStartedAt()
+	if startedAt == "" || startedAt == NULL_DATETIME {
 		return nil
 	}
-
 	minutes := -1 * waitMinutes
-
 	waitTill := queuedTask.StartedAtCarbon().AddMinutes(minutes)
-
 	isOvertime := carbon.Now(carbon.UTC).Gt(waitTill)
-
 	if isOvertime {
 		queuedTask.AppendDetails("Failed forcefully after " + cast.ToString(waitMinutes) + " minutes timeout")
 		return store.TaskQueueFail(ctx, queuedTask)
 	}
-
 	return nil
 }
 
-// TaskQueueUpdate creates a Queue
+// TaskQueueUpdate updates a queued task
 func (store *Store) TaskQueueUpdate(ctx context.Context, queue TaskQueueInterface) error {
+	if queue == nil {
+		return errors.New("queue is nil")
+	}
 	queue.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
 
-	dataChanged := queue.DataChanged()
-
-	delete(dataChanged, COLUMN_ID) // ID is not updateable
-
-	if len(dataChanged) < 1 {
-		return nil
+	row := map[string]any{
+		COLUMN_QUEUE_NAME:      queue.GetQueueName(),
+		COLUMN_TASK_ID:         queue.GetTaskID(),
+		COLUMN_PARAMETERS:      queue.GetParameters(),
+		COLUMN_STATUS:          queue.GetStatus(),
+		COLUMN_OUTPUT:          queue.GetOutput(),
+		COLUMN_DETAILS:         queue.GetDetails(),
+		COLUMN_ATTEMPTS:        queue.GetAttempts(),
+		COLUMN_STARTED_AT:      queue.StartedAtCarbon().StdTime(),
+		COLUMN_COMPLETED_AT:    queue.CompletedAtCarbon().StdTime(),
+		COLUMN_UPDATED_AT:      queue.UpdatedAtCarbon().StdTime(),
+		COLUMN_SOFT_DELETED_AT: queue.SoftDeletedAtCarbon().StdTime(),
 	}
 
-	sqlStr, params, errSql := goqu.Dialect(store.dbDriverName).
-		Update(store.taskQueueTableName).
-		Prepared(true).
-		Set(dataChanged).
-		Where(goqu.C(COLUMN_ID).Eq(queue.ID())).
-		ToSQL()
-
-	if errSql != nil {
-		return errSql
-	}
-
-	if store.debugEnabled {
-		log.Println(sqlStr)
-	}
-
-	if store.db == nil {
-		return errors.New("taskstore: database is nil")
-	}
-
-	_, err := store.db.ExecContext(ctx, sqlStr, params...)
-
-	queue.MarkAsNotDirty()
-
+	_, err := store.db.Query().
+		Table(store.taskQueueTableName).
+		Where(COLUMN_ID+" = ?", queue.GetID()).
+		Update(row)
 	return err
 }
 
-func (store *Store) taskQueueSelectQuery(options TaskQueueQueryInterface) (selectDataset *goqu.SelectDataset, columns []any, err error) {
+func (store *Store) buildTaskQueueQuery(options TaskQueueQueryInterface) contractsorm.Query {
+	q := store.db.Query()
+
 	if options == nil {
-		return nil, []any{}, errors.New("site options cannot be nil")
+		return q
 	}
 
-	if err := options.Validate(); err != nil {
-		return nil, []any{}, err
+	if options.HasCreatedAtGte() && options.CreatedAtGte() != "" {
+		q = q.Where(COLUMN_CREATED_AT+" >= ?", carbon.Parse(options.CreatedAtGte(), carbon.UTC).StdTime())
 	}
 
-	q := goqu.Dialect(store.dbDriverName).From(store.taskQueueTableName)
-
-	if options.HasCreatedAtGte() && options.HasCreatedAtLte() {
-		q = q.Where(
-			goqu.C(COLUMN_CREATED_AT).Gte(options.CreatedAtGte()),
-			goqu.C(COLUMN_CREATED_AT).Lte(options.CreatedAtLte()),
-		)
-	} else if options.HasCreatedAtGte() {
-		q = q.Where(goqu.C(COLUMN_CREATED_AT).Gte(options.CreatedAtGte()))
-	} else if options.HasCreatedAtLte() {
-		q = q.Where(goqu.C(COLUMN_CREATED_AT).Lte(options.CreatedAtLte()))
+	if options.HasCreatedAtLte() && options.CreatedAtLte() != "" {
+		q = q.Where(COLUMN_CREATED_AT+" <= ?", carbon.Parse(options.CreatedAtLte(), carbon.UTC).StdTime())
 	}
 
-	if options.HasID() {
-		q = q.Where(goqu.C(COLUMN_ID).Eq(options.ID()))
+	if options.HasID() && options.ID() != "" {
+		q = q.Where(COLUMN_ID+" = ?", options.ID())
 	}
 
-	if options.HasIDIn() {
-		q = q.Where(goqu.C(COLUMN_ID).In(options.IDIn()))
-	}
-
-	if options.HasStatus() {
-		q = q.Where(goqu.C(COLUMN_STATUS).Eq(options.Status()))
-	}
-
-	if options.HasStatusIn() {
-		q = q.Where(goqu.C(COLUMN_STATUS).In(options.StatusIn()))
-	}
-
-	if options.HasTaskID() {
-		q = q.Where(goqu.C(COLUMN_TASK_ID).Eq(options.TaskID()))
-	}
-
-	if options.HasQueueName() {
-		q = q.Where(goqu.C(COLUMN_QUEUE_NAME).Eq(options.QueueName()))
-	}
-
-	if !options.IsCountOnly() {
-		if options.HasLimit() {
-			q = q.Limit(uint(options.Limit()))
+	if options.HasIDIn() && len(options.IDIn()) > 0 {
+		args := make([]any, len(options.IDIn()))
+		for i, id := range options.IDIn() {
+			args[i] = id
 		}
+		q = q.WhereIn(COLUMN_ID, args)
+	}
 
-		if options.HasOffset() {
-			q = q.Offset(uint(options.Offset()))
+	if options.HasStatus() && options.Status() != "" {
+		q = q.Where(COLUMN_STATUS+" = ?", options.Status())
+	}
+
+	if options.HasStatusIn() && len(options.StatusIn()) > 0 {
+		args := make([]any, len(options.StatusIn()))
+		for i, status := range options.StatusIn() {
+			args[i] = status
 		}
+		q = q.WhereIn(COLUMN_STATUS, args)
 	}
 
-	sortOrder := sb.DESC
-	if options.HasSortOrder() {
-		sortOrder = options.SortOrder()
+	if options.HasTaskID() && options.TaskID() != "" {
+		q = q.Where(COLUMN_TASK_ID+" = ?", options.TaskID())
 	}
 
-	if options.HasOrderBy() {
-		if strings.EqualFold(sortOrder, sb.ASC) {
-			q = q.Order(goqu.I(options.OrderBy()).Asc())
-		} else {
-			q = q.Order(goqu.I(options.OrderBy()).Desc())
+	if options.HasQueueName() && options.QueueName() != "" {
+		q = q.Where(COLUMN_QUEUE_NAME+" = ?", options.QueueName())
+	}
+
+	if options.HasLimit() && options.Limit() > 0 {
+		q = q.Limit(options.Limit())
+	}
+
+	if options.HasOffset() && options.Offset() > 0 {
+		q = q.Offset(options.Offset())
+	}
+
+	if options.HasOrderBy() && options.OrderBy() != "" {
+		sortOrder := DESC
+		if options.HasSortOrder() && options.SortOrder() != "" {
+			sortOrder = options.SortOrder()
 		}
+		q = q.OrderBy(options.OrderBy(), sortOrder)
 	}
 
-	columns = []any{}
-
-	for _, column := range options.Columns() {
-		columns = append(columns, column)
+	// Handle soft delete filtering
+	if options.HasSoftDeletedIncluded() && options.SoftDeletedIncluded() {
+		q = q.WithSoftDeleted()
+	} else {
+		q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 	}
 
-	if options.SoftDeletedIncluded() {
-		return q, columns, nil // soft deleted sites requested specifically
-	}
-
-	softDeleted := goqu.C(COLUMN_SOFT_DELETED_AT).
-		Gt(carbon.Now(carbon.UTC).ToDateTimeString())
-
-	return q.Where(softDeleted), columns, nil
+	return q
 }

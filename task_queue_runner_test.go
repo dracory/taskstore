@@ -15,7 +15,7 @@ func TestTaskQueueRunnerRunOnceProcessesQueuedTasks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
 
@@ -69,7 +69,7 @@ func TestTaskQueueRunnerStartStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -95,7 +95,7 @@ func TestTaskQueueRunner_SerialProcessing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
 
@@ -168,7 +168,7 @@ func TestTaskQueueRunner_ConcurrentProcessing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
 
@@ -262,7 +262,7 @@ func TestTaskQueueRunner_ConcurrencyLimitEnforced(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
 
@@ -335,7 +335,7 @@ func TestTaskQueueRunner_GracefulShutdownConcurrent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
 
@@ -409,7 +409,7 @@ func TestTaskQueueRunner_DefaultMaxConcurrency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer store.db.Close()
+	defer store.GetDB().Close()
 
 	ctx := context.Background()
 

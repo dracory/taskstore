@@ -258,10 +258,10 @@ func (c *taskDefinitionUpdateController) prepareData(r *http.Request) (data task
 	}
 
 	if r.Method == http.MethodGet {
-		data.formAlias = data.task.Alias()
-		data.formDescription = data.task.Description()
-		data.formStatus = data.task.Status()
-		data.formTitle = data.task.Title()
+		data.formAlias = data.task.GetAlias()
+		data.formDescription = data.task.GetDescription()
+		data.formStatus = data.task.GetStatus()
+		data.formTitle = data.task.GetTitle()
 	}
 
 	if r.Method == http.MethodPost {

@@ -44,3 +44,9 @@ const ASC = "asc"
 const DESC = "desc"
 
 const DefaultQueueName = "default"
+
+// MAX_DATETIME is a far-future datetime used as the default soft-delete sentinel.
+const MAX_DATETIME = "9999-12-31 23:59:59"
+
+// NULL_DATETIME represents a null or unset datetime value.
+const NULL_DATETIME = "0000-00-00 00:00:00"

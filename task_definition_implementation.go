@@ -1,17 +1,29 @@
 package taskstore
 
 import (
-	"github.com/dracory/dataobject"
-	"github.com/dracory/sb"
-	"github.com/dracory/uid"
+	"github.com/dracory/neat/database/orm"
+	"github.com/dracory/neat/database/soft_delete"
+	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
 
-// == CLASS ===================================================================
+// == TYPE ====================================================================
 
 type taskDefinition struct {
-	dataobject.DataObject
+	orm.ShortID
+
+	StatusField         string `db:"status"`
+	AliasField          string `db:"alias"`
+	TitleField          string `db:"title"`
+	DescriptionField    string `db:"description"`
+	MemoField           string `db:"memo"`
+	IsRecurringField    int    `db:"is_recurring"`
+	RecurrenceRuleField string `db:"recurrence_rule"`
+
+	CreatedAtField orm.CreatedAt
+	UpdatedAtField orm.UpdatedAt
+	soft_delete.SoftDeletesMaxDate
 }
 
 var _ TaskDefinitionInterface = (*taskDefinition)(nil)
@@ -20,8 +32,7 @@ var _ TaskDefinitionInterface = (*taskDefinition)(nil)
 
 func NewTaskDefinition() TaskDefinitionInterface {
 	o := &taskDefinition{}
-
-	o.SetID(uid.HumanUid()).
+	o.SetID(neatuid.GenerateShortID()).
 		SetStatus(TaskDefinitionStatusActive).
 		SetAlias("").
 		SetTitle("").
@@ -31,267 +42,174 @@ func NewTaskDefinition() TaskDefinitionInterface {
 		SetMemo("").
 		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
 		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
-		SetSoftDeletedAt(sb.MAX_DATETIME)
+		SetSoftDeletedAt(MAX_DATETIME)
 
 	return o
 }
 
 func NewTaskDefinitionFromExistingData(data map[string]string) TaskDefinitionInterface {
 	o := &taskDefinition{}
-	o.Hydrate(data)
+	o.SetID(data[COLUMN_ID])
+	o.SetStatus(data[COLUMN_STATUS])
+	o.SetAlias(data[COLUMN_ALIAS])
+	o.SetTitle(data[COLUMN_TITLE])
+	o.SetDescription(data[COLUMN_DESCRIPTION])
+	o.SetMemo(data[COLUMN_MEMO])
+	o.SetIsRecurring(cast.ToInt(data[COLUMN_IS_RECURRING]))
+	o.SetRecurrenceRule(data[COLUMN_RECURRENCE_RULE])
+	if v, ok := data[COLUMN_CREATED_AT]; ok {
+		o.SetCreatedAt(v)
+	}
+	if v, ok := data[COLUMN_UPDATED_AT]; ok {
+		o.SetUpdatedAt(v)
+	}
+	if v, ok := data[COLUMN_SOFT_DELETED_AT]; ok {
+		o.SetSoftDeletedAt(v)
+	}
 	return o
 }
 
 // == METHODS =================================================================
+
 func (o *taskDefinition) IsActive() bool {
-	return o.Status() == TaskDefinitionStatusActive
+	return o.GetStatus() == TaskDefinitionStatusActive
 }
 
 func (o *taskDefinition) IsCanceled() bool {
-	return o.Status() == TaskDefinitionStatusCanceled
+	return o.GetStatus() == TaskDefinitionStatusCanceled
 }
 
 func (o *taskDefinition) IsSoftDeleted() bool {
-	return o.SoftDeletedAtCarbon().Compare("<", carbon.Now(carbon.UTC))
+	return o.SoftDeletesMaxDate.IsSoftDeleted()
 }
 
 // == SETTERS AND GETTERS =====================================================
 
 func (o *taskDefinition) GetAlias() string {
-	return o.Get(COLUMN_ALIAS)
-}
-
-// Alias alias is kept for backwards compatibility.
-// Deprecated: use GetAlias instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) Alias() string {
-	return o.GetAlias()
+	return o.AliasField
 }
 
 func (o *taskDefinition) SetAlias(alias string) TaskDefinitionInterface {
-	o.Set(COLUMN_ALIAS, alias)
+	o.AliasField = alias
 	return o
 }
 
 func (o *taskDefinition) GetCreatedAt() string {
-	return o.Get(COLUMN_CREATED_AT)
-}
-
-// CreatedAt alias is kept for backwards compatibility.
-// Deprecated: use GetCreatedAt instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) CreatedAt() string {
-	return o.GetCreatedAt()
+	if o.CreatedAtField.CreatedAt.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt).ToDateTimeString()
 }
 
 func (o *taskDefinition) CreatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetCreatedAt(), carbon.UTC)
+	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt)
 }
 
 func (o *taskDefinition) SetCreatedAt(createdAt string) TaskDefinitionInterface {
-	o.Set(COLUMN_CREATED_AT, createdAt)
+	if createdAt == "" {
+		return o
+	}
+	o.CreatedAtField.CreatedAt = carbon.Parse(createdAt, carbon.UTC).StdTime()
 	return o
 }
 
 func (o *taskDefinition) GetDescription() string {
-	return o.Get(COLUMN_DESCRIPTION)
-}
-
-// Description alias is kept for backwards compatibility.
-// Deprecated: use GetDescription instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) Description() string {
-	return o.GetDescription()
+	return o.DescriptionField
 }
 
 func (o *taskDefinition) SetDescription(description string) TaskDefinitionInterface {
-	o.Set(COLUMN_DESCRIPTION, description)
+	o.DescriptionField = description
 	return o
 }
 
 func (o *taskDefinition) GetID() string {
-	return o.Get(COLUMN_ID)
-}
-
-// ID alias is kept for backwards compatibility.
-// Deprecated: use GetID instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) ID() string {
-	return o.GetID()
+	return o.ShortID.ID
 }
 
 func (o *taskDefinition) SetID(id string) TaskDefinitionInterface {
-	o.Set(COLUMN_ID, id)
+	o.ShortID.ID = id
 	return o
 }
 
 func (o *taskDefinition) GetMemo() string {
-	return o.Get(COLUMN_MEMO)
-}
-
-// Memo alias is kept for backwards compatibility.
-// Deprecated: use GetMemo instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) Memo() string {
-	return o.GetMemo()
+	return o.MemoField
 }
 
 func (o *taskDefinition) SetMemo(memo string) TaskDefinitionInterface {
-	o.Set(COLUMN_MEMO, memo)
+	o.MemoField = memo
 	return o
 }
 
 func (o *taskDefinition) GetIsRecurring() int {
-	return cast.ToInt(o.Get(COLUMN_IS_RECURRING))
-}
-
-// IsRecurring alias is kept for backwards compatibility.
-// Deprecated: use GetIsRecurring instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) IsRecurring() int {
-	return o.GetIsRecurring()
+	return o.IsRecurringField
 }
 
 func (o *taskDefinition) SetIsRecurring(isRecurring int) TaskDefinitionInterface {
-	o.Set(COLUMN_IS_RECURRING, cast.ToString(isRecurring))
+	o.IsRecurringField = isRecurring
 	return o
 }
 
 func (o *taskDefinition) GetRecurrenceRule() string {
-	return o.Get(COLUMN_RECURRENCE_RULE)
-}
-
-// RecurrenceRule alias is kept for backwards compatibility.
-// Deprecated: use GetRecurrenceRule instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) RecurrenceRule() string {
-	return o.GetRecurrenceRule()
+	return o.RecurrenceRuleField
 }
 
 func (o *taskDefinition) SetRecurrenceRule(recurrenceRule string) TaskDefinitionInterface {
-	o.Set(COLUMN_RECURRENCE_RULE, recurrenceRule)
+	o.RecurrenceRuleField = recurrenceRule
 	return o
-}
-
-// func (o *taskDefinition) Metas() (map[string]string, error) {
-// 	metasStr := o.Get(COLUMN_METAS)
-
-// 	if metasStr == "" {
-// 		metasStr = "{}"
-// 	}
-
-// 	metasJson, errJson := utils.FromJSON(metasStr, map[string]string{})
-// 	if errJson != nil {
-// 		return map[string]string{}, errJson
-// 	}
-
-// 	return maputils.MapStringAnyToMapStringString(metasJson.(map[string]any)), nil
-// }
-
-// func (o *taskDefinition) Meta(name string) string {
-// 	metas, err := o.Metas()
-
-// 	if err != nil {
-// 		return ""
-// 	}
-
-// 	if value, exists := metas[name]; exists {
-// 		return value
-// 	}
-
-// 	return ""
-// }
-
-// func (o *taskDefinition) SetMeta(name string, value string) error {
-// 	return o.UpsertMetas(map[string]string{name: value})
-// }
-
-// // SetMetas stores metas as json string
-// // Warning: it overwrites any existing metas
-// func (o *taskDefinition) SetMetas(metas map[string]string) error {
-// 	mapString, err := utils.ToJSON(metas)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	o.Set(COLUMN_METAS, mapString)
-// 	return nil
-// }
-
-// func (o *taskDefinition) UpsertMetas(metas map[string]string) error {
-// 	currentMetas, err := o.Metas()
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	for k, v := range metas {
-// 		currentMetas[k] = v
-// 	}
-
-// 	return o.SetMetas(currentMetas)
-// }
-
-func (o *taskDefinition) GetStatus() string {
-	return o.Get(COLUMN_STATUS)
-}
-
-// Status alias is kept for backwards compatibility.
-// Deprecated: use GetStatus instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) Status() string {
-	return o.GetStatus()
 }
 
 func (o *taskDefinition) GetSoftDeletedAt() string {
-	return o.Get(COLUMN_SOFT_DELETED_AT)
-}
-
-// SoftDeletedAt alias is kept for backwards compatibility.
-// Deprecated: use GetSoftDeletedAt instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) SoftDeletedAt() string {
-	return o.GetSoftDeletedAt()
+	if o.SoftDeletesMaxDate.SoftDeletedAt.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt).ToDateTimeString()
 }
 
 func (o *taskDefinition) SoftDeletedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetSoftDeletedAt(), carbon.UTC)
+	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt)
 }
 
 func (o *taskDefinition) SetSoftDeletedAt(deletedAt string) TaskDefinitionInterface {
-	o.Set(COLUMN_SOFT_DELETED_AT, deletedAt)
+	if deletedAt == "" {
+		return o
+	}
+	o.SoftDeletesMaxDate.SoftDeletedAt = carbon.Parse(deletedAt, carbon.UTC).StdTime()
 	return o
 }
 
+func (o *taskDefinition) GetStatus() string {
+	return o.StatusField
+}
+
 func (o *taskDefinition) SetStatus(status string) TaskDefinitionInterface {
-	o.Set(COLUMN_STATUS, status)
+	o.StatusField = status
 	return o
 }
 
 func (o *taskDefinition) GetTitle() string {
-	return o.Get(COLUMN_TITLE)
-}
-
-// Title alias is kept for backwards compatibility.
-// Deprecated: use GetTitle instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) Title() string {
-	return o.GetTitle()
+	return o.TitleField
 }
 
 func (o *taskDefinition) SetTitle(title string) TaskDefinitionInterface {
-	o.Set(COLUMN_TITLE, title)
+	o.TitleField = title
 	return o
 }
 
 func (o *taskDefinition) GetUpdatedAt() string {
-	return o.Get(COLUMN_UPDATED_AT)
-}
-
-// UpdatedAt alias is kept for backwards compatibility.
-// Deprecated: use GetUpdatedAt instead. Will be removed after 2026-11-30.
-func (o *taskDefinition) UpdatedAt() string {
-	return o.GetUpdatedAt()
+	if o.UpdatedAtField.UpdatedAt.IsZero() {
+		return ""
+	}
+	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt).ToDateTimeString()
 }
 
 func (o *taskDefinition) UpdatedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.GetUpdatedAt(), carbon.UTC)
+	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt)
 }
 
 func (o *taskDefinition) SetUpdatedAt(updatedAt string) TaskDefinitionInterface {
-	o.Set(COLUMN_UPDATED_AT, updatedAt)
+	if updatedAt == "" {
+		return o
+	}
+	o.UpdatedAtField.UpdatedAt = carbon.Parse(updatedAt, carbon.UTC).StdTime()
 	return o
-}
-
-func (o *taskDefinition) MarkAsNotDirty() {
-	o.DataObject.MarkAsNotDirty()
 }
