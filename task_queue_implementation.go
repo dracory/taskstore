@@ -136,7 +136,7 @@ func (o *taskQueue) SetAttempts(attempts int) TaskQueueInterface {
 
 func (o *taskQueue) GetCompletedAt() string {
 	if o.CompletedAtField.IsZero() {
-		return ""
+		return NULL_DATETIME
 	}
 	return carbon.CreateFromStdTime(o.CompletedAtField).ToDateTimeString()
 }
@@ -273,7 +273,7 @@ func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
 
 func (o *taskQueue) GetStartedAt() string {
 	if o.StartedAtField.IsZero() {
-		return ""
+		return NULL_DATETIME
 	}
 	return carbon.CreateFromStdTime(o.StartedAtField).ToDateTimeString()
 }

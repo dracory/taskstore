@@ -180,6 +180,9 @@ func parseDateTime(dateTimeUTC string) *carbon.Carbon {
 func NewRecurrenceRule() RecurrenceRuleInterface {
 	r := recurrenceRule{}
 
+	// By default, it runs once (no recurrence)
+	r.SetFrequency(FrequencyNone)
+
 	// By default, it does not have an end time
 	r.SetEndsAt(MAX_DATETIME)
 

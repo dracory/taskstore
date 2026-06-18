@@ -4,7 +4,9 @@ import "errors"
 
 func NewScheduleQuery() ScheduleQueryInterface {
 	return &scheduleQuery{
-		properties: make(map[string]interface{}),
+		properties: map[string]interface{}{
+			"limit": 10,
+		},
 	}
 }
 

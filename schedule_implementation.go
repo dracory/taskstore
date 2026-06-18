@@ -5,6 +5,7 @@ import (
 
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
+	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 )
 
@@ -30,22 +31,29 @@ type scheduleImplementation struct {
 	CreatedAtField orm.CreatedAt
 	UpdatedAtField orm.UpdatedAt
 	soft_delete.SoftDeletesMaxDate
+
+	// cached recurrence rule to allow mutation via GetRecurrenceRule()
+	cachedRecurrenceRule RecurrenceRuleInterface
 }
 
 var _ ScheduleInterface = (*scheduleImplementation)(nil)
 
 // NewSchedule creates a new schedule with default values and a new recurrence rule.
 func NewSchedule() ScheduleInterface {
-	return &scheduleImplementation{
-		StatusField:            "draft",
-		RecurrenceRuleField:    "",
-		StartAtField:           NULL_DATETIME,
-		EndAtField:             MAX_DATETIME,
-		LastRunAtField:         NULL_DATETIME,
-		NextRunAtField:         NULL_DATETIME,
-		ExecutionCountField:    0,
-		MaxExecutionCountField: 0,
-	}
+	o := &scheduleImplementation{}
+	o.SetID(neatuid.GenerateShortID())
+	o.SetStatus("draft")
+	o.SetRecurrenceRule(NewRecurrenceRule())
+	o.SetStartAt(NULL_DATETIME)
+	o.SetEndAt(MAX_DATETIME)
+	o.SetLastRunAt(NULL_DATETIME)
+	o.SetNextRunAt(NULL_DATETIME)
+	o.SetExecutionCount(0)
+	o.SetMaxExecutionCount(0)
+	o.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	o.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	o.SetSoftDeletedAt(MAX_DATETIME)
+	return o
 }
 
 // GetID returns the unique identifier of the schedule.
@@ -93,27 +101,37 @@ func (s *scheduleImplementation) SetStatus(status string) ScheduleInterface {
 }
 
 // GetRecurrenceRule returns the recurrence rule that defines when the schedule should run.
+// The returned instance is cached and mutable; changes made to it will be reflected
+// in subsequent calls to GetRecurrenceRule and when the schedule is persisted.
 func (s *scheduleImplementation) GetRecurrenceRule() RecurrenceRuleInterface {
+	if s.cachedRecurrenceRule != nil {
+		return s.cachedRecurrenceRule
+	}
 	if s.RecurrenceRuleField == "" {
-		return NewRecurrenceRule()
+		s.cachedRecurrenceRule = NewRecurrenceRule()
+		return s.cachedRecurrenceRule
 	}
 	rr := NewRecurrenceRule()
 	_ = json.Unmarshal([]byte(s.RecurrenceRuleField), rr)
-	return rr
+	s.cachedRecurrenceRule = rr
+	return s.cachedRecurrenceRule
 }
 
 // SetRecurrenceRule sets the recurrence rule that defines when the schedule should run.
 func (s *scheduleImplementation) SetRecurrenceRule(rule RecurrenceRuleInterface) ScheduleInterface {
 	if rule == nil {
 		s.RecurrenceRuleField = ""
+		s.cachedRecurrenceRule = nil
 		return s
 	}
 	bytes, err := json.Marshal(rule)
 	if err != nil {
 		s.RecurrenceRuleField = ""
+		s.cachedRecurrenceRule = nil
 		return s
 	}
 	s.RecurrenceRuleField = string(bytes)
+	s.cachedRecurrenceRule = rule
 	return s
 }
 
@@ -381,4 +399,14 @@ func (s *scheduleImplementation) IsDue() bool {
 	}
 
 	return false
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling to reset cached fields.
+func (s *scheduleImplementation) UnmarshalJSON(data []byte) error {
+	type alias scheduleImplementation
+	if err := json.Unmarshal(data, (*alias)(s)); err != nil {
+		return err
+	}
+	s.cachedRecurrenceRule = nil
+	return nil
 }
