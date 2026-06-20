@@ -47,9 +47,9 @@ func (store *Store) TaskDefinitionCreate(ctx context.Context, task TaskDefinitio
 		COLUMN_MEMO:            task.GetMemo(),
 		COLUMN_IS_RECURRING:    task.GetIsRecurring(),
 		COLUMN_RECURRENCE_RULE: task.GetRecurrenceRule(),
-		COLUMN_CREATED_AT:      task.CreatedAtCarbon().StdTime(),
-		COLUMN_UPDATED_AT:      task.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT: task.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_CREATED_AT:      task.GetCreatedAt(),
+		COLUMN_UPDATED_AT:      task.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt(),
 	}
 
 	return store.db.Query().Table(store.taskDefinitionTableName).Create(row)
@@ -95,7 +95,7 @@ func (store *Store) TaskDefinitionFindByID(ctx context.Context, id string) (Task
 	q := store.db.Query().Table(store.taskDefinitionTableName).
 		Where(COLUMN_ID+" = ?", id)
 	// Default: exclude soft-deleted
-	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
+	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", MAX_DATETIME)
 
 	var task taskDefinition
 	if err := q.First(&task); err != nil {
@@ -160,8 +160,8 @@ func (store *Store) TaskDefinitionUpdate(ctx context.Context, task TaskDefinitio
 		COLUMN_MEMO:            task.GetMemo(),
 		COLUMN_IS_RECURRING:    task.GetIsRecurring(),
 		COLUMN_RECURRENCE_RULE: task.GetRecurrenceRule(),
-		COLUMN_UPDATED_AT:      task.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT: task.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_UPDATED_AT:      task.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt(),
 	}
 
 	_, err := store.db.Query().
@@ -233,11 +233,11 @@ func (store *Store) buildTaskDefinitionQuery(options TaskDefinitionQueryInterfac
 	}
 
 	if options.HasCreatedAtGte() && options.CreatedAtGte() != "" {
-		q = q.Where(COLUMN_CREATED_AT+" >= ?", carbon.Parse(options.CreatedAtGte(), carbon.UTC).StdTime())
+		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
 	}
 
 	if options.HasCreatedAtLte() && options.CreatedAtLte() != "" {
-		q = q.Where(COLUMN_CREATED_AT+" <= ?", carbon.Parse(options.CreatedAtLte(), carbon.UTC).StdTime())
+		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 	}
 
 	if options.HasID() && options.ID() != "" {
@@ -284,7 +284,7 @@ func (store *Store) buildTaskDefinitionQuery(options TaskDefinitionQueryInterfac
 	if options.HasSoftDeletedIncluded() && options.SoftDeletedIncluded() {
 		q = q.WithSoftDeleted()
 	} else {
-		q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
+		q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", MAX_DATETIME)
 	}
 
 	return q

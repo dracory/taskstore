@@ -61,9 +61,9 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 		COLUMN_MAX_EXECUTION_COUNT: schedule.GetMaxExecutionCount(),
 		COLUMN_LAST_RUN_AT:         schedule.GetLastRunAt(),
 		COLUMN_NEXT_RUN_AT:         schedule.GetNextRunAt(),
-		COLUMN_CREATED_AT:          schedule.CreatedAtCarbon().StdTime(),
-		COLUMN_UPDATED_AT:          schedule.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT:     schedule.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_CREATED_AT:          schedule.GetCreatedAt(),
+		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt(),
 	}
 
 	return store.db.Query().Table(store.scheduleTableName).Create(row)
@@ -96,7 +96,7 @@ func (store *Store) ScheduleFindByID(ctx context.Context, id string) (ScheduleIn
 	}
 	q := store.db.Query().Table(store.scheduleTableName).
 		Where(COLUMN_ID+" = ?", id)
-	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
+	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", MAX_DATETIME)
 
 	var schedule scheduleImplementation
 	if err := q.First(&schedule); err != nil {
@@ -178,8 +178,8 @@ func (store *Store) ScheduleUpdate(ctx context.Context, schedule ScheduleInterfa
 		COLUMN_MAX_EXECUTION_COUNT: schedule.GetMaxExecutionCount(),
 		COLUMN_LAST_RUN_AT:         schedule.GetLastRunAt(),
 		COLUMN_NEXT_RUN_AT:         schedule.GetNextRunAt(),
-		COLUMN_UPDATED_AT:          schedule.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT:     schedule.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt(),
 	}
 
 	_, err = store.db.Query().
@@ -283,7 +283,7 @@ func (store *Store) buildScheduleQuery(options ScheduleQueryInterface) contracts
 	}
 
 	// Default: exclude soft-deleted records
-	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
+	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", MAX_DATETIME)
 
 	return q
 }
