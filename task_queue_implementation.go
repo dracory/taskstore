@@ -2,7 +2,6 @@ package taskstore
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
@@ -23,8 +22,8 @@ type taskQueue struct {
 	OutputField      string    `db:"output"`
 	DetailsField     string    `db:"details"`
 	AttemptsField    int       `db:"attempts"`
-	StartedAtField   time.Time `db:"started_at"`
-	CompletedAtField time.Time `db:"completed_at"`
+	StartedAtField   string `db:"started_at"`
+	CompletedAtField string `db:"completed_at"`
 
 	CreatedAtField orm.CreatedAt
 	UpdatedAtField orm.UpdatedAt
@@ -135,22 +134,15 @@ func (o *taskQueue) SetAttempts(attempts int) TaskQueueInterface {
 }
 
 func (o *taskQueue) GetCompletedAt() string {
-	if o.CompletedAtField.IsZero() {
-		return NULL_DATETIME
-	}
-	return carbon.CreateFromStdTime(o.CompletedAtField).ToDateTimeString()
+	return o.CompletedAtField
 }
 
 func (o *taskQueue) CompletedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(o.CompletedAtField)
+	return carbon.Parse(o.CompletedAtField, carbon.UTC)
 }
 
 func (o *taskQueue) SetCompletedAt(completedAt string) TaskQueueInterface {
-	if completedAt == "" || completedAt == NULL_DATETIME {
-		o.CompletedAtField = time.Time{}
-		return o
-	}
-	o.CompletedAtField = carbon.Parse(completedAt, carbon.UTC).StdTime()
+	o.CompletedAtField = completedAt
 	return o
 }
 
@@ -272,22 +264,15 @@ func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
 }
 
 func (o *taskQueue) GetStartedAt() string {
-	if o.StartedAtField.IsZero() {
-		return NULL_DATETIME
-	}
-	return carbon.CreateFromStdTime(o.StartedAtField).ToDateTimeString()
+	return o.StartedAtField
 }
 
 func (o *taskQueue) StartedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(o.StartedAtField)
+	return carbon.Parse(o.StartedAtField, carbon.UTC)
 }
 
 func (o *taskQueue) SetStartedAt(startedAt string) TaskQueueInterface {
-	if startedAt == "" || startedAt == NULL_DATETIME {
-		o.StartedAtField = time.Time{}
-		return o
-	}
-	o.StartedAtField = carbon.Parse(startedAt, carbon.UTC).StdTime()
+	o.StartedAtField = startedAt
 	return o
 }
 

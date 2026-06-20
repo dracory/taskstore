@@ -49,11 +49,11 @@ func (store *Store) TaskQueueCreate(ctx context.Context, queue TaskQueueInterfac
 		COLUMN_OUTPUT:          queue.GetOutput(),
 		COLUMN_DETAILS:         queue.GetDetails(),
 		COLUMN_ATTEMPTS:        queue.GetAttempts(),
-		COLUMN_STARTED_AT:      queue.StartedAtCarbon().StdTime(),
-		COLUMN_COMPLETED_AT:    queue.CompletedAtCarbon().StdTime(),
-		COLUMN_CREATED_AT:      queue.CreatedAtCarbon().StdTime(),
-		COLUMN_UPDATED_AT:      queue.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT: queue.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_STARTED_AT:      queue.GetStartedAt(),
+		COLUMN_COMPLETED_AT:    queue.GetCompletedAt(),
+		COLUMN_CREATED_AT:      queue.GetCreatedAt(),
+		COLUMN_UPDATED_AT:      queue.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT: queue.GetSoftDeletedAt(),
 	}
 
 	return store.db.Query().Table(store.taskQueueTableName).Create(row)
@@ -213,8 +213,8 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 		Where(COLUMN_ID+" = ?", task.ShortID.ID).
 		Update(map[string]any{
 			COLUMN_STATUS:     TaskQueueStatusRunning,
-			COLUMN_STARTED_AT: carbon.Parse(now, carbon.UTC).StdTime(),
-			COLUMN_UPDATED_AT: carbon.Parse(now, carbon.UTC).StdTime(),
+			COLUMN_STARTED_AT: now,
+			COLUMN_UPDATED_AT: now,
 		})
 	if err != nil {
 		return nil, err
@@ -225,8 +225,8 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	}
 
 	task.StatusField = TaskQueueStatusRunning
-	task.StartedAtField = carbon.Parse(now, carbon.UTC).StdTime()
-	task.UpdatedAtField.UpdatedAt = carbon.Parse(now, carbon.UTC).StdTime()
+	task.SetStartedAt(now)
+	task.SetUpdatedAt(now)
 
 	return &task, nil
 }
@@ -318,10 +318,10 @@ func (store *Store) TaskQueueUpdate(ctx context.Context, queue TaskQueueInterfac
 		COLUMN_OUTPUT:          queue.GetOutput(),
 		COLUMN_DETAILS:         queue.GetDetails(),
 		COLUMN_ATTEMPTS:        queue.GetAttempts(),
-		COLUMN_STARTED_AT:      queue.StartedAtCarbon().StdTime(),
-		COLUMN_COMPLETED_AT:    queue.CompletedAtCarbon().StdTime(),
-		COLUMN_UPDATED_AT:      queue.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT: queue.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_STARTED_AT:      queue.GetStartedAt(),
+		COLUMN_COMPLETED_AT:    queue.GetCompletedAt(),
+		COLUMN_UPDATED_AT:      queue.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT: queue.GetSoftDeletedAt(),
 	}
 
 	_, err := store.db.Query().
@@ -341,9 +341,11 @@ func (store *Store) buildTaskQueueQuery(options TaskQueueQueryInterface) contrac
 
 	if options.HasCreatedAtGte() && options.CreatedAtGte() != "" {
 		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
+		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
 	}
 
 	if options.HasCreatedAtLte() && options.CreatedAtLte() != "" {
+		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 	}
 

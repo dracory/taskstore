@@ -47,9 +47,9 @@ func (store *Store) TaskDefinitionCreate(ctx context.Context, task TaskDefinitio
 		COLUMN_MEMO:            task.GetMemo(),
 		COLUMN_IS_RECURRING:    task.GetIsRecurring(),
 		COLUMN_RECURRENCE_RULE: task.GetRecurrenceRule(),
-		COLUMN_CREATED_AT:      task.CreatedAtCarbon().StdTime(),
-		COLUMN_UPDATED_AT:      task.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT: task.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_CREATED_AT:      task.GetCreatedAt(),
+		COLUMN_UPDATED_AT:      task.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt(),
 	}
 
 	return store.db.Query().Table(store.taskDefinitionTableName).Create(row)
@@ -158,8 +158,8 @@ func (store *Store) TaskDefinitionUpdate(ctx context.Context, task TaskDefinitio
 		COLUMN_MEMO:            task.GetMemo(),
 		COLUMN_IS_RECURRING:    task.GetIsRecurring(),
 		COLUMN_RECURRENCE_RULE: task.GetRecurrenceRule(),
-		COLUMN_UPDATED_AT:      task.UpdatedAtCarbon().StdTime(),
-		COLUMN_SOFT_DELETED_AT: task.SoftDeletedAtCarbon().StdTime(),
+		COLUMN_UPDATED_AT:      task.GetUpdatedAt(),
+		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt(),
 	}
 
 	_, err := store.db.Query().
@@ -233,9 +233,11 @@ func (store *Store) buildTaskDefinitionQuery(options TaskDefinitionQueryInterfac
 
 	if options.HasCreatedAtGte() && options.CreatedAtGte() != "" {
 		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
+		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
 	}
 
 	if options.HasCreatedAtLte() && options.CreatedAtLte() != "" {
+		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 	}
 
