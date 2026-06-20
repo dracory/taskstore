@@ -332,18 +332,19 @@ func (store *Store) TaskQueueUpdate(ctx context.Context, queue TaskQueueInterfac
 }
 
 func (store *Store) buildTaskQueueQuery(options TaskQueueQueryInterface) contractsorm.Query {
-	q := store.db.Query()
+	// Use Model() to enable neat's automatic soft delete handling via SoftDeletesMaxDate
+	q := store.db.Query().Model(&taskQueue{})
 
 	if options == nil {
 		return q
 	}
 
 	if options.HasCreatedAtGte() && options.CreatedAtGte() != "" {
-		q = q.Where(COLUMN_CREATED_AT+" >= ?", carbon.Parse(options.CreatedAtGte(), carbon.UTC).StdTime())
+		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
 	}
 
 	if options.HasCreatedAtLte() && options.CreatedAtLte() != "" {
-		q = q.Where(COLUMN_CREATED_AT+" <= ?", carbon.Parse(options.CreatedAtLte(), carbon.UTC).StdTime())
+		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 	}
 
 	if options.HasID() && options.ID() != "" {
@@ -394,11 +395,9 @@ func (store *Store) buildTaskQueueQuery(options TaskQueueQueryInterface) contrac
 		q = q.OrderBy(options.OrderBy(), sortOrder)
 	}
 
-	// Handle soft delete filtering
+	// Handle soft delete filtering via neat's automatic handling (SoftDeletesMaxDate)
 	if options.HasSoftDeletedIncluded() && options.SoftDeletedIncluded() {
 		q = q.WithSoftDeleted()
-	} else {
-		q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 	}
 
 	return q

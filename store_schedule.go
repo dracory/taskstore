@@ -94,9 +94,8 @@ func (store *Store) ScheduleFindByID(ctx context.Context, id string) (ScheduleIn
 	if id == "" {
 		return nil, errors.New("schedule id is empty")
 	}
-	q := store.db.Query().Table(store.scheduleTableName).
+	q := store.db.Query().Model(&scheduleImplementation{}).Table(store.scheduleTableName).
 		Where(COLUMN_ID+" = ?", id)
-	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 
 	var schedule scheduleImplementation
 	if err := q.First(&schedule); err != nil {
@@ -248,7 +247,8 @@ func (store *Store) GetTaskDefinitionAliasByID(ctx context.Context, id string) s
 }
 
 func (store *Store) buildScheduleQuery(options ScheduleQueryInterface) contractsorm.Query {
-	q := store.db.Query()
+	// Use Model() to enable neat's automatic soft delete handling via SoftDeletesMaxDate
+	q := store.db.Query().Model(&scheduleImplementation{})
 
 	if options == nil {
 		return q
@@ -281,9 +281,6 @@ func (store *Store) buildScheduleQuery(options ScheduleQueryInterface) contracts
 	if options.Offset() > 0 {
 		q = q.Offset(options.Offset())
 	}
-
-	// Default: exclude soft-deleted records
-	q = q.Where(COLUMN_SOFT_DELETED_AT+" = ?", carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 
 	return q
 }
