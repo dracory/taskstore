@@ -31,7 +31,7 @@ func setupTestStore(t *testing.T) taskstore.StoreInterface {
 	return store
 }
 
-func setupTestLayout(t *testing.T) Layout {
+func setupTestLayout(_ *testing.T) Layout {
 	return &mockLayout{}
 }
 

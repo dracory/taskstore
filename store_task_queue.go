@@ -33,11 +33,11 @@ func (store *Store) TaskQueueCreate(ctx context.Context, queue TaskQueueInterfac
 		time.Sleep(1 * time.Millisecond) // !!! important
 		queue.SetID(neatuid.GenerateShortID())
 	}
-	if queue.GetCreatedAt() == "" {
-		queue.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	if queue.GetCreatedAt().IsZero() {
+		queue.SetCreatedAt(carbon.Now(carbon.UTC).StdTime())
 	}
-	if queue.GetUpdatedAt() == "" {
-		queue.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	if queue.GetUpdatedAt().IsZero() {
+		queue.SetUpdatedAt(carbon.Now(carbon.UTC).StdTime())
 	}
 
 	row := map[string]any{
@@ -49,11 +49,11 @@ func (store *Store) TaskQueueCreate(ctx context.Context, queue TaskQueueInterfac
 		COLUMN_OUTPUT:          queue.GetOutput(),
 		COLUMN_DETAILS:         queue.GetDetails(),
 		COLUMN_ATTEMPTS:        queue.GetAttempts(),
-		COLUMN_STARTED_AT:      queue.GetStartedAt(),
-		COLUMN_COMPLETED_AT:    queue.GetCompletedAt(),
-		COLUMN_CREATED_AT:      queue.GetCreatedAt(),
-		COLUMN_UPDATED_AT:      queue.GetUpdatedAt(),
-		COLUMN_SOFT_DELETED_AT: queue.GetSoftDeletedAt(),
+		COLUMN_STARTED_AT:      queue.GetStartedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_COMPLETED_AT:    queue.GetCompletedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_CREATED_AT:      queue.GetCreatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_UPDATED_AT:      queue.GetUpdatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_SOFT_DELETED_AT: queue.GetSoftDeletedAt().Format("2006-01-02 15:04:05"),
 	}
 
 	return store.db.Query().Table(store.taskQueueTableName).Create(row)
@@ -79,7 +79,7 @@ func (store *Store) TaskQueueDeleteByID(ctx context.Context, id string) error {
 
 // TaskQueueFail fails a queued task
 func (store *Store) TaskQueueFail(ctx context.Context, queue TaskQueueInterface) error {
-	queue.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	queue.SetCompletedAt(carbon.Now(carbon.UTC).StdTime())
 	queue.SetStatus(TaskQueueStatusFailed)
 	return store.TaskQueueUpdate(ctx, queue)
 }
@@ -208,13 +208,13 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	}
 	task := tasks[0]
 
-	now := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
+	now := carbon.Now(carbon.UTC)
 	_, err = tx.Table(store.taskQueueTableName).
 		Where(COLUMN_ID+" = ?", task.ShortID.ID).
 		Update(map[string]any{
 			COLUMN_STATUS:     TaskQueueStatusRunning,
-			COLUMN_STARTED_AT: now,
-			COLUMN_UPDATED_AT: now,
+			COLUMN_STARTED_AT: now.ToDateTimeString(carbon.UTC),
+			COLUMN_UPDATED_AT: now.ToDateTimeString(carbon.UTC),
 		})
 	if err != nil {
 		return nil, err
@@ -225,8 +225,8 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 	}
 
 	task.StatusField = TaskQueueStatusRunning
-	task.SetStartedAt(now)
-	task.SetUpdatedAt(now)
+	task.SetStartedAt(now.StdTime())
+	task.SetUpdatedAt(now.StdTime())
 
 	return &task, nil
 }
@@ -266,7 +266,7 @@ func (store *Store) TaskQueueSoftDelete(ctx context.Context, queue TaskQueueInte
 	if queue == nil {
 		return errors.New("queue is nil")
 	}
-	queue.SetSoftDeletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	queue.SetSoftDeletedAt(carbon.Now(carbon.UTC).StdTime())
 	return store.TaskQueueUpdate(ctx, queue)
 }
 
@@ -283,18 +283,18 @@ func (store *Store) TaskQueueSoftDeleteByID(ctx context.Context, id string) erro
 
 // TaskQueueSuccess completes a queued task successfully
 func (store *Store) TaskQueueSuccess(ctx context.Context, queue TaskQueueInterface) error {
-	queue.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	queue.SetCompletedAt(carbon.Now(carbon.UTC).StdTime())
 	queue.SetStatus(TaskQueueStatusSuccess)
 	return store.TaskQueueUpdate(ctx, queue)
 }
 
 func (store *Store) QueuedTaskForceFail(ctx context.Context, queuedTask TaskQueueInterface, waitMinutes int) error {
 	startedAt := queuedTask.GetStartedAt()
-	if startedAt == "" || startedAt == NULL_DATETIME {
+	if startedAt.IsZero() {
 		return nil
 	}
 	minutes := -1 * waitMinutes
-	waitTill := queuedTask.StartedAtCarbon().AddMinutes(minutes)
+	waitTill := queuedTask.GetStartedAtCarbon().AddMinutes(minutes)
 	isOvertime := carbon.Now(carbon.UTC).Gt(waitTill)
 	if isOvertime {
 		queuedTask.AppendDetails("Failed forcefully after " + cast.ToString(waitMinutes) + " minutes timeout")
@@ -308,7 +308,7 @@ func (store *Store) TaskQueueUpdate(ctx context.Context, queue TaskQueueInterfac
 	if queue == nil {
 		return errors.New("queue is nil")
 	}
-	queue.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	queue.SetUpdatedAt(carbon.Now(carbon.UTC).StdTime())
 
 	row := map[string]any{
 		COLUMN_QUEUE_NAME:      queue.GetQueueName(),
@@ -318,10 +318,10 @@ func (store *Store) TaskQueueUpdate(ctx context.Context, queue TaskQueueInterfac
 		COLUMN_OUTPUT:          queue.GetOutput(),
 		COLUMN_DETAILS:         queue.GetDetails(),
 		COLUMN_ATTEMPTS:        queue.GetAttempts(),
-		COLUMN_STARTED_AT:      queue.GetStartedAt(),
-		COLUMN_COMPLETED_AT:    queue.GetCompletedAt(),
-		COLUMN_UPDATED_AT:      queue.GetUpdatedAt(),
-		COLUMN_SOFT_DELETED_AT: queue.GetSoftDeletedAt(),
+		COLUMN_STARTED_AT:      queue.GetStartedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_COMPLETED_AT:    queue.GetCompletedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_UPDATED_AT:      queue.GetUpdatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_SOFT_DELETED_AT: queue.GetSoftDeletedAt().Format("2006-01-02 15:04:05"),
 	}
 
 	_, err := store.db.Query().
@@ -341,11 +341,9 @@ func (store *Store) buildTaskQueueQuery(options TaskQueueQueryInterface) contrac
 
 	if options.HasCreatedAtGte() && options.CreatedAtGte() != "" {
 		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
-		q = q.Where(COLUMN_CREATED_AT+" >= ?", options.CreatedAtGte())
 	}
 
 	if options.HasCreatedAtLte() && options.CreatedAtLte() != "" {
-		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 		q = q.Where(COLUMN_CREATED_AT+" <= ?", options.CreatedAtLte())
 	}
 

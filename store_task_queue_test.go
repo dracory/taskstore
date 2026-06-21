@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 )
 
 func Test_Store_TaskQueueCount(t *testing.T) {
@@ -380,7 +381,7 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 		queue := NewTaskQueue()
 		queue.SetTaskID("test-task-2")
 		queue.SetStatus(TaskQueueStatusQueued)
-		queue.SetStartedAt("") // Empty string
+		queue.SetStartedAt(time.Time{}) // Empty/zero time
 
 		err := store.QueuedTaskForceFail(context.Background(), queue, 1)
 		if err != nil {
@@ -498,7 +499,7 @@ func Test_Store_TaskQueueClaimNext(t *testing.T) {
 		t.Errorf("TaskQueueClaimNext: Expected status %s, got %s", TaskQueueStatusRunning, claimedTask.GetStatus())
 	}
 
-	if claimedTask.GetStartedAt() == "" || claimedTask.GetStartedAt() == NULL_DATETIME {
+	if claimedTask.GetStartedAt().IsZero() {
 		t.Error("TaskQueueClaimNext: Expected StartedAt to be set")
 	}
 

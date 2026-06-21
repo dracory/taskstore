@@ -25,16 +25,17 @@ func TestNewTaskDefinition(t *testing.T) {
 		t.Errorf("NewTaskDefinition: Expected memo to be empty, got %s", task.GetMemo())
 	}
 
-	if task.GetCreatedAt() == "" {
+	if task.GetCreatedAt().IsZero() {
 		t.Error("NewTaskDefinition: Expected CreatedAt to be set")
 	}
 
-	if task.GetUpdatedAt() == "" {
+	if task.GetUpdatedAt().IsZero() {
 		t.Error("NewTaskDefinition: Expected UpdatedAt to be set")
 	}
 
-	if task.GetSoftDeletedAt() != MAX_DATETIME {
-		t.Errorf("NewTaskDefinition: Expected SoftDeletedAt to be %s, got %s", MAX_DATETIME, task.GetSoftDeletedAt())
+	maxDateTime := carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime()
+	if !task.GetSoftDeletedAt().Equal(maxDateTime) {
+		t.Errorf("NewTaskDefinition: Expected SoftDeletedAt to be %s, got %s", MAX_DATETIME, task.GetSoftDeletedAt().Format("2006-01-02 15:04:05"))
 	}
 }
 
@@ -119,14 +120,14 @@ func TestTaskDefinition_IsSoftDeleted(t *testing.T) {
 	}
 
 	// Test soft deleted
-	pastTime := carbon.Now(carbon.UTC).SubHours(1).ToDateTimeString(carbon.UTC)
+	pastTime := carbon.Now(carbon.UTC).SubHours(1).StdTime()
 	task.SetSoftDeletedAt(pastTime)
 	if !task.IsSoftDeleted() {
 		t.Error("IsSoftDeleted: Expected task to be soft deleted when deleted_at is in the past")
 	}
 
 	// Test future deletion time (not yet deleted)
-	futureTime := carbon.Now(carbon.UTC).AddHours(1).ToDateTimeString(carbon.UTC)
+	futureTime := carbon.Now(carbon.UTC).AddHours(1).StdTime()
 	task.SetSoftDeletedAt(futureTime)
 	if task.IsSoftDeleted() {
 		t.Error("IsSoftDeleted: Expected task to not be soft deleted when deleted_at is in the future")
@@ -136,9 +137,9 @@ func TestTaskDefinition_IsSoftDeleted(t *testing.T) {
 func TestTaskDefinition_CreatedAtCarbon(t *testing.T) {
 	task := NewTaskDefinition()
 	createdAtStr := "2023-01-01 12:00:00"
-	task.SetCreatedAt(createdAtStr)
+	task.SetCreatedAt(carbon.Parse(createdAtStr, carbon.UTC).StdTime())
 
-	createdAtCarbon := task.CreatedAtCarbon()
+	createdAtCarbon := task.GetCreatedAtCarbon()
 	if createdAtCarbon == nil {
 		t.Fatal("CreatedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -151,9 +152,9 @@ func TestTaskDefinition_CreatedAtCarbon(t *testing.T) {
 func TestTaskDefinition_UpdatedAtCarbon(t *testing.T) {
 	task := NewTaskDefinition()
 	updatedAtStr := "2023-01-02 15:30:45"
-	task.SetUpdatedAt(updatedAtStr)
+	task.SetUpdatedAt(carbon.Parse(updatedAtStr, carbon.UTC).StdTime())
 
-	updatedAtCarbon := task.UpdatedAtCarbon()
+	updatedAtCarbon := task.GetUpdatedAtCarbon()
 	if updatedAtCarbon == nil {
 		t.Fatal("UpdatedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -166,9 +167,9 @@ func TestTaskDefinition_UpdatedAtCarbon(t *testing.T) {
 func TestTaskDefinition_SoftDeletedAtCarbon(t *testing.T) {
 	task := NewTaskDefinition()
 	deletedAtStr := "2023-01-03 09:15:30"
-	task.SetSoftDeletedAt(deletedAtStr)
+	task.SetSoftDeletedAt(carbon.Parse(deletedAtStr, carbon.UTC).StdTime())
 
-	deletedAtCarbon := task.SoftDeletedAtCarbon()
+	deletedAtCarbon := task.GetSoftDeletedAtCarbon()
 	if deletedAtCarbon == nil {
 		t.Fatal("SoftDeletedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -224,23 +225,23 @@ func TestTaskDefinition_SettersAndGetters(t *testing.T) {
 
 	// Test CreatedAt
 	testCreatedAt := "2023-01-01 10:00:00"
-	task.SetCreatedAt(testCreatedAt)
-	if task.GetCreatedAt() != testCreatedAt {
-		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, task.GetCreatedAt())
+	task.SetCreatedAt(carbon.Parse(testCreatedAt, carbon.UTC).StdTime())
+	if task.GetCreatedAt().Format("2006-01-02 15:04:05") != testCreatedAt {
+		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, task.GetCreatedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	// Test UpdatedAt
 	testUpdatedAt := "2023-01-02 11:00:00"
-	task.SetUpdatedAt(testUpdatedAt)
-	if task.GetUpdatedAt() != testUpdatedAt {
-		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, task.GetUpdatedAt())
+	task.SetUpdatedAt(carbon.Parse(testUpdatedAt, carbon.UTC).StdTime())
+	if task.GetUpdatedAt().Format("2006-01-02 15:04:05") != testUpdatedAt {
+		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, task.GetUpdatedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	// Test SoftDeletedAt
 	testDeletedAt := "2023-01-03 12:00:00"
-	task.SetSoftDeletedAt(testDeletedAt)
-	if task.GetSoftDeletedAt() != testDeletedAt {
-		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, task.GetSoftDeletedAt())
+	task.SetSoftDeletedAt(carbon.Parse(testDeletedAt, carbon.UTC).StdTime())
+	if task.GetSoftDeletedAt().Format("2006-01-02 15:04:05") != testDeletedAt {
+		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, task.GetSoftDeletedAt().Format("2006-01-02 15:04:05"))
 	}
 }
 
@@ -254,9 +255,9 @@ func TestTaskDefinition_ChainedSetters(t *testing.T) {
 		SetDescription("Test Description").
 		SetMemo("Test Memo").
 		SetStatus(TaskDefinitionStatusCanceled).
-		SetCreatedAt("2023-01-01 10:00:00").
-		SetUpdatedAt("2023-01-02 11:00:00").
-		SetSoftDeletedAt("2023-01-03 12:00:00")
+		SetCreatedAt(carbon.Parse("2023-01-01 10:00:00", carbon.UTC).StdTime()).
+		SetUpdatedAt(carbon.Parse("2023-01-02 11:00:00", carbon.UTC).StdTime()).
+		SetSoftDeletedAt(carbon.Parse("2023-01-03 12:00:00", carbon.UTC).StdTime())
 
 	if result != task {
 		t.Error("ChainedSetters: Expected setters to return the same task instance for chaining")

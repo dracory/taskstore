@@ -31,16 +31,17 @@ func TestNewSchedule(t *testing.T) {
 	if schedule.GetNextRunAt() != NULL_DATETIME {
 		t.Error("expected NextRunAt to be NULL_DATETIME")
 	}
-	if schedule.GetSoftDeletedAt() != MAX_DATETIME {
+	maxDateTime := carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime()
+	if !schedule.GetSoftDeletedAt().Equal(maxDateTime) {
 		t.Error("expected SoftDeletedAt to be MAX_DATETIME")
 	}
 	if schedule.GetRecurrenceRule() == nil {
 		t.Error("expected RecurrenceRule to not be nil")
 	}
-	if schedule.GetCreatedAt() == "" {
+	if schedule.GetCreatedAt().IsZero() {
 		t.Error("expected CreatedAt to not be empty")
 	}
-	if schedule.GetUpdatedAt() == "" {
+	if schedule.GetUpdatedAt().IsZero() {
 		t.Error("expected UpdatedAt to not be empty")
 	}
 }
@@ -133,24 +134,24 @@ func TestScheduleGettersAndSetters(t *testing.T) {
 	}
 
 	// Test CreatedAt
-	createdAt := carbon.Now(carbon.UTC).AddDays(-1).ToDateTimeString(carbon.UTC)
+	createdAt := carbon.Now(carbon.UTC).AddDays(-1).StdTime()
 	schedule.SetCreatedAt(createdAt)
-	if schedule.GetCreatedAt() != createdAt {
-		t.Errorf("expected created at %s, got %s", createdAt, schedule.GetCreatedAt())
+	if !schedule.GetCreatedAt().Equal(createdAt) {
+		t.Errorf("expected created at %s, got %s", createdAt.Format("2006-01-02 15:04:05"), schedule.GetCreatedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	// Test UpdatedAt
-	updatedAt := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
+	updatedAt := carbon.Now(carbon.UTC).StdTime()
 	schedule.SetUpdatedAt(updatedAt)
-	if schedule.GetUpdatedAt() != updatedAt {
-		t.Errorf("expected updated at %s, got %s", updatedAt, schedule.GetUpdatedAt())
+	if !schedule.GetUpdatedAt().Equal(updatedAt) {
+		t.Errorf("expected updated at %s, got %s", updatedAt.Format("2006-01-02 15:04:05"), schedule.GetUpdatedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	// Test SoftDeletedAt
-	softDeletedAt := carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)
+	softDeletedAt := carbon.Now(carbon.UTC).StdTime()
 	schedule.SetSoftDeletedAt(softDeletedAt)
-	if schedule.GetSoftDeletedAt() != softDeletedAt {
-		t.Errorf("expected soft deleted at %s, got %s", softDeletedAt, schedule.GetSoftDeletedAt())
+	if !schedule.GetSoftDeletedAt().Equal(softDeletedAt) {
+		t.Errorf("expected soft deleted at %s, got %s", softDeletedAt.Format("2006-01-02 15:04:05"), schedule.GetSoftDeletedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	// Test RecurrenceRule

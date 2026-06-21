@@ -720,7 +720,7 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 	queuedTask.AppendDetails("Task started")
 	queuedTask.SetStatus(TaskQueueStatusRunning)
 	queuedTask.SetAttempts(attempts)
-	queuedTask.SetStartedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	queuedTask.SetStartedAt(carbon.Now(carbon.UTC).StdTime())
 
 	err := store.TaskQueueUpdate(ctx, queuedTask)
 
@@ -738,7 +738,7 @@ func (store *Store) QueuedTaskProcessWithContext(ctx context.Context, queuedTask
 	if task == nil {
 		queuedTask.AppendDetails("Task DOES NOT exist")
 		queuedTask.SetStatus(TaskQueueStatusFailed)
-		queuedTask.SetCompletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+		queuedTask.SetCompletedAt(carbon.Now(carbon.UTC).StdTime())
 		err = store.TaskQueueUpdate(ctx, queuedTask)
 
 		if err != nil {

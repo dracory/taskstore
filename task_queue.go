@@ -2,6 +2,7 @@ package taskstore
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
@@ -9,6 +10,66 @@ import (
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
+
+// == INTERFACE =================================================================
+
+type TaskQueueInterface interface {
+	IsCanceled() bool
+	IsDeleted() bool
+	IsFailed() bool
+	IsQueued() bool
+	IsPaused() bool
+	IsRunning() bool
+	IsSuccess() bool
+	IsSoftDeleted() bool
+
+	GetAttempts() int
+	SetAttempts(attempts int) TaskQueueInterface
+
+	GetCompletedAt() time.Time
+	GetCompletedAtCarbon() *carbon.Carbon
+	SetCompletedAt(completedAt time.Time) TaskQueueInterface
+
+	GetCreatedAt() time.Time
+	GetCreatedAtCarbon() *carbon.Carbon
+	SetCreatedAt(createdAt time.Time) TaskQueueInterface
+
+	GetDetails() string
+	AppendDetails(details string) TaskQueueInterface
+	SetDetails(details string) TaskQueueInterface
+
+	GetID() string
+	SetID(id string) TaskQueueInterface
+
+	GetOutput() string
+	SetOutput(output string) TaskQueueInterface
+
+	GetParameters() string
+	SetParameters(parameters string) TaskQueueInterface
+	ParametersMap() (map[string]string, error)
+	SetParametersMap(parameters map[string]string) (TaskQueueInterface, error)
+
+	GetSoftDeletedAt() time.Time
+	GetSoftDeletedAtCarbon() *carbon.Carbon
+	SetSoftDeletedAt(deletedAt time.Time) TaskQueueInterface
+
+	GetStartedAt() time.Time
+	GetStartedAtCarbon() *carbon.Carbon
+	SetStartedAt(startedAt time.Time) TaskQueueInterface
+
+	GetStatus() string
+	SetStatus(status string) TaskQueueInterface
+
+	GetTaskID() string
+	SetTaskID(taskID string) TaskQueueInterface
+
+	GetUpdatedAt() time.Time
+	GetUpdatedAtCarbon() *carbon.Carbon
+	SetUpdatedAt(updatedAt time.Time) TaskQueueInterface
+
+	GetQueueName() string
+	SetQueueName(queueName string) TaskQueueInterface
+}
 
 // == TYPE =====================================================================
 
@@ -22,8 +83,8 @@ type taskQueue struct {
 	OutputField      string    `db:"output"`
 	DetailsField     string    `db:"details"`
 	AttemptsField    int       `db:"attempts"`
-	StartedAtField   string `db:"started_at"`
-	CompletedAtField string `db:"completed_at"`
+	StartedAtField   time.Time `db:"started_at"`
+	CompletedAtField time.Time `db:"completed_at"`
 
 	CreatedAtField orm.CreatedAt
 	UpdatedAtField orm.UpdatedAt
@@ -51,11 +112,11 @@ func NewTaskQueue(queueName ...string) TaskQueueInterface {
 		SetOutput("").
 		SetDetails("").
 		SetParameters("{}").
-		SetStartedAt(NULL_DATETIME).
-		SetCompletedAt(NULL_DATETIME).
-		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
-		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
-		SetSoftDeletedAt(MAX_DATETIME)
+		SetStartedAt(time.Time{}).
+		SetCompletedAt(time.Time{}).
+		SetCreatedAt(carbon.Now(carbon.UTC).StdTime()).
+		SetUpdatedAt(carbon.Now(carbon.UTC).StdTime()).
+		SetSoftDeletedAt(carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 
 	return o
 }
@@ -71,19 +132,19 @@ func NewTaskQueueFromExistingData(data map[string]string) TaskQueueInterface {
 	o.SetDetails(data[COLUMN_DETAILS])
 	o.SetAttempts(cast.ToInt(data[COLUMN_ATTEMPTS]))
 	if v, ok := data[COLUMN_STARTED_AT]; ok {
-		o.SetStartedAt(v)
+		o.SetStartedAt(parseTime(v))
 	}
 	if v, ok := data[COLUMN_COMPLETED_AT]; ok {
-		o.SetCompletedAt(v)
+		o.SetCompletedAt(parseTime(v))
 	}
 	if v, ok := data[COLUMN_CREATED_AT]; ok {
-		o.SetCreatedAt(v)
+		o.SetCreatedAt(parseTime(v))
 	}
 	if v, ok := data[COLUMN_UPDATED_AT]; ok {
-		o.SetUpdatedAt(v)
+		o.SetUpdatedAt(parseTime(v))
 	}
 	if v, ok := data[COLUMN_SOFT_DELETED_AT]; ok {
-		o.SetSoftDeletedAt(v)
+		o.SetSoftDeletedAt(parseTime(v))
 	}
 	return o
 }
@@ -133,35 +194,29 @@ func (o *taskQueue) SetAttempts(attempts int) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) GetCompletedAt() string {
+func (o *taskQueue) GetCompletedAt() time.Time {
 	return o.CompletedAtField
 }
 
-func (o *taskQueue) CompletedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.CompletedAtField, carbon.UTC)
+func (o *taskQueue) GetCompletedAtCarbon() *carbon.Carbon {
+	return carbon.CreateFromStdTime(o.CompletedAtField)
 }
 
-func (o *taskQueue) SetCompletedAt(completedAt string) TaskQueueInterface {
+func (o *taskQueue) SetCompletedAt(completedAt time.Time) TaskQueueInterface {
 	o.CompletedAtField = completedAt
 	return o
 }
 
-func (o *taskQueue) GetCreatedAt() string {
-	if o.CreatedAtField.CreatedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt).ToDateTimeString()
+func (o *taskQueue) GetCreatedAt() time.Time {
+	return o.CreatedAtField.CreatedAt
 }
 
-func (o *taskQueue) CreatedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) GetCreatedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt)
 }
 
-func (o *taskQueue) SetCreatedAt(createdAt string) TaskQueueInterface {
-	if createdAt == "" {
-		return o
-	}
-	o.CreatedAtField.CreatedAt = carbon.Parse(createdAt, carbon.UTC).StdTime()
+func (o *taskQueue) SetCreatedAt(createdAt time.Time) TaskQueueInterface {
+	o.CreatedAtField.CreatedAt = createdAt
 	return o
 }
 
@@ -244,34 +299,28 @@ func (o *taskQueue) SetParametersMap(parameters map[string]string) (TaskQueueInt
 	return o.SetParameters(string(parametersBytes)), nil
 }
 
-func (o *taskQueue) GetSoftDeletedAt() string {
-	if o.SoftDeletesMaxDate.SoftDeletedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt).ToDateTimeString()
+func (o *taskQueue) GetSoftDeletedAt() time.Time {
+	return o.SoftDeletesMaxDate.SoftDeletedAt
 }
 
-func (o *taskQueue) SoftDeletedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) GetSoftDeletedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt)
 }
 
-func (o *taskQueue) SetSoftDeletedAt(deletedAt string) TaskQueueInterface {
-	if deletedAt == "" {
-		return o
-	}
-	o.SoftDeletesMaxDate.SoftDeletedAt = carbon.Parse(deletedAt, carbon.UTC).StdTime()
+func (o *taskQueue) SetSoftDeletedAt(deletedAt time.Time) TaskQueueInterface {
+	o.SoftDeletesMaxDate.SoftDeletedAt = deletedAt
 	return o
 }
 
-func (o *taskQueue) GetStartedAt() string {
+func (o *taskQueue) GetStartedAt() time.Time {
 	return o.StartedAtField
 }
 
-func (o *taskQueue) StartedAtCarbon() *carbon.Carbon {
-	return carbon.Parse(o.StartedAtField, carbon.UTC)
+func (o *taskQueue) GetStartedAtCarbon() *carbon.Carbon {
+	return carbon.CreateFromStdTime(o.StartedAtField)
 }
 
-func (o *taskQueue) SetStartedAt(startedAt string) TaskQueueInterface {
+func (o *taskQueue) SetStartedAt(startedAt time.Time) TaskQueueInterface {
 	o.StartedAtField = startedAt
 	return o
 }
@@ -294,21 +343,15 @@ func (o *taskQueue) SetTaskID(taskID string) TaskQueueInterface {
 	return o
 }
 
-func (o *taskQueue) GetUpdatedAt() string {
-	if o.UpdatedAtField.UpdatedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt).ToDateTimeString()
+func (o *taskQueue) GetUpdatedAt() time.Time {
+	return o.UpdatedAtField.UpdatedAt
 }
 
-func (o *taskQueue) UpdatedAtCarbon() *carbon.Carbon {
+func (o *taskQueue) GetUpdatedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt)
 }
 
-func (o *taskQueue) SetUpdatedAt(updatedAt string) TaskQueueInterface {
-	if updatedAt == "" {
-		return o
-	}
-	o.UpdatedAtField.UpdatedAt = carbon.Parse(updatedAt, carbon.UTC).StdTime()
+func (o *taskQueue) SetUpdatedAt(updatedAt time.Time) TaskQueueInterface {
+	o.UpdatedAtField.UpdatedAt = updatedAt
 	return o
 }

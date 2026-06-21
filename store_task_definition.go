@@ -28,14 +28,14 @@ func (store *Store) TaskDefinitionCreate(ctx context.Context, task TaskDefinitio
 		return errors.New("taskstore: task is nil")
 	}
 
-	if task.GetCreatedAt() == "" {
-		task.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	if task.GetCreatedAt().IsZero() {
+		task.SetCreatedAt(carbon.Now(carbon.UTC).StdTime())
 	}
-	if task.GetUpdatedAt() == "" {
-		task.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	if task.GetUpdatedAt().IsZero() {
+		task.SetUpdatedAt(carbon.Now(carbon.UTC).StdTime())
 	}
-	if task.GetSoftDeletedAt() == "" {
-		task.SetSoftDeletedAt(MAX_DATETIME)
+	if task.GetSoftDeletedAt().IsZero() {
+		task.SetSoftDeletedAt(carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 	}
 
 	row := map[string]any{
@@ -47,9 +47,9 @@ func (store *Store) TaskDefinitionCreate(ctx context.Context, task TaskDefinitio
 		COLUMN_MEMO:            task.GetMemo(),
 		COLUMN_IS_RECURRING:    task.GetIsRecurring(),
 		COLUMN_RECURRENCE_RULE: task.GetRecurrenceRule(),
-		COLUMN_CREATED_AT:      task.GetCreatedAt(),
-		COLUMN_UPDATED_AT:      task.GetUpdatedAt(),
-		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt(),
+		COLUMN_CREATED_AT:      task.GetCreatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_UPDATED_AT:      task.GetUpdatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt().Format("2006-01-02 15:04:05"),
 	}
 
 	return store.db.Query().Table(store.taskDefinitionTableName).Create(row)
@@ -129,7 +129,7 @@ func (store *Store) TaskDefinitionSoftDelete(ctx context.Context, task TaskDefin
 	if task == nil {
 		return errors.New("task is nil")
 	}
-	task.SetSoftDeletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	task.SetSoftDeletedAt(carbon.Now(carbon.UTC).StdTime())
 	return store.TaskDefinitionUpdate(ctx, task)
 }
 
@@ -148,7 +148,7 @@ func (store *Store) TaskDefinitionUpdate(ctx context.Context, task TaskDefinitio
 	if task == nil {
 		return errors.New("task is nil")
 	}
-	task.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	task.SetUpdatedAt(carbon.Now(carbon.UTC).StdTime())
 
 	row := map[string]any{
 		COLUMN_STATUS:          task.GetStatus(),
@@ -158,8 +158,8 @@ func (store *Store) TaskDefinitionUpdate(ctx context.Context, task TaskDefinitio
 		COLUMN_MEMO:            task.GetMemo(),
 		COLUMN_IS_RECURRING:    task.GetIsRecurring(),
 		COLUMN_RECURRENCE_RULE: task.GetRecurrenceRule(),
-		COLUMN_UPDATED_AT:      task.GetUpdatedAt(),
-		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt(),
+		COLUMN_UPDATED_AT:      task.GetUpdatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_SOFT_DELETED_AT: task.GetSoftDeletedAt().Format("2006-01-02 15:04:05"),
 	}
 
 	_, err := store.db.Query().

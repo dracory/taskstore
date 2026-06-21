@@ -26,14 +26,14 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 	if schedule == nil {
 		return errors.New("schedule is nil")
 	}
-	if schedule.GetCreatedAt() == "" {
-		schedule.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	if schedule.GetCreatedAt().IsZero() {
+		schedule.SetCreatedAt(carbon.Now(carbon.UTC).StdTime())
 	}
-	if schedule.GetUpdatedAt() == "" {
-		schedule.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	if schedule.GetUpdatedAt().IsZero() {
+		schedule.SetUpdatedAt(carbon.Now(carbon.UTC).StdTime())
 	}
-	if schedule.GetSoftDeletedAt() == "" {
-		schedule.SetSoftDeletedAt(MAX_DATETIME)
+	if schedule.GetSoftDeletedAt().IsZero() {
+		schedule.SetSoftDeletedAt(carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 	}
 
 	rrBytes, err := json.Marshal(schedule.GetRecurrenceRule())
@@ -61,9 +61,9 @@ func (store *Store) ScheduleCreate(ctx context.Context, schedule ScheduleInterfa
 		COLUMN_MAX_EXECUTION_COUNT: schedule.GetMaxExecutionCount(),
 		COLUMN_LAST_RUN_AT:         schedule.GetLastRunAt(),
 		COLUMN_NEXT_RUN_AT:         schedule.GetNextRunAt(),
-		COLUMN_CREATED_AT:          schedule.GetCreatedAt(),
-		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt(),
-		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt(),
+		COLUMN_CREATED_AT:          schedule.GetCreatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt().Format("2006-01-02 15:04:05"),
 	}
 
 	return store.db.Query().Table(store.scheduleTableName).Create(row)
@@ -130,7 +130,7 @@ func (store *Store) ScheduleSoftDelete(ctx context.Context, schedule ScheduleInt
 	if schedule == nil {
 		return errors.New("schedule is nil")
 	}
-	schedule.SetSoftDeletedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	schedule.SetSoftDeletedAt(carbon.Now(carbon.UTC).StdTime())
 	return store.ScheduleUpdate(ctx, schedule)
 }
 
@@ -151,7 +151,7 @@ func (store *Store) ScheduleUpdate(ctx context.Context, schedule ScheduleInterfa
 	if schedule == nil {
 		return errors.New("schedule is nil")
 	}
-	schedule.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
+	schedule.SetUpdatedAt(carbon.Now(carbon.UTC).StdTime())
 
 	rrBytes, err := json.Marshal(schedule.GetRecurrenceRule())
 	if err != nil {
@@ -177,8 +177,8 @@ func (store *Store) ScheduleUpdate(ctx context.Context, schedule ScheduleInterfa
 		COLUMN_MAX_EXECUTION_COUNT: schedule.GetMaxExecutionCount(),
 		COLUMN_LAST_RUN_AT:         schedule.GetLastRunAt(),
 		COLUMN_NEXT_RUN_AT:         schedule.GetNextRunAt(),
-		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt(),
-		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt(),
+		COLUMN_UPDATED_AT:          schedule.GetUpdatedAt().Format("2006-01-02 15:04:05"),
+		COLUMN_SOFT_DELETED_AT:     schedule.GetSoftDeletedAt().Format("2006-01-02 15:04:05"),
 	}
 
 	_, err = store.db.Query().

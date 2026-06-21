@@ -346,26 +346,26 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 					HxTarget("body").
 					HxSwap("beforeend")
 
-				startedAtDate := lo.IfF(queuedTask.GetStartedAt() != "", func() string {
-					return queuedTask.StartedAtCarbon().Format("d M Y")
+				startedAtDate := lo.IfF(!queuedTask.GetStartedAt().IsZero(), func() string {
+					return queuedTask.GetStartedAtCarbon().Format("d M Y")
 				}).Else("-")
-				startedAtTime := lo.IfF(queuedTask.GetStartedAt() != "", func() string {
-					return queuedTask.StartedAtCarbon().ToTimeString()
+				startedAtTime := lo.IfF(!queuedTask.GetStartedAt().IsZero(), func() string {
+					return queuedTask.GetStartedAtCarbon().ToTimeString()
 				}).Else("-")
-				completeddAtDate := lo.IfF(queuedTask.GetCompletedAt() != "", func() string {
-					return queuedTask.CompletedAtCarbon().Format("d M Y")
+				completeddAtDate := lo.IfF(!queuedTask.GetCompletedAt().IsZero(), func() string {
+					return queuedTask.GetCompletedAtCarbon().Format("d M Y")
 				}).Else("-")
-				completeddAtTime := lo.IfF(queuedTask.GetCompletedAt() != "", func() string {
-					return queuedTask.CompletedAtCarbon().ToTimeString()
+				completeddAtTime := lo.IfF(!queuedTask.GetCompletedAt().IsZero(), func() string {
+					return queuedTask.GetCompletedAtCarbon().ToTimeString()
 				}).Else("-")
 
-				elapsedTime := lo.IfF(queuedTask.GetStartedAt() != "" && queuedTask.GetCompletedAt() != "", func() string {
-					diffSeconds := queuedTask.CompletedAtCarbon().DiffAbsInSeconds(queuedTask.StartedAtCarbon())
+				elapsedTime := lo.IfF(!queuedTask.GetStartedAt().IsZero() && !queuedTask.GetCompletedAt().IsZero(), func() string {
+					diffSeconds := queuedTask.GetCompletedAtCarbon().DiffAbsInSeconds(queuedTask.GetStartedAtCarbon())
 					return cast.ToString(diffSeconds) + "s"
 				}).Else("-")
 
-				createdAtDate := queuedTask.CreatedAtCarbon().Format("d M Y")
-				createdAtTime := queuedTask.CreatedAtCarbon().ToTimeString()
+				createdAtDate := queuedTask.GetCreatedAtCarbon().Format("d M Y")
+				createdAtTime := queuedTask.GetCreatedAtCarbon().ToTimeString()
 
 				status := hb.Span().
 					Style(`font-weight: bold;`).

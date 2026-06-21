@@ -23,16 +23,17 @@ func TestNewTaskQueue(t *testing.T) {
 		t.Errorf("NewTaskQueue: Expected status to be %s, got %s", TaskQueueStatusQueued, queue.GetStatus())
 	}
 
-	if queue.GetCreatedAt() == "" {
+	if queue.GetCreatedAt().IsZero() {
 		t.Error("NewTaskQueue: Expected CreatedAt to be set")
 	}
 
-	if queue.GetUpdatedAt() == "" {
+	if queue.GetUpdatedAt().IsZero() {
 		t.Error("NewTaskQueue: Expected UpdatedAt to be set")
 	}
 
-	if queue.GetSoftDeletedAt() != MAX_DATETIME {
-		t.Errorf("NewTaskQueue: Expected SoftDeletedAt to be %s, got %s", MAX_DATETIME, queue.GetSoftDeletedAt())
+	maxDateTime := carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime()
+	if !queue.GetSoftDeletedAt().Equal(maxDateTime) {
+		t.Errorf("NewTaskQueue: Expected SoftDeletedAt to be %s, got %s", MAX_DATETIME, queue.GetSoftDeletedAt().Format("2006-01-02 15:04:05"))
 	}
 }
 
@@ -164,14 +165,14 @@ func TestTaskQueue_IsSoftDeleted(t *testing.T) {
 	}
 
 	// Test soft deleted
-	pastTime := carbon.Now(carbon.UTC).SubHours(1).ToDateTimeString(carbon.UTC)
+	pastTime := carbon.Now(carbon.UTC).SubHours(1).StdTime()
 	queue.SetSoftDeletedAt(pastTime)
 	if !queue.IsSoftDeleted() {
 		t.Error("IsSoftDeleted: Expected TaskQueue to be soft deleted when deleted_at is in the past")
 	}
 
 	// Test future deletion time (not yet deleted)
-	futureTime := carbon.Now(carbon.UTC).AddHours(1).ToDateTimeString(carbon.UTC)
+	futureTime := carbon.Now(carbon.UTC).AddHours(1).StdTime()
 	queue.SetSoftDeletedAt(futureTime)
 	if queue.IsSoftDeleted() {
 		t.Error("IsSoftDeleted: Expected TaskQueue to not be soft deleted when deleted_at is in the future")
@@ -313,8 +314,8 @@ func TestTaskQueue_CarbonMethods(t *testing.T) {
 
 	// Test CreatedAtCarbon
 	createdAtStr := "2023-01-01 12:00:00"
-	queue.SetCreatedAt(createdAtStr)
-	createdAtCarbon := queue.CreatedAtCarbon()
+	queue.SetCreatedAt(carbon.Parse(createdAtStr, carbon.UTC).StdTime())
+	createdAtCarbon := queue.GetCreatedAtCarbon()
 	if createdAtCarbon == nil {
 		t.Fatal("CreatedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -324,8 +325,8 @@ func TestTaskQueue_CarbonMethods(t *testing.T) {
 
 	// Test UpdatedAtCarbon
 	updatedAtStr := "2023-01-02 15:30:45"
-	queue.SetUpdatedAt(updatedAtStr)
-	updatedAtCarbon := queue.UpdatedAtCarbon()
+	queue.SetUpdatedAt(carbon.Parse(updatedAtStr, carbon.UTC).StdTime())
+	updatedAtCarbon := queue.GetUpdatedAtCarbon()
 	if updatedAtCarbon == nil {
 		t.Fatal("UpdatedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -335,8 +336,8 @@ func TestTaskQueue_CarbonMethods(t *testing.T) {
 
 	// Test StartedAtCarbon
 	startedAtStr := "2023-01-01 12:30:00"
-	queue.SetStartedAt(startedAtStr)
-	startedAtCarbon := queue.StartedAtCarbon()
+	queue.SetStartedAt(carbon.Parse(startedAtStr, carbon.UTC).StdTime())
+	startedAtCarbon := queue.GetStartedAtCarbon()
 	if startedAtCarbon == nil {
 		t.Fatal("StartedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -346,8 +347,8 @@ func TestTaskQueue_CarbonMethods(t *testing.T) {
 
 	// Test CompletedAtCarbon
 	completedAtStr := "2023-01-01 13:00:00"
-	queue.SetCompletedAt(completedAtStr)
-	completedAtCarbon := queue.CompletedAtCarbon()
+	queue.SetCompletedAt(carbon.Parse(completedAtStr, carbon.UTC).StdTime())
+	completedAtCarbon := queue.GetCompletedAtCarbon()
 	if completedAtCarbon == nil {
 		t.Fatal("CompletedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -357,8 +358,8 @@ func TestTaskQueue_CarbonMethods(t *testing.T) {
 
 	// Test SoftDeletedAtCarbon
 	deletedAtStr := "2023-01-03 09:15:30"
-	queue.SetSoftDeletedAt(deletedAtStr)
-	deletedAtCarbon := queue.SoftDeletedAtCarbon()
+	queue.SetSoftDeletedAt(carbon.Parse(deletedAtStr, carbon.UTC).StdTime())
+	deletedAtCarbon := queue.GetSoftDeletedAtCarbon()
 	if deletedAtCarbon == nil {
 		t.Fatal("SoftDeletedAtCarbon: Expected carbon instance, got nil")
 	}
@@ -442,33 +443,33 @@ func TestTaskQueue_SettersAndGetters(t *testing.T) {
 
 	// Test timestamps
 	testCreatedAt := "2023-01-01 10:00:00"
-	queue.SetCreatedAt(testCreatedAt)
-	if queue.GetCreatedAt() != testCreatedAt {
-		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, queue.GetCreatedAt())
+	queue.SetCreatedAt(carbon.Parse(testCreatedAt, carbon.UTC).StdTime())
+	if queue.GetCreatedAt().Format("2006-01-02 15:04:05") != testCreatedAt {
+		t.Errorf("CreatedAt: Expected %s, got %s", testCreatedAt, queue.GetCreatedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	testUpdatedAt := "2023-01-02 11:00:00"
-	queue.SetUpdatedAt(testUpdatedAt)
-	if queue.GetUpdatedAt() != testUpdatedAt {
-		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, queue.GetUpdatedAt())
+	queue.SetUpdatedAt(carbon.Parse(testUpdatedAt, carbon.UTC).StdTime())
+	if queue.GetUpdatedAt().Format("2006-01-02 15:04:05") != testUpdatedAt {
+		t.Errorf("UpdatedAt: Expected %s, got %s", testUpdatedAt, queue.GetUpdatedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	testStartedAt := "2023-01-01 10:30:00"
-	queue.SetStartedAt(testStartedAt)
-	if queue.GetStartedAt() != testStartedAt {
-		t.Errorf("StartedAt: Expected %s, got %s", testStartedAt, queue.GetStartedAt())
+	queue.SetStartedAt(carbon.Parse(testStartedAt, carbon.UTC).StdTime())
+	if queue.GetStartedAt().Format("2006-01-02 15:04:05") != testStartedAt {
+		t.Errorf("StartedAt: Expected %s, got %s", testStartedAt, queue.GetStartedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	testCompletedAt := "2023-01-01 11:30:00"
-	queue.SetCompletedAt(testCompletedAt)
-	if queue.GetCompletedAt() != testCompletedAt {
-		t.Errorf("CompletedAt: Expected %s, got %s", testCompletedAt, queue.GetCompletedAt())
+	queue.SetCompletedAt(carbon.Parse(testCompletedAt, carbon.UTC).StdTime())
+	if queue.GetCompletedAt().Format("2006-01-02 15:04:05") != testCompletedAt {
+		t.Errorf("CompletedAt: Expected %s, got %s", testCompletedAt, queue.GetCompletedAt().Format("2006-01-02 15:04:05"))
 	}
 
 	testDeletedAt := "2023-01-03 12:00:00"
-	queue.SetSoftDeletedAt(testDeletedAt)
-	if queue.GetSoftDeletedAt() != testDeletedAt {
-		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, queue.GetSoftDeletedAt())
+	queue.SetSoftDeletedAt(carbon.Parse(testDeletedAt, carbon.UTC).StdTime())
+	if queue.GetSoftDeletedAt().Format("2006-01-02 15:04:05") != testDeletedAt {
+		t.Errorf("SoftDeletedAt: Expected %s, got %s", testDeletedAt, queue.GetSoftDeletedAt().Format("2006-01-02 15:04:05"))
 	}
 }
 
@@ -483,11 +484,11 @@ func TestTaskQueue_ChainedSetters(t *testing.T) {
 		SetOutput("test output").
 		SetDetails("test details").
 		SetParameters(`{"key":"value"}`).
-		SetCreatedAt("2023-01-01 10:00:00").
-		SetUpdatedAt("2023-01-02 11:00:00").
-		SetStartedAt("2023-01-01 10:30:00").
-		SetCompletedAt("2023-01-01 11:30:00").
-		SetSoftDeletedAt("2023-01-03 12:00:00").
+		SetCreatedAt(carbon.Parse("2023-01-01 10:00:00", carbon.UTC).StdTime()).
+		SetUpdatedAt(carbon.Parse("2023-01-02 11:00:00", carbon.UTC).StdTime()).
+		SetStartedAt(carbon.Parse("2023-01-01 10:30:00", carbon.UTC).StdTime()).
+		SetCompletedAt(carbon.Parse("2023-01-01 11:30:00", carbon.UTC).StdTime()).
+		SetSoftDeletedAt(carbon.Parse("2023-01-03 12:00:00", carbon.UTC).StdTime()).
 		SetQueueName("chained-queue")
 
 	if result != queue {
@@ -526,14 +527,14 @@ func TestTaskQueue_StartedAt_WithNullDateTime(t *testing.T) {
 	// NewTaskQueue sets StartedAt to NULL_DATETIME
 
 	startedAt := queue.GetStartedAt()
-	t.Logf("StartedAt: %s", startedAt)
+	t.Logf("StartedAt: %s", startedAt.Format("2006-01-02 15:04:05"))
 
-	if startedAt != NULL_DATETIME {
-		t.Errorf("StartedAt: Expected %s, got %s", NULL_DATETIME, startedAt)
+	if !startedAt.IsZero() {
+		t.Errorf("StartedAt: Expected zero time (NULL_DATETIME), got %s", startedAt.Format("2006-01-02 15:04:05"))
 	}
 
 	// Check if carbon parse handles it without panicking
-	c := queue.StartedAtCarbon()
+	c := queue.GetStartedAtCarbon()
 	t.Logf("Carbon: %v, IsZero: %v", c, c.IsZero())
 
 	// Verify that Carbon handles NULL_DATETIME gracefully

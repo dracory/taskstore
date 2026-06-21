@@ -90,12 +90,6 @@ func breadcrumbs(r *http.Request, pageBreadcrumbs []Breadcrumb) hb.TagInterface 
 		Child(breadcrumbs)
 }
 
-func redirect(w http.ResponseWriter, r *http.Request, url string) string {
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-
-	return ""
-}
-
 func url(r *http.Request, path string, params map[string]string) string {
 	endpoint := r.URL.Path
 
@@ -108,28 +102,6 @@ func url(r *http.Request, path string, params map[string]string) string {
 	url := endpoint + query(params)
 
 	return url
-}
-
-// linkWithContext provides a context-based URL generation alternative
-// This uses context to retrieve the endpoint, useful in complex routing scenarios
-// Usage: Set endpoint in context with keyEndpoint before calling this function
-func linkWithContext(r *http.Request, path string, params map[string]string) string {
-	endpoint := r.URL.Path
-
-	// Try to get endpoint from context first (if set by caller)
-	if ctxEndpoint := r.Context().Value(keyEndpoint); ctxEndpoint != nil {
-		if endpointStr, ok := ctxEndpoint.(string); ok {
-			endpoint = endpointStr
-		}
-	}
-
-	if params == nil {
-		params = map[string]string{}
-	}
-
-	params["controller"] = path
-
-	return endpoint + query(params)
 }
 
 func query(queryData map[string]string) string {
@@ -193,34 +165,6 @@ func isJSON(str string) bool {
 	}
 
 	return false
-}
-
-// sortableColumnLabel creates a sortable column label with sorting indicator
-// This is a standalone utility function for better reusability across controllers
-// page parameter defaults to "0" to reset pagination on sort change
-func sortableColumnLabel(r *http.Request, tableLabel, columnName, path string, sortBy, sortOrder, page string) hb.TagInterface {
-	if page == "" {
-		page = "0"
-	}
-
-	isSelected := strings.EqualFold(sortBy, columnName)
-
-	direction := lo.If(sortOrder == "asc", "desc").Else("asc")
-
-	if !isSelected {
-		direction = "asc"
-	}
-
-	linkURL := url(r, path, map[string]string{
-		"page": page,
-		"by":   columnName,
-		"sort": direction,
-	})
-
-	return hb.Hyperlink().
-		HTML(tableLabel).
-		Child(sortingIndicator(columnName, sortBy, sortOrder)).
-		Href(linkURL)
 }
 
 // sortingIndicator returns the sorting indicator (up/down arrow) for a column

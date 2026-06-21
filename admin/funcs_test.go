@@ -617,10 +617,7 @@ func Test_Breadcrumb_struct(t *testing.T) {
 
 func Test_admin_struct(t *testing.T) {
 	// Test admin struct can be created
-	admin := &admin{}
-	if admin == nil {
-		t.Error("admin struct should not be nil")
-	}
+	_ = &admin{}
 }
 
 func Test_UIOptions_struct(t *testing.T) {
@@ -629,7 +626,6 @@ func Test_UIOptions_struct(t *testing.T) {
 		ResponseWriter: httptest.NewRecorder(),
 		Request:        &http.Request{},
 		Logger:         slog.Default(),
-		Store:          nil,
 		Layout:         &mockLayout{},
 	}
 
@@ -1099,13 +1095,15 @@ func Test_admin_struct_creation(t *testing.T) {
 	admin := &admin{
 		response: httptest.NewRecorder(),
 		request:  &http.Request{Method: "GET"},
-		store:    nil,
 		logger:   *slog.Default(),
 		layout:   &mockLayout{},
 	}
 
 	if admin.response == nil {
 		t.Error("admin response should not be nil")
+	}
+	if admin.logger == (slog.Logger{}) {
+		t.Error("admin logger should be set")
 	}
 	if admin.request == nil {
 		t.Error("admin request should not be nil")
@@ -1626,7 +1624,6 @@ func Test_taskQueueCreateController_struct(t *testing.T) {
 	// Test taskQueueCreateController struct
 	controller := &taskQueueCreateController{
 		logger: *slog.Default(),
-		store:  nil,
 	}
 
 	if controller.logger == (slog.Logger{}) {
@@ -1637,8 +1634,7 @@ func Test_taskQueueCreateController_struct(t *testing.T) {
 func Test_taskQueueCreateControllerData_struct(t *testing.T) {
 	// Test taskQueueCreateControllerData struct
 	data := taskQueueCreateControllerData{
-		request:  &http.Request{},
-		taskList: nil,
+		request: &http.Request{},
 	}
 
 	if data.request == nil {
@@ -1687,16 +1683,12 @@ func Test_Breadcrumb_equality(t *testing.T) {
 	// Test Breadcrumb struct equality
 	b1 := Breadcrumb{Name: "Test", URL: "/test"}
 	b2 := Breadcrumb{Name: "Test", URL: "/test"}
-	b3 := Breadcrumb{Name: "Other", URL: "/test"}
 
 	if b1.Name != b2.Name {
 		t.Error("Equal breadcrumbs should have same name")
 	}
 	if b1.URL != b2.URL {
 		t.Error("Equal breadcrumbs should have same URL")
-	}
-	if b1.Name == b3.Name {
-		t.Error("Different breadcrumbs should have different names")
 	}
 }
 
@@ -2159,7 +2151,7 @@ func Test_isJSON_with_valid_arrays(t *testing.T) {
 
 func Test_Breadcrumb_with_empty_name(t *testing.T) {
 	// Test Breadcrumb with empty name
-	b := Breadcrumb{Name: "", URL: "/test"}
+	b := Breadcrumb{URL: "/test"}
 
 	if b.URL != "/test" {
 		t.Error("Breadcrumb URL should be correct")
@@ -2168,7 +2160,7 @@ func Test_Breadcrumb_with_empty_name(t *testing.T) {
 
 func Test_Breadcrumb_with_empty_url(t *testing.T) {
 	// Test Breadcrumb with empty URL
-	b := Breadcrumb{Name: "Test", URL: ""}
+	b := Breadcrumb{Name: "Test"}
 
 	if b.Name != "Test" {
 		t.Error("Breadcrumb Name should be correct")
@@ -2182,6 +2174,9 @@ func Test_Breadcrumb_with_very_long_name(t *testing.T) {
 
 	if b.Name != longName {
 		t.Error("Breadcrumb Name should preserve long name")
+	}
+	if b.URL != "/test" {
+		t.Error("Breadcrumb URL should be correct")
 	}
 }
 
@@ -2759,7 +2754,6 @@ func Test_UIOptions_with_all_fields_set(t *testing.T) {
 		ResponseWriter: httptest.NewRecorder(),
 		Request:        &http.Request{},
 		Logger:         slog.Default(),
-		Store:          nil,
 		Layout:         &mockLayout{},
 	}
 

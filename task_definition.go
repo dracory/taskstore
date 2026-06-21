@@ -1,12 +1,117 @@
 package taskstore
 
 import (
+	"time"
+
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
 	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
+
+// == INTERFACE =================================================================
+
+type TaskDefinitionInterface interface {
+	IsActive() bool
+	IsCanceled() bool
+	IsSoftDeleted() bool
+
+	GetAlias() string
+	SetAlias(alias string) TaskDefinitionInterface
+
+	GetCreatedAt() time.Time
+	GetCreatedAtCarbon() *carbon.Carbon
+	SetCreatedAt(createdAt time.Time) TaskDefinitionInterface
+
+	GetDescription() string
+	SetDescription(description string) TaskDefinitionInterface
+
+	GetID() string
+	SetID(id string) TaskDefinitionInterface
+
+	GetMemo() string
+	SetMemo(memo string) TaskDefinitionInterface
+
+	GetIsRecurring() int
+	SetIsRecurring(isRecurring int) TaskDefinitionInterface
+
+	GetRecurrenceRule() string
+	SetRecurrenceRule(recurrenceRule string) TaskDefinitionInterface
+
+	GetSoftDeletedAt() time.Time
+	GetSoftDeletedAtCarbon() *carbon.Carbon
+	SetSoftDeletedAt(deletedAt time.Time) TaskDefinitionInterface
+
+	GetStatus() string
+	SetStatus(status string) TaskDefinitionInterface
+
+	GetTitle() string
+	SetTitle(title string) TaskDefinitionInterface
+
+	GetUpdatedAt() time.Time
+	GetUpdatedAtCarbon() *carbon.Carbon
+	SetUpdatedAt(updatedAt time.Time) TaskDefinitionInterface
+}
+
+type TaskDefinitionQueryInterface interface {
+	Validate() error
+
+	Columns() []string
+	SetColumns(columns []string) TaskDefinitionQueryInterface
+
+	HasCountOnly() bool
+	IsCountOnly() bool
+	SetCountOnly(countOnly bool) TaskDefinitionQueryInterface
+
+	HasAlias() bool
+	Alias() string
+	SetAlias(alias string) TaskDefinitionQueryInterface
+
+	HasCreatedAtGte() bool
+	CreatedAtGte() string
+	SetCreatedAtGte(createdAtGte string) TaskDefinitionQueryInterface
+
+	HasCreatedAtLte() bool
+	CreatedAtLte() string
+	SetCreatedAtLte(createdAtLte string) TaskDefinitionQueryInterface
+
+	HasID() bool
+	ID() string
+	SetID(id string) TaskDefinitionQueryInterface
+
+	HasIDIn() bool
+	IDIn() []string
+	SetIDIn(idIn []string) TaskDefinitionQueryInterface
+
+	HasLimit() bool
+	Limit() int
+	SetLimit(limit int) TaskDefinitionQueryInterface
+
+	HasOffset() bool
+	Offset() int
+	SetOffset(offset int) TaskDefinitionQueryInterface
+
+	HasSortOrder() bool
+	SortOrder() string
+	SetSortOrder(sortOrder string) TaskDefinitionQueryInterface
+
+	HasOrderBy() bool
+	OrderBy() string
+	SetOrderBy(orderBy string) TaskDefinitionQueryInterface
+
+	HasSoftDeletedIncluded() bool
+	SoftDeletedIncluded() bool
+	SetSoftDeletedIncluded(withDeleted bool) TaskDefinitionQueryInterface
+
+	HasStatus() bool
+	Status() string
+	SetStatus(status string) TaskDefinitionQueryInterface
+
+	HasStatusIn() bool
+	StatusIn() []string
+	SetStatusIn(statusIn []string) TaskDefinitionQueryInterface
+}
 
 // == TYPE ====================================================================
 
@@ -40,9 +145,9 @@ func NewTaskDefinition() TaskDefinitionInterface {
 		SetIsRecurring(0).
 		SetRecurrenceRule("").
 		SetMemo("").
-		SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
-		SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC)).
-		SetSoftDeletedAt(MAX_DATETIME)
+		SetCreatedAt(carbon.Now(carbon.UTC).StdTime()).
+		SetUpdatedAt(carbon.Now(carbon.UTC).StdTime()).
+		SetSoftDeletedAt(carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 
 	return o
 }
@@ -58,13 +163,13 @@ func NewTaskDefinitionFromExistingData(data map[string]string) TaskDefinitionInt
 	o.SetIsRecurring(cast.ToInt(data[COLUMN_IS_RECURRING]))
 	o.SetRecurrenceRule(data[COLUMN_RECURRENCE_RULE])
 	if v, ok := data[COLUMN_CREATED_AT]; ok {
-		o.SetCreatedAt(v)
+		o.SetCreatedAt(parseTime(v))
 	}
 	if v, ok := data[COLUMN_UPDATED_AT]; ok {
-		o.SetUpdatedAt(v)
+		o.SetUpdatedAt(parseTime(v))
 	}
 	if v, ok := data[COLUMN_SOFT_DELETED_AT]; ok {
-		o.SetSoftDeletedAt(v)
+		o.SetSoftDeletedAt(parseTime(v))
 	}
 	return o
 }
@@ -94,22 +199,16 @@ func (o *taskDefinition) SetAlias(alias string) TaskDefinitionInterface {
 	return o
 }
 
-func (o *taskDefinition) GetCreatedAt() string {
-	if o.CreatedAtField.CreatedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt).ToDateTimeString()
+func (o *taskDefinition) GetCreatedAt() time.Time {
+	return o.CreatedAtField.CreatedAt
 }
 
-func (o *taskDefinition) CreatedAtCarbon() *carbon.Carbon {
+func (o *taskDefinition) GetCreatedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt)
 }
 
-func (o *taskDefinition) SetCreatedAt(createdAt string) TaskDefinitionInterface {
-	if createdAt == "" {
-		return o
-	}
-	o.CreatedAtField.CreatedAt = carbon.Parse(createdAt, carbon.UTC).StdTime()
+func (o *taskDefinition) SetCreatedAt(createdAt time.Time) TaskDefinitionInterface {
+	o.CreatedAtField.CreatedAt = createdAt
 	return o
 }
 
@@ -158,22 +257,16 @@ func (o *taskDefinition) SetRecurrenceRule(recurrenceRule string) TaskDefinition
 	return o
 }
 
-func (o *taskDefinition) GetSoftDeletedAt() string {
-	if o.SoftDeletesMaxDate.SoftDeletedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt).ToDateTimeString()
+func (o *taskDefinition) GetSoftDeletedAt() time.Time {
+	return o.SoftDeletesMaxDate.SoftDeletedAt
 }
 
-func (o *taskDefinition) SoftDeletedAtCarbon() *carbon.Carbon {
+func (o *taskDefinition) GetSoftDeletedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(o.SoftDeletesMaxDate.SoftDeletedAt)
 }
 
-func (o *taskDefinition) SetSoftDeletedAt(deletedAt string) TaskDefinitionInterface {
-	if deletedAt == "" {
-		return o
-	}
-	o.SoftDeletesMaxDate.SoftDeletedAt = carbon.Parse(deletedAt, carbon.UTC).StdTime()
+func (o *taskDefinition) SetSoftDeletedAt(deletedAt time.Time) TaskDefinitionInterface {
+	o.SoftDeletesMaxDate.SoftDeletedAt = deletedAt
 	return o
 }
 
@@ -195,21 +288,15 @@ func (o *taskDefinition) SetTitle(title string) TaskDefinitionInterface {
 	return o
 }
 
-func (o *taskDefinition) GetUpdatedAt() string {
-	if o.UpdatedAtField.UpdatedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt).ToDateTimeString()
+func (o *taskDefinition) GetUpdatedAt() time.Time {
+	return o.UpdatedAtField.UpdatedAt
 }
 
-func (o *taskDefinition) UpdatedAtCarbon() *carbon.Carbon {
+func (o *taskDefinition) GetUpdatedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt)
 }
 
-func (o *taskDefinition) SetUpdatedAt(updatedAt string) TaskDefinitionInterface {
-	if updatedAt == "" {
-		return o
-	}
-	o.UpdatedAtField.UpdatedAt = carbon.Parse(updatedAt, carbon.UTC).StdTime()
+func (o *taskDefinition) SetUpdatedAt(updatedAt time.Time) TaskDefinitionInterface {
+	o.UpdatedAtField.UpdatedAt = updatedAt
 	return o
 }

@@ -2,6 +2,7 @@ package taskstore
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
@@ -107,35 +108,35 @@ type ScheduleInterface interface {
 	SetNextRunAt(string) ScheduleInterface
 
 	// GetCreatedAt the date and time the schedule was created
-	GetCreatedAt() string
+	GetCreatedAt() time.Time
 
-	// CreatedAtCarbon returns the created at time as a carbon object
-	CreatedAtCarbon() *carbon.Carbon
+	// GetCreatedAtCarbon returns the created at time as a carbon object
+	GetCreatedAtCarbon() *carbon.Carbon
 
 	// SetCreatedAt sets the date and time the schedule was created
-	SetCreatedAt(string) ScheduleInterface
+	SetCreatedAt(time.Time) ScheduleInterface
 
 	// GetUpdatedAt the date and time the schedule was last updated
-	GetUpdatedAt() string
+	GetUpdatedAt() time.Time
 
-	// UpdatedAtCarbon returns the updated at time as a carbon object
-	UpdatedAtCarbon() *carbon.Carbon
+	// GetUpdatedAtCarbon returns the updated at time as a carbon object
+	GetUpdatedAtCarbon() *carbon.Carbon
 
 	// SetUpdatedAt sets the date and time the schedule was last updated
-	SetUpdatedAt(string) ScheduleInterface
+	SetUpdatedAt(time.Time) ScheduleInterface
 
 	// GetSoftDeletedAt the date and time the schedule was soft deleted
 	// The default value is max datetime (not soft deleted, 9999-12-31 23:59:59)
 	// To soft delete a schedule, set softDeletedAt to the current time
 	// To unsoft delete a schedule, set softDeletedAt to max datetime
 	// A soft deleted schedule is when its in the past
-	GetSoftDeletedAt() string
+	GetSoftDeletedAt() time.Time
 
-	// SoftDeletedAtCarbon returns the soft deleted at time as a carbon object
-	SoftDeletedAtCarbon() *carbon.Carbon
+	// GetSoftDeletedAtCarbon returns the soft deleted at time as a carbon object
+	GetSoftDeletedAtCarbon() *carbon.Carbon
 
 	// SetSoftDeletedAt sets the date and time the schedule was soft deleted
-	SetSoftDeletedAt(string) ScheduleInterface
+	SetSoftDeletedAt(time.Time) ScheduleInterface
 
 	// HasReachedEndDate returns true if the schedule has reached its end date
 	HasReachedEndDate() bool
@@ -247,9 +248,9 @@ func NewSchedule() ScheduleInterface {
 	o.SetNextRunAt(NULL_DATETIME)
 	o.SetExecutionCount(0)
 	o.SetMaxExecutionCount(0)
-	o.SetCreatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
-	o.SetUpdatedAt(carbon.Now(carbon.UTC).ToDateTimeString(carbon.UTC))
-	o.SetSoftDeletedAt(MAX_DATETIME)
+	o.SetCreatedAt(carbon.Now(carbon.UTC).StdTime())
+	o.SetUpdatedAt(carbon.Now(carbon.UTC).StdTime())
+	o.SetSoftDeletedAt(carbon.Parse(MAX_DATETIME, carbon.UTC).StdTime())
 	return o
 }
 
@@ -449,46 +450,34 @@ func (s *scheduleImplementation) SetNextRunAt(nextRunAt string) ScheduleInterfac
 }
 
 // GetCreatedAt returns the date and time the schedule was created.
-func (s *scheduleImplementation) GetCreatedAt() string {
-	if s.CreatedAtField.CreatedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(s.CreatedAtField.CreatedAt).ToDateTimeString()
+func (s *scheduleImplementation) GetCreatedAt() time.Time {
+	return s.CreatedAtField.CreatedAt
 }
 
-// CreatedAtCarbon returns the created at time of the schedule as a carbon object.
-func (s *scheduleImplementation) CreatedAtCarbon() *carbon.Carbon {
+// GetCreatedAtCarbon returns the created at time of the schedule as a carbon object.
+func (s *scheduleImplementation) GetCreatedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(s.CreatedAtField.CreatedAt)
 }
 
 // SetCreatedAt sets the date and time the schedule was created.
-func (s *scheduleImplementation) SetCreatedAt(createdAt string) ScheduleInterface {
-	if createdAt == "" {
-		return s
-	}
-	s.CreatedAtField.CreatedAt = carbon.Parse(createdAt, carbon.UTC).StdTime()
+func (s *scheduleImplementation) SetCreatedAt(createdAt time.Time) ScheduleInterface {
+	s.CreatedAtField.CreatedAt = createdAt
 	return s
 }
 
 // GetUpdatedAt returns the date and time the schedule was last updated.
-func (s *scheduleImplementation) GetUpdatedAt() string {
-	if s.UpdatedAtField.UpdatedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(s.UpdatedAtField.UpdatedAt).ToDateTimeString()
+func (s *scheduleImplementation) GetUpdatedAt() time.Time {
+	return s.UpdatedAtField.UpdatedAt
 }
 
-// UpdatedAtCarbon returns the updated at time of the schedule as a carbon object.
-func (s *scheduleImplementation) UpdatedAtCarbon() *carbon.Carbon {
+// GetUpdatedAtCarbon returns the updated at time of the schedule as a carbon object.
+func (s *scheduleImplementation) GetUpdatedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(s.UpdatedAtField.UpdatedAt)
 }
 
 // SetUpdatedAt sets the date and time the schedule was last updated.
-func (s *scheduleImplementation) SetUpdatedAt(updatedAt string) ScheduleInterface {
-	if updatedAt == "" {
-		return s
-	}
-	s.UpdatedAtField.UpdatedAt = carbon.Parse(updatedAt, carbon.UTC).StdTime()
+func (s *scheduleImplementation) SetUpdatedAt(updatedAt time.Time) ScheduleInterface {
+	s.UpdatedAtField.UpdatedAt = updatedAt
 	return s
 }
 
@@ -497,24 +486,18 @@ func (s *scheduleImplementation) SetUpdatedAt(updatedAt string) ScheduleInterfac
 // To soft delete a schedule, set softDeletedAt to the current time.
 // To unsoft delete a schedule, set softDeletedAt to max datetime.
 // A soft deleted schedule is when its in the past.
-func (s *scheduleImplementation) GetSoftDeletedAt() string {
-	if s.SoftDeletesMaxDate.SoftDeletedAt.IsZero() {
-		return ""
-	}
-	return carbon.CreateFromStdTime(s.SoftDeletesMaxDate.SoftDeletedAt).ToDateTimeString()
+func (s *scheduleImplementation) GetSoftDeletedAt() time.Time {
+	return s.SoftDeletesMaxDate.SoftDeletedAt
 }
 
-// SoftDeletedAtCarbon returns the soft deleted at time of the schedule as a carbon object.
-func (s *scheduleImplementation) SoftDeletedAtCarbon() *carbon.Carbon {
+// GetSoftDeletedAtCarbon returns the soft deleted at time of the schedule as a carbon object.
+func (s *scheduleImplementation) GetSoftDeletedAtCarbon() *carbon.Carbon {
 	return carbon.CreateFromStdTime(s.SoftDeletesMaxDate.SoftDeletedAt)
 }
 
 // SetSoftDeletedAt sets the date and time the schedule was soft deleted.
-func (s *scheduleImplementation) SetSoftDeletedAt(softDeletedAt string) ScheduleInterface {
-	if softDeletedAt == "" {
-		return s
-	}
-	s.SoftDeletesMaxDate.SoftDeletedAt = carbon.Parse(softDeletedAt, carbon.UTC).StdTime()
+func (s *scheduleImplementation) SetSoftDeletedAt(softDeletedAt time.Time) ScheduleInterface {
+	s.SoftDeletesMaxDate.SoftDeletedAt = softDeletedAt
 	return s
 }
 

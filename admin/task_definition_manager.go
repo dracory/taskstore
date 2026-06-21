@@ -152,10 +152,10 @@ func (controller *taskDefinitionManagerController) tableRecords(data *taskDefini
 					HxTarget("body").
 					HxSwap("beforeend")
 
-				createdAtDate := task.CreatedAtCarbon().Format("d M Y")
-				createdAtTime := task.CreatedAtCarbon().ToTimeString()
-				updatedAtDate := task.UpdatedAtCarbon().Format("d M Y")
-				updatedAtTime := task.UpdatedAtCarbon().ToTimeString()
+				createdAtDate := task.GetCreatedAtCarbon().Format("d M Y")
+				createdAtTime := task.GetCreatedAtCarbon().ToTimeString()
+				updatedAtDate := task.GetUpdatedAtCarbon().Format("d M Y")
+				updatedAtTime := task.GetUpdatedAtCarbon().ToTimeString()
 
 				status := hb.Span().
 					Style(`font-weight: bold;`).
