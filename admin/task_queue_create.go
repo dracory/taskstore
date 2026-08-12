@@ -10,7 +10,6 @@ import (
 	"github.com/dracory/form"
 	"github.com/dracory/hb"
 	"github.com/dracory/req"
-	"github.com/dracory/sb"
 	"github.com/dracory/taskstore"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -202,7 +201,7 @@ func (c *taskQueueCreateController) prepareData(r *http.Request) (data taskQueue
 
 	if data.taskList, err = c.store.TaskDefinitionList(context.Background(), taskstore.TaskDefinitionQuery().
 		SetOrderBy(taskstore.COLUMN_TITLE).
-		SetSortOrder(sb.ASC).
+		SetSortOrder(taskstore.ASC).
 		SetOffset(0).
 		SetLimit(100)); err != nil {
 		return data, err

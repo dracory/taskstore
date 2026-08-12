@@ -12,7 +12,6 @@ import (
 
 	"github.com/dracory/form"
 	"github.com/dracory/hb"
-	"github.com/dracory/sb"
 	"github.com/dracory/taskstore"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -436,10 +435,10 @@ func (controller *taskQueueManagerController) tableRecords(data *taskQueueManage
 func (controller *taskQueueManagerController) sortableColumnLabel(data *taskQueueManagerControllerData, tableLabel, columnName string) hb.TagInterface {
 	isSelected := strings.EqualFold(data.sortBy, columnName)
 
-	direction := lo.If(data.sortOrder == sb.ASC, sb.DESC).Else(sb.ASC)
+	direction := lo.If(data.sortOrder == taskstore.ASC, taskstore.DESC).Else(taskstore.ASC)
 
 	if !isSelected {
-		direction = sb.ASC
+		direction = taskstore.ASC
 	}
 
 	link := url(data.request, pathTaskQueueManager, map[string]string{
@@ -589,7 +588,7 @@ func (controller *taskQueueManagerController) prepareData(r *http.Request) (data
 
 	data.taskList, err = controller.store.TaskDefinitionList(context.Background(), taskstore.TaskDefinitionQuery().
 		SetOrderBy(taskstore.COLUMN_ALIAS).
-		SetSortOrder(sb.ASC).
+		SetSortOrder(taskstore.ASC).
 		SetOffset(0).
 		SetLimit(100))
 

@@ -10,7 +10,6 @@ import (
 	"github.com/dracory/cdn"
 	"github.com/dracory/hb"
 	"github.com/dracory/req"
-	"github.com/dracory/sb"
 	"github.com/dracory/taskstore"
 	"github.com/samber/lo"
 	"github.com/spf13/cast"
@@ -201,10 +200,10 @@ func (controller *taskDefinitionManagerController) tableRecords(data *taskDefini
 func (controller *taskDefinitionManagerController) sortableColumnLabel(data *taskDefinitionManagerControllerData, tableLabel, columnName string) hb.TagInterface {
 	isSelected := strings.EqualFold(data.sortBy, columnName)
 
-	direction := lo.If(data.sortOrder == sb.ASC, sb.DESC).Else(sb.ASC)
+	direction := lo.If(data.sortOrder == taskstore.ASC, taskstore.DESC).Else(taskstore.ASC)
 
 	if !isSelected {
-		direction = sb.ASC
+		direction = taskstore.ASC
 	}
 
 	link := url(data.request, pathTaskDefinitionManager, map[string]string{
@@ -336,7 +335,7 @@ func (controller *taskDefinitionManagerController) prepareData(r *http.Request) 
 	data.page = req.GetStringTrimmed(r, "page")
 	data.pageInt = cast.ToInt(data.page)
 	data.perPage = cast.ToInt(req.GetStringTrimmedOr(r, "per_page", cast.ToString(initialPerPage)))
-	data.sortOrder = req.GetStringTrimmedOr(r, "sort", sb.DESC)
+	data.sortOrder = req.GetStringTrimmedOr(r, "sort", taskstore.DESC)
 	data.sortBy = req.GetStringTrimmedOr(r, "by", taskstore.COLUMN_CREATED_AT)
 	data.formCreatedFrom = req.GetStringTrimmed(r, "filter_created_from")
 	data.formCreatedTo = req.GetStringTrimmed(r, "filter_created_to")
