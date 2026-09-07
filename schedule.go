@@ -226,8 +226,8 @@ type scheduleImplementation struct {
 	LastRunAtField         string `db:"last_run_at"`
 	NextRunAtField         string `db:"next_run_at"`
 
-	CreatedAtField orm.CreatedAt
-	UpdatedAtField orm.UpdatedAt
+	CreatedAtField time.Time `db:"created_at"`
+	UpdatedAtField time.Time `db:"updated_at"`
 	soft_delete.SoftDeletesMaxDate
 
 	// cached recurrence rule to allow mutation via GetRecurrenceRule()
@@ -451,33 +451,33 @@ func (s *scheduleImplementation) SetNextRunAt(nextRunAt string) ScheduleInterfac
 
 // GetCreatedAt returns the date and time the schedule was created.
 func (s *scheduleImplementation) GetCreatedAt() time.Time {
-	return s.CreatedAtField.CreatedAt
+	return s.CreatedAtField
 }
 
 // GetCreatedAtCarbon returns the created at time of the schedule as a carbon object.
 func (s *scheduleImplementation) GetCreatedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(s.CreatedAtField.CreatedAt)
+	return carbon.CreateFromStdTime(s.CreatedAtField)
 }
 
 // SetCreatedAt sets the date and time the schedule was created.
 func (s *scheduleImplementation) SetCreatedAt(createdAt time.Time) ScheduleInterface {
-	s.CreatedAtField.CreatedAt = createdAt
+	s.CreatedAtField = createdAt
 	return s
 }
 
 // GetUpdatedAt returns the date and time the schedule was last updated.
 func (s *scheduleImplementation) GetUpdatedAt() time.Time {
-	return s.UpdatedAtField.UpdatedAt
+	return s.UpdatedAtField
 }
 
 // GetUpdatedAtCarbon returns the updated at time of the schedule as a carbon object.
 func (s *scheduleImplementation) GetUpdatedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(s.UpdatedAtField.UpdatedAt)
+	return carbon.CreateFromStdTime(s.UpdatedAtField)
 }
 
 // SetUpdatedAt sets the date and time the schedule was last updated.
 func (s *scheduleImplementation) SetUpdatedAt(updatedAt time.Time) ScheduleInterface {
-	s.UpdatedAtField.UpdatedAt = updatedAt
+	s.UpdatedAtField = updatedAt
 	return s
 }
 

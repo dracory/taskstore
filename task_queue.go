@@ -86,8 +86,8 @@ type taskQueue struct {
 	StartedAtField   time.Time `db:"started_at"`
 	CompletedAtField time.Time `db:"completed_at"`
 
-	CreatedAtField orm.CreatedAt
-	UpdatedAtField orm.UpdatedAt
+	CreatedAtField time.Time `db:"created_at"`
+	UpdatedAtField time.Time `db:"updated_at"`
 	soft_delete.SoftDeletesMaxDate
 }
 
@@ -208,15 +208,15 @@ func (o *taskQueue) SetCompletedAt(completedAt time.Time) TaskQueueInterface {
 }
 
 func (o *taskQueue) GetCreatedAt() time.Time {
-	return o.CreatedAtField.CreatedAt
+	return o.CreatedAtField
 }
 
 func (o *taskQueue) GetCreatedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt)
+	return carbon.CreateFromStdTime(o.CreatedAtField)
 }
 
 func (o *taskQueue) SetCreatedAt(createdAt time.Time) TaskQueueInterface {
-	o.CreatedAtField.CreatedAt = createdAt
+	o.CreatedAtField = createdAt
 	return o
 }
 
@@ -344,14 +344,14 @@ func (o *taskQueue) SetTaskID(taskID string) TaskQueueInterface {
 }
 
 func (o *taskQueue) GetUpdatedAt() time.Time {
-	return o.UpdatedAtField.UpdatedAt
+	return o.UpdatedAtField
 }
 
 func (o *taskQueue) GetUpdatedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt)
+	return carbon.CreateFromStdTime(o.UpdatedAtField)
 }
 
 func (o *taskQueue) SetUpdatedAt(updatedAt time.Time) TaskQueueInterface {
-	o.UpdatedAtField.UpdatedAt = updatedAt
+	o.UpdatedAtField = updatedAt
 	return o
 }

@@ -461,6 +461,112 @@ func Test_normalizeQueueName(t *testing.T) {
 	}
 }
 
+// Test_Store_TimestampsPopulatedOnRead proves that created_at and updated_at
+// written on insert are populated when entities are read back from the store.
+// Regression test: these fields silently came back as zero time.Time because
+// the struct columns were never mapped to the DB columns on scan.
+func Test_Store_TimestampsPopulatedOnRead(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("initStore: Error[%v]", err)
+	}
+	defer store.GetDB().Close()
+
+	ctx := context.Background()
+
+	t.Run("TaskQueue", func(t *testing.T) {
+		task := NewTaskQueue().
+			SetTaskID("TASK_TS").
+			SetStatus(TaskQueueStatusQueued)
+
+		if task.GetCreatedAt().IsZero() {
+			t.Fatal("precondition failed: in-memory CreatedAt is zero before insert")
+		}
+
+		if err := store.TaskQueueCreate(ctx, task); err != nil {
+			t.Fatalf("TaskQueueCreate: Error[%v]", err)
+		}
+
+		found, err := store.TaskQueueFindByID(ctx, task.GetID())
+		if err != nil {
+			t.Fatalf("TaskQueueFindByID: Error[%v]", err)
+		}
+		if found == nil {
+			t.Fatal("TaskQueueFindByID: expected task, got nil")
+		}
+		if found.GetCreatedAt().IsZero() {
+			t.Error("GetCreatedAt() is zero after read-back; expected the value written on insert")
+		}
+		if found.GetUpdatedAt().IsZero() {
+			t.Error("GetUpdatedAt() is zero after read-back; expected the value written on insert")
+		}
+
+		list, err := store.TaskQueueList(ctx, TaskQueueQuery())
+		if err != nil {
+			t.Fatalf("TaskQueueList: Error[%v]", err)
+		}
+		if len(list) != 1 {
+			t.Fatalf("expected 1 task, got %d", len(list))
+		}
+		if list[0].GetCreatedAt().IsZero() {
+			t.Error("TaskQueueList: GetCreatedAt() is zero after read-back")
+		}
+		if list[0].GetUpdatedAt().IsZero() {
+			t.Error("TaskQueueList: GetUpdatedAt() is zero after read-back")
+		}
+	})
+
+	t.Run("TaskDefinition", func(t *testing.T) {
+		def := NewTaskDefinition().SetAlias("ts_def")
+		if def.GetCreatedAt().IsZero() {
+			t.Fatal("precondition failed: in-memory CreatedAt is zero before insert")
+		}
+
+		if err := store.TaskDefinitionCreate(ctx, def); err != nil {
+			t.Fatalf("TaskDefinitionCreate: Error[%v]", err)
+		}
+
+		defs, err := store.TaskDefinitionList(ctx, TaskDefinitionQuery())
+		if err != nil {
+			t.Fatalf("TaskDefinitionList: Error[%v]", err)
+		}
+		if len(defs) != 1 {
+			t.Fatalf("expected 1 definition, got %d", len(defs))
+		}
+		if defs[0].GetCreatedAt().IsZero() {
+			t.Error("TaskDefinitionList: GetCreatedAt() is zero after read-back")
+		}
+		if defs[0].GetUpdatedAt().IsZero() {
+			t.Error("TaskDefinitionList: GetUpdatedAt() is zero after read-back")
+		}
+	})
+
+	t.Run("Schedule", func(t *testing.T) {
+		schedule := NewSchedule()
+		schedule.SetName("ts_schedule")
+		schedule.SetTaskDefinitionID("task-1")
+		schedule.SetStartAt(time.Now().UTC().Format("2006-01-02 15:04:05"))
+
+		if err := store.ScheduleCreate(ctx, schedule); err != nil {
+			t.Fatalf("ScheduleCreate: Error[%v]", err)
+		}
+
+		list, err := store.ScheduleList(ctx, NewScheduleQuery())
+		if err != nil {
+			t.Fatalf("ScheduleList: Error[%v]", err)
+		}
+		if len(list) != 1 {
+			t.Fatalf("expected 1 schedule, got %d", len(list))
+		}
+		if list[0].GetCreatedAt().IsZero() {
+			t.Error("ScheduleList: GetCreatedAt() is zero after read-back")
+		}
+		if list[0].GetUpdatedAt().IsZero() {
+			t.Error("ScheduleList: GetUpdatedAt() is zero after read-back")
+		}
+	})
+}
+
 func Test_Store_TaskQueueClaimNext(t *testing.T) {
 	store, err := initStore()
 	if err != nil {

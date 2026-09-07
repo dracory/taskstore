@@ -126,8 +126,8 @@ type taskDefinition struct {
 	IsRecurringField    int    `db:"is_recurring"`
 	RecurrenceRuleField string `db:"recurrence_rule"`
 
-	CreatedAtField orm.CreatedAt
-	UpdatedAtField orm.UpdatedAt
+	CreatedAtField time.Time `db:"created_at"`
+	UpdatedAtField time.Time `db:"updated_at"`
 	soft_delete.SoftDeletesMaxDate
 }
 
@@ -200,15 +200,15 @@ func (o *taskDefinition) SetAlias(alias string) TaskDefinitionInterface {
 }
 
 func (o *taskDefinition) GetCreatedAt() time.Time {
-	return o.CreatedAtField.CreatedAt
+	return o.CreatedAtField
 }
 
 func (o *taskDefinition) GetCreatedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(o.CreatedAtField.CreatedAt)
+	return carbon.CreateFromStdTime(o.CreatedAtField)
 }
 
 func (o *taskDefinition) SetCreatedAt(createdAt time.Time) TaskDefinitionInterface {
-	o.CreatedAtField.CreatedAt = createdAt
+	o.CreatedAtField = createdAt
 	return o
 }
 
@@ -289,14 +289,14 @@ func (o *taskDefinition) SetTitle(title string) TaskDefinitionInterface {
 }
 
 func (o *taskDefinition) GetUpdatedAt() time.Time {
-	return o.UpdatedAtField.UpdatedAt
+	return o.UpdatedAtField
 }
 
 func (o *taskDefinition) GetUpdatedAtCarbon() *carbon.Carbon {
-	return carbon.CreateFromStdTime(o.UpdatedAtField.UpdatedAt)
+	return carbon.CreateFromStdTime(o.UpdatedAtField)
 }
 
 func (o *taskDefinition) SetUpdatedAt(updatedAt time.Time) TaskDefinitionInterface {
-	o.UpdatedAtField.UpdatedAt = updatedAt
+	o.UpdatedAtField = updatedAt
 	return o
 }
