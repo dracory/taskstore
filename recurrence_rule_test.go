@@ -243,6 +243,34 @@ func TestNextRunAt(t *testing.T) {
 		// 	now:      carbon.Parse("2024-10-28T11:00:00Z", carbon.UTC),
 		// 	expected: carbon.Parse("2024-10-28T12:00:00Z", carbon.UTC),
 		// },
+		//
+		// Regression: previously NextRunAt created the rrule with Count:100,
+		// which exhausted after 100 occurrences. After that, UpdateNextRunAt
+		// silently kept the old (past) next_run_at and the schedule fired on
+		// every runner tick. This test places `now` 200 occurrences after the
+		// start — well past the old 100-occurrence limit.
+		//
+		{
+			name: "Minutely recurrence beyond 100 occurrences (regression)",
+			rule: NewRecurrenceRule().
+				SetFrequency(FrequencyMinutely).
+				SetStartsAt("2024-01-01T00:00:00Z").
+				SetInterval(5),
+			// 200 * 5 min = 1000 min ≈ 16h40m after start
+			now:      carbon.Parse("2024-01-01T16:40:00Z", carbon.UTC),
+			expected: carbon.Parse("2024-01-01T16:45:00Z", carbon.UTC),
+		},
+		{
+			name: "Minutely recurrence beyond 100 occurrences - 15min interval (regression)",
+			rule: NewRecurrenceRule().
+				SetFrequency(FrequencyMinutely).
+				SetStartsAt("2024-01-01T00:00:00Z").
+				SetInterval(15),
+			// 200 * 15 min = 3000 min = 50h after start; 02:00 is an exact
+			// occurrence so After(now, false) returns the next one at 02:15
+			now:      carbon.Parse("2024-01-03T02:00:00Z", carbon.UTC),
+			expected: carbon.Parse("2024-01-03T02:15:00Z", carbon.UTC),
+		},
 	}
 
 	for _, tc := range testCases {

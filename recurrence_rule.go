@@ -129,10 +129,13 @@ func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon
 
 	freq := frequencyToRRuleFrequency(rule.GetFrequency())
 
+	// Count is intentionally left at 0 (infinite). A non-zero Count limits
+	// the rrule to that many total occurrences from Dtstart; once exhausted,
+	// After() returns a zero time, UpdateNextRunAt() silently keeps the old
+	// (past) next_run_at, and the schedule fires on every runner tick.
 	r, err := rrule.NewRRule(rrule.ROption{
 		Freq:     freq,
 		Interval: rule.GetInterval(),
-		Count:    100,
 		Dtstart:  startsAt.StdTime(),
 	})
 
@@ -140,13 +143,21 @@ func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon
 		return nil, err
 	}
 
-	times := r.Between(now.StdTime(), endsAt.StdTime(), true)
+	// After() with inc=false returns the first occurrence strictly after now.
+	// It is more efficient than Between() because it stops at the first match
+	// instead of collecting all occurrences up to endsAt.
+	next := r.After(now.StdTime(), false)
 
-	if len(times) == 0 {
+	if next.IsZero() {
 		return nil, fmt.Errorf("no more runs")
 	}
 
-	return carbon.Parse(times[0].String(), carbon.UTC), nil
+	// Honour the rule's end time even though the rrule itself is infinite.
+	if next.After(endsAt.StdTime()) {
+		return nil, fmt.Errorf("no more runs")
+	}
+
+	return carbon.CreateFromStdTime(next), nil
 }
 
 func frequencyToRRuleFrequency(frequency Frequency) rrule.Frequency {
