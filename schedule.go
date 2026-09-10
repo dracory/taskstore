@@ -537,10 +537,24 @@ func (s *scheduleImplementation) IncrementExecutionCount() ScheduleInterface {
 	return s
 }
 
-// UpdateNextRunAt calculates the next run at of the schedule and updates it
+// UpdateNextRunAt calculates the next run at of the schedule and updates it.
+//
+// Business Logic:
+//  1. Ask the recurrence rule for the next occurrence via GetNextOccurrence.
+//  2. If a valid time is returned, store it in NextRunAtField.
+//  3. If any error is returned (ErrNoMoreRuns or other), set NextRunAtField
+//     to MAX_DATETIME. This prevents repeated firing: without this, a
+//     stale past NextRunAt would make IsDue() return true on every tick.
+//     - ErrNoMoreRuns: the schedule is exhausted (no more occurrences).
+//     - Other errors (e.g. "interval must be positive"): the rule is
+//     misconfigured. Setting MAX_DATETIME stops the bleeding; the runner
+//     marks the schedule "completed".
+//  4. NULL_DATETIME is never set here — it is reserved for "not yet
+//     initialized", so the two states remain unambiguous.
 func (s *scheduleImplementation) UpdateNextRunAt() ScheduleInterface {
 	nextRunAt, err := s.GetNextOccurrence()
 	if err != nil {
+		s.NextRunAtField = MAX_DATETIME
 		return s
 	}
 	s.NextRunAtField = nextRunAt
@@ -553,7 +567,18 @@ func (s *scheduleImplementation) UpdateLastRunAt() ScheduleInterface {
 	return s
 }
 
-// IsDue returns true if the schedule is due to run
+// IsDue returns true if the schedule is due to run.
+//
+// Business Logic:
+//  1. If status is not "active", return false (draft/completed/paused
+//     schedules never fire).
+//  2. If HasReachedEndDate or HasReachedMaxExecutions, return false.
+//  3. If NextRunAt is NULL_DATETIME ("not yet initialized"), return false —
+//     the runner needs to calculate the first run time first.
+//  4. If NextRunAt is MAX_DATETIME ("exhausted"), return false — the
+//     recurrence rule has no more occurrences; the runner marks the
+//     schedule "completed".
+//  5. Otherwise, the schedule is due if now >= NextRunAt.
 func (s *scheduleImplementation) IsDue() bool {
 	if s.StatusField != "active" {
 		return false
@@ -567,7 +592,13 @@ func (s *scheduleImplementation) IsDue() bool {
 		return false
 	}
 
-	if s.NextRunAtField == NULL_DATETIME || s.NextRunAtField == "" {
+	if isNullDateTime(s.NextRunAtField) {
+		// Not yet initialized — needs first-run calculation.
+		return false
+	}
+
+	if isMaxDateTime(s.NextRunAtField) {
+		// Exhausted — no more occurrences.
 		return false
 	}
 

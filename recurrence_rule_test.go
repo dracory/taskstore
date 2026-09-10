@@ -13,6 +13,7 @@ func Test_frequencyToRRuleFrequency(t *testing.T) {
 		name      string
 		frequency Frequency
 		want      rrule.Frequency
+		expectErr bool
 	}{
 		{
 			name:      "secondly frequency",
@@ -50,15 +51,29 @@ func Test_frequencyToRRuleFrequency(t *testing.T) {
 			want:      rrule.YEARLY,
 		},
 		{
-			name:      "unknown frequency defaults to MAXYEAR",
+			name:      "unknown frequency returns error",
 			frequency: FrequencyNone,
 			want:      rrule.MAXYEAR,
+			expectErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := frequencyToRRuleFrequency(tt.frequency); got != tt.want {
+			got, err := frequencyToRRuleFrequency(tt.frequency)
+			if tt.expectErr {
+				if err == nil {
+					t.Fatalf("frequencyToRRuleFrequency() expected error, got nil")
+				}
+				if got != tt.want {
+					t.Errorf("frequencyToRRuleFrequency() = %v, want %v (on error path)", got, tt.want)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("frequencyToRRuleFrequency() unexpected error: %v", err)
+			}
+			if got != tt.want {
 				t.Errorf("frequencyToRRuleFrequency() = %v, want %v", got, tt.want)
 			}
 		})
@@ -232,6 +247,34 @@ func TestNextRunAt(t *testing.T) {
 			now:      carbon.Parse("2024-10-31T00:00:00Z", carbon.UTC),
 			expected: carbon.Parse("2024-11-04T10:00:00Z", carbon.UTC),
 		},
+		{
+			// Regression: Byweekday was previously not passed to rrule.
+			// Start on a Wednesday (2024-10-30) but constrain to Friday.
+			// Without Byweekday, rrule would return Wednesday (the next
+			// interval step from Dtstart). With Byweekday, it must skip
+			// to Friday.
+			name: "Weekly recurrence - Byweekday constrains to Friday from Wednesday start",
+			rule: NewRecurrenceRule().
+				SetFrequency(FrequencyWeekly).
+				SetStartsAt("2024-10-30T10:00:00Z"). // Wednesday
+				SetInterval(1).
+				SetDaysOfWeek([]DayOfWeek{DayOfWeekFriday}),
+			now:      carbon.Parse("2024-10-30T12:00:00Z", carbon.UTC), // Wednesday afternoon
+			expected: carbon.Parse("2024-11-01T10:00:00Z", carbon.UTC), // Friday
+		},
+		{
+			// Monthly recurrence with Bymonthday constraint: run on the
+			// 15th of each month. Without Bymonthday, rrule would use the
+			// day of Dtstart (the 1st). With Bymonthday, it must use the 15th.
+			name: "Monthly recurrence - Bymonthday constrains to 15th",
+			rule: NewRecurrenceRule().
+				SetFrequency(FrequencyMonthly).
+				SetStartsAt("2024-10-01T10:00:00Z").
+				SetInterval(1).
+				SetDaysOfMonth([]int{15}),
+			now:      carbon.Parse("2024-10-02T00:00:00Z", carbon.UTC),
+			expected: carbon.Parse("2024-10-15T10:00:00Z", carbon.UTC),
+		},
 		// {
 		// 	name: "Ends at is before the next run - same day",
 		// 	rule: NewRecurrenceRule().
@@ -270,6 +313,39 @@ func TestNextRunAt(t *testing.T) {
 			// occurrence so After(now, false) returns the next one at 02:15
 			now:      carbon.Parse("2024-01-03T02:00:00Z", carbon.UTC),
 			expected: carbon.Parse("2024-01-03T02:15:00Z", carbon.UTC),
+		},
+		{
+			// Regression: FrequencyNone with a past start time should
+			// return ErrNoMoreRuns, not the past startsAt (which would
+			// cause IsDue() to return true on every tick).
+			name: "FrequencyNone with past startsAt returns no more runs",
+			rule: NewRecurrenceRule().
+				SetFrequency(FrequencyNone).
+				SetStartsAt("2024-01-01T00:00:00Z").
+				SetInterval(1),
+			now:         carbon.Parse("2024-06-01T00:00:00Z", carbon.UTC),
+			expectedErr: "no more runs",
+		},
+		{
+			// FrequencyNone with a future startsAt should return startsAt.
+			name: "FrequencyNone with future startsAt returns startsAt",
+			rule: NewRecurrenceRule().
+				SetFrequency(FrequencyNone).
+				SetStartsAt("2024-12-01T00:00:00Z").
+				SetInterval(1),
+			now:      carbon.Parse("2024-06-01T00:00:00Z", carbon.UTC),
+			expected: carbon.Parse("2024-12-01T00:00:00Z", carbon.UTC),
+		},
+		{
+			// Expired endsAt should return ErrNoMoreRuns.
+			name: "Expired endsAt returns no more runs",
+			rule: NewRecurrenceRule().
+				SetFrequency(FrequencyDaily).
+				SetStartsAt("2024-01-01T00:00:00Z").
+				SetEndsAt("2024-01-31T23:59:59Z").
+				SetInterval(1),
+			now:         carbon.Parse("2024-06-01T00:00:00Z", carbon.UTC),
+			expectedErr: "no more runs",
 		},
 	}
 

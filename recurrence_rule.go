@@ -102,17 +102,37 @@ type RecurrenceRuleInterface interface {
 	SetMonthsOfYear([]MonthOfYear) RecurrenceRuleInterface
 }
 
+// ErrNoMoreRuns is returned by NextRunAt when a recurrence rule has no more
+// occurrences in the future. Callers (e.g. UpdateNextRunAt) use this sentinel
+// to distinguish "schedule is done" from transient errors, and set
+// NextRunAtField to MAX_DATETIME so IsDue() returns false and the runner
+// marks the schedule "completed".
+var ErrNoMoreRuns = fmt.Errorf("no more runs")
+
 // NextRunAt calculates the next time a recurrence rule should run, given the
-// current time. It respects the rule's start and end times, interval and
-// frequency, and returns an error if no further runs exist.
+// current time.
+//
+// Business Logic:
+//  1. If now is past endsAt, return ErrNoMoreRuns — the schedule's end time
+//     has passed.
+//  2. If interval is not positive, return an error — the rule is invalid.
+//  3. If now is before startsAt, return startsAt — the first run hasn't
+//     happened yet.
+//  4. If frequency is FrequencyNone (one-time schedule) and now >= startsAt,
+//     return ErrNoMoreRuns — the single run has already passed.
+//  5. Otherwise, build an rrule and ask it for the first occurrence strictly
+//     after now. If none exists (rrule exhausted or next exceeds endsAt),
+//     return ErrNoMoreRuns.
+//  6. This function never returns MAX_DATETIME — that is a storage-layer
+//     sentinel. UpdateNextRunAt translates ErrNoMoreRuns into MAX_DATETIME.
 func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon, error) {
 	startsAt := parseDateTime(rule.GetStartsAt())
 
 	endsAt := parseDateTime(rule.GetEndsAt())
 
-	// If end time has passed, return max datetime to indicate no more runs
+	// If end time has passed, no more runs.
 	if now.Gt(endsAt) {
-		return carbon.Parse(MAX_DATETIME, carbon.UTC), nil
+		return nil, ErrNoMoreRuns
 	}
 
 	if interval := rule.GetInterval(); interval <= 0 {
@@ -124,19 +144,31 @@ func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon
 	}
 
 	if rule.GetFrequency() == FrequencyNone {
+		// One-time schedule: if the start time has already passed, there
+		// are no more runs. Returning startsAt here would cause IsDue() to
+		// return true on every tick, firing the schedule repeatedly.
+		if now.Gte(startsAt) {
+			return nil, ErrNoMoreRuns
+		}
 		return startsAt, nil
 	}
 
-	freq := frequencyToRRuleFrequency(rule.GetFrequency())
+	freq, err := frequencyToRRuleFrequency(rule.GetFrequency())
+	if err != nil {
+		return nil, err
+	}
 
 	// Count is intentionally left at 0 (infinite). A non-zero Count limits
 	// the rrule to that many total occurrences from Dtstart; once exhausted,
 	// After() returns a zero time, UpdateNextRunAt() silently keeps the old
 	// (past) next_run_at, and the schedule fires on every runner tick.
 	r, err := rrule.NewRRule(rrule.ROption{
-		Freq:     freq,
-		Interval: rule.GetInterval(),
-		Dtstart:  startsAt.StdTime(),
+		Freq:       freq,
+		Interval:   rule.GetInterval(),
+		Dtstart:    startsAt.StdTime(),
+		Byweekday:  daysOfWeekToRRuleWeekdays(rule.GetDaysOfWeek()),
+		Bymonthday: rule.GetDaysOfMonth(),
+		Bymonth:    monthsOfYearToRRuleMonths(rule.GetMonthsOfYear()),
 	})
 
 	if err != nil {
@@ -149,36 +181,118 @@ func NextRunAt(rule RecurrenceRuleInterface, now *carbon.Carbon) (*carbon.Carbon
 	next := r.After(now.StdTime(), false)
 
 	if next.IsZero() {
-		return nil, fmt.Errorf("no more runs")
+		return nil, ErrNoMoreRuns
 	}
 
 	// Honour the rule's end time even though the rrule itself is infinite.
 	if next.After(endsAt.StdTime()) {
-		return nil, fmt.Errorf("no more runs")
+		return nil, ErrNoMoreRuns
 	}
 
 	return carbon.CreateFromStdTime(next), nil
 }
 
-func frequencyToRRuleFrequency(frequency Frequency) rrule.Frequency {
+func frequencyToRRuleFrequency(frequency Frequency) (rrule.Frequency, error) {
 	switch frequency {
 	case FrequencySecondly:
-		return rrule.SECONDLY
+		return rrule.SECONDLY, nil
 	case FrequencyMinutely:
-		return rrule.MINUTELY
+		return rrule.MINUTELY, nil
 	case FrequencyHourly:
-		return rrule.HOURLY
+		return rrule.HOURLY, nil
 	case FrequencyDaily:
-		return rrule.DAILY
+		return rrule.DAILY, nil
 	case FrequencyWeekly:
-		return rrule.WEEKLY
+		return rrule.WEEKLY, nil
 	case FrequencyMonthly:
-		return rrule.MONTHLY
+		return rrule.MONTHLY, nil
 	case FrequencyYearly:
-		return rrule.YEARLY
+		return rrule.YEARLY, nil
 	default:
-		return rrule.MAXYEAR
+		return rrule.MAXYEAR, fmt.Errorf("unknown frequency: %s", frequency)
 	}
+}
+
+// dayOfWeekToRRuleWeekday converts a DayOfWeek string to the corresponding
+// rrule.Weekday constant. Returns ok=false for unknown day names.
+func dayOfWeekToRRuleWeekday(d DayOfWeek) (rrule.Weekday, bool) {
+	switch d {
+	case DayOfWeekMonday:
+		return rrule.MO, true
+	case DayOfWeekTuesday:
+		return rrule.TU, true
+	case DayOfWeekWednesday:
+		return rrule.WE, true
+	case DayOfWeekThursday:
+		return rrule.TH, true
+	case DayOfWeekFriday:
+		return rrule.FR, true
+	case DayOfWeekSaturday:
+		return rrule.SA, true
+	case DayOfWeekSunday:
+		return rrule.SU, true
+	default:
+		return rrule.Weekday{}, false
+	}
+}
+
+// daysOfWeekToRRuleWeekdays converts a slice of DayOfWeek strings to rrule
+// Weekday values. Unknown day names are silently skipped.
+func daysOfWeekToRRuleWeekdays(days []DayOfWeek) []rrule.Weekday {
+	if len(days) == 0 {
+		return nil
+	}
+	result := make([]rrule.Weekday, 0, len(days))
+	for _, d := range days {
+		if wd, ok := dayOfWeekToRRuleWeekday(d); ok {
+			result = append(result, wd)
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
+}
+
+// monthsOfYearToRRuleMonths converts a slice of MonthOfYear strings to rrule
+// month numbers (1=January … 12=December). Unknown month names are skipped.
+func monthsOfYearToRRuleMonths(months []MonthOfYear) []int {
+	if len(months) == 0 {
+		return nil
+	}
+	result := make([]int, 0, len(months))
+	for _, m := range months {
+		switch m {
+		case MonthOfYearJanuary:
+			result = append(result, 1)
+		case MonthOfYearFebruary:
+			result = append(result, 2)
+		case MonthOfYearMarch:
+			result = append(result, 3)
+		case MonthOfYearApril:
+			result = append(result, 4)
+		case MonthOfYearMay:
+			result = append(result, 5)
+		case MonthOfYearJune:
+			result = append(result, 6)
+		case MonthOfYearJuly:
+			result = append(result, 7)
+		case MonthOfYearAugust:
+			result = append(result, 8)
+		case MonthOfYearSeptember:
+			result = append(result, 9)
+		case MonthOfYearOctober:
+			result = append(result, 10)
+		case MonthOfYearNovember:
+			result = append(result, 11)
+		case MonthOfYearDecember:
+			result = append(result, 12)
+		}
+	}
+	if len(result) == 0 {
+		return nil
+	}
+	return result
 }
 
 // parseDateTime parses a UTC datetime string into a carbon instance.
@@ -298,17 +412,18 @@ func (r *recurrenceRule) String() string {
 		r.frequency, r.startsAt, r.endsAt, r.interval, r.daysOfWeek, r.daysOfMonth, r.monthsOfYear)
 }
 
-// Clone creates a shallow copy of the recurrence rule.
+// Clone creates a deep copy of the recurrence rule.
 func (r *recurrenceRule) Clone() RecurrenceRuleInterface {
-	return &recurrenceRule{
+	clone := &recurrenceRule{
 		frequency:    r.frequency,
 		startsAt:     r.startsAt,
 		endsAt:       r.endsAt,
 		interval:     r.interval,
-		daysOfWeek:   r.daysOfWeek,
-		daysOfMonth:  r.daysOfMonth,
-		monthsOfYear: r.monthsOfYear,
+		daysOfWeek:   append([]DayOfWeek(nil), r.daysOfWeek...),
+		daysOfMonth:  append([]int(nil), r.daysOfMonth...),
+		monthsOfYear: append([]MonthOfYear(nil), r.monthsOfYear...),
 	}
+	return clone
 }
 
 // MarshalJSON serializes the recurrence rule into JSON.
