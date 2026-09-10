@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/dromara/carbon/v2"
 )
 
 func Test_Store_TaskQueueCount(t *testing.T) {
@@ -393,6 +395,59 @@ func TestQueuedTaskForceFail_WithNullDateTime(t *testing.T) {
 			t.Errorf("Expected status to remain 'queued', got '%s'", queue.GetStatus())
 		}
 	})
+}
+
+// TestQueuedTaskForceFail_WithinTimeout verifies that a task that has been
+// running for LESS than waitMinutes is NOT force-failed. This is the core
+// contract of the timeout: only tasks that exceed their allotted runtime
+// should be marked as failed.
+func TestQueuedTaskForceFail_WithinTimeout(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("Failed to create test store: %v", err)
+	}
+
+	// Task started 30 seconds ago — well within a 2-minute threshold
+	queue := NewTaskQueue()
+	queue.SetTaskID("test-task-within-timeout")
+	queue.SetStatus(TaskQueueStatusRunning)
+	queue.SetStartedAt(carbon.Now(carbon.UTC).AddSeconds(-30).StdTime())
+
+	err = store.QueuedTaskForceFail(context.Background(), queue, 2)
+	if err != nil {
+		t.Fatalf("QueuedTaskForceFail returned error: %v", err)
+	}
+
+	if queue.GetStatus() != TaskQueueStatusRunning {
+		t.Errorf("Task started 30s ago with 2min timeout should NOT be force-failed. "+
+			"Expected status 'running', got '%s'. Details: %s",
+			queue.GetStatus(), queue.GetDetails())
+	}
+}
+
+// TestQueuedTaskForceFail_ExceedsTimeout verifies that a task that HAS been
+// running longer than waitMinutes IS force-failed.
+func TestQueuedTaskForceFail_ExceedsTimeout(t *testing.T) {
+	store, err := initStore()
+	if err != nil {
+		t.Fatalf("Failed to create test store: %v", err)
+	}
+
+	// Task started 5 minutes ago — exceeds the 2-minute threshold
+	queue := NewTaskQueue()
+	queue.SetTaskID("test-task-exceeds-timeout")
+	queue.SetStatus(TaskQueueStatusRunning)
+	queue.SetStartedAt(carbon.Now(carbon.UTC).AddMinutes(-5).StdTime())
+
+	err = store.QueuedTaskForceFail(context.Background(), queue, 2)
+	if err != nil {
+		t.Fatalf("QueuedTaskForceFail returned error: %v", err)
+	}
+
+	if queue.GetStatus() != TaskQueueStatusFailed {
+		t.Errorf("Task started 5min ago with 2min timeout SHOULD be force-failed. "+
+			"Expected status 'failed', got '%s'", queue.GetStatus())
+	}
 }
 
 func Test_Store_TaskQueueProcessNextByQueue(t *testing.T) {

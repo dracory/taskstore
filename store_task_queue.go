@@ -293,7 +293,7 @@ func (store *Store) QueuedTaskForceFail(ctx context.Context, queuedTask TaskQueu
 	if startedAt.IsZero() {
 		return nil
 	}
-	minutes := -1 * waitMinutes
+	minutes := waitMinutes
 	waitTill := queuedTask.GetStartedAtCarbon().AddMinutes(minutes)
 	isOvertime := carbon.Now(carbon.UTC).Gt(waitTill)
 	if isOvertime {
