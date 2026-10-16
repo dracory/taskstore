@@ -3,9 +3,10 @@ package taskstore
 import (
 	"time"
 
+	"uuid"
+
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
-	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
@@ -116,7 +117,7 @@ type TaskDefinitionQueryInterface interface {
 // == TYPE ====================================================================
 
 type taskDefinition struct {
-	orm.ShortID
+	orm.StringID
 
 	StatusField         string `db:"status"`
 	AliasField          string `db:"alias"`
@@ -137,7 +138,7 @@ var _ TaskDefinitionInterface = (*taskDefinition)(nil)
 
 func NewTaskDefinition() TaskDefinitionInterface {
 	o := &taskDefinition{}
-	o.SetID(neatuid.GenerateShortID()).
+	o.SetID(uuid.NewV7().String()).
 		SetStatus(TaskDefinitionStatusActive).
 		SetAlias("").
 		SetTitle("").
@@ -222,11 +223,11 @@ func (o *taskDefinition) SetDescription(description string) TaskDefinitionInterf
 }
 
 func (o *taskDefinition) GetID() string {
-	return o.ShortID.ID
+	return o.StringID.ID
 }
 
 func (o *taskDefinition) SetID(id string) TaskDefinitionInterface {
-	o.ShortID.ID = id
+	o.StringID.ID = id
 	return o
 }
 

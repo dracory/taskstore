@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
+	"uuid"
+
 	contractsorm "github.com/dracory/neat/contracts/database/orm"
-	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
@@ -31,7 +32,7 @@ func (store *Store) TaskQueueCreate(ctx context.Context, queue TaskQueueInterfac
 	}
 	if queue.GetID() == "" {
 		time.Sleep(1 * time.Millisecond) // !!! important
-		queue.SetID(neatuid.GenerateShortID())
+		queue.SetID(uuid.NewV7().String())
 	}
 	if queue.GetCreatedAt().IsZero() {
 		queue.SetCreatedAt(carbon.Now(carbon.UTC).StdTime())
@@ -210,7 +211,7 @@ func (store *Store) TaskQueueClaimNext(ctx context.Context, queueName string) (T
 
 	now := carbon.Now(carbon.UTC)
 	_, err = tx.Table(store.taskQueueTableName).
-		Where(COLUMN_ID+" = ?", task.ShortID.ID).
+		Where(COLUMN_ID+" = ?", task.StringID.ID).
 		Update(map[string]any{
 			COLUMN_STATUS:     TaskQueueStatusRunning,
 			COLUMN_STARTED_AT: now.ToDateTimeString(carbon.UTC),
