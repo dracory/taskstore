@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"uuid"
+
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
-	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 )
 
@@ -210,7 +211,7 @@ type ScheduleQueryInterface interface {
 // scheduleImplementation is the concrete implementation of ScheduleInterface.
 // It stores all schedule fields including timing, recurrence, and metadata.
 type scheduleImplementation struct {
-	orm.ShortID
+	orm.StringID
 
 	NameField              string `db:"name"`
 	DescriptionField       string `db:"description"`
@@ -239,7 +240,7 @@ var _ ScheduleInterface = (*scheduleImplementation)(nil)
 // NewSchedule creates a new schedule with default values and a new recurrence rule.
 func NewSchedule() ScheduleInterface {
 	o := &scheduleImplementation{}
-	o.SetID(neatuid.GenerateShortID())
+	o.SetID(uuid.NewV7().String())
 	o.SetStatus("draft")
 	o.SetRecurrenceRule(NewRecurrenceRule())
 	o.SetStartAt(NULL_DATETIME)
@@ -256,12 +257,12 @@ func NewSchedule() ScheduleInterface {
 
 // GetID returns the unique identifier of the schedule.
 func (s *scheduleImplementation) GetID() string {
-	return s.ShortID.ID
+	return s.StringID.ID
 }
 
 // SetID sets the unique identifier of the schedule.
 func (s *scheduleImplementation) SetID(id string) ScheduleInterface {
-	s.ShortID.ID = id
+	s.StringID.ID = id
 	return s
 }
 

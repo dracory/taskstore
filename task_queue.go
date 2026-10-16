@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"time"
 
+	"uuid"
+
 	"github.com/dracory/neat/database/orm"
 	"github.com/dracory/neat/database/soft_delete"
-	neatuid "github.com/dracory/neat/support/uid"
 	"github.com/dromara/carbon/v2"
 	"github.com/spf13/cast"
 )
@@ -74,7 +75,7 @@ type TaskQueueInterface interface {
 // == TYPE =====================================================================
 
 type taskQueue struct {
-	orm.ShortID
+	orm.StringID
 
 	QueueNameField   string    `db:"queue_name"`
 	TaskIDField      string    `db:"task_id"`
@@ -105,7 +106,7 @@ func NewTaskQueue(queueName ...string) TaskQueueInterface {
 
 	o := &taskQueue{}
 
-	o.SetID(neatuid.GenerateShortID()).
+	o.SetID(uuid.NewV7().String()).
 		SetStatus(TaskQueueStatusQueued).
 		SetQueueName(name).
 		SetAttempts(0).
@@ -251,11 +252,11 @@ func (o *taskQueue) SetQueueName(queueName string) TaskQueueInterface {
 }
 
 func (o *taskQueue) GetID() string {
-	return o.ShortID.ID
+	return o.StringID.ID
 }
 
 func (o *taskQueue) SetID(id string) TaskQueueInterface {
-	o.ShortID.ID = id
+	o.StringID.ID = id
 	return o
 }
 
