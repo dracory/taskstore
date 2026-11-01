@@ -26,7 +26,7 @@ type homeController struct {
 func (c *homeController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, errorMessage := c.prepareData(r)
 
-	c.layout.SetTitle("Dashboard | Zeppelin")
+	c.layout.SetTitle("Dashboard | Tasks")
 
 	if errorMessage != "" {
 		c.layout.SetBody(hb.Div().
@@ -72,7 +72,7 @@ func (controller *homeController) page(data homeControllerData) hb.TagInterface 
 	})
 
 	title := hb.Heading1().
-		HTML("Zeppelin. Dashboard")
+		HTML("Dashboard")
 
 	return hb.Div().
 		Class("container").

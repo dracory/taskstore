@@ -36,7 +36,7 @@ type taskQueueManagerController struct {
 func (c *taskQueueManagerController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, errorMessage := c.prepareData(r)
 
-	c.layout.SetTitle("Queue Manager | Zeppelin")
+	c.layout.SetTitle("Queue Manager | Tasks")
 
 	if errorMessage != "" {
 		c.layout.SetBody(hb.Div().
@@ -237,7 +237,7 @@ func (controller *taskQueueManagerController) page(data *taskQueueManagerControl
 		HxSwap("beforeend")
 
 	title := hb.Heading1().
-		HTML("Zeppelin. Queue Manager").
+		HTML("Queue Manager").
 		Child(buttonQueueCreate)
 
 	return hb.Div().

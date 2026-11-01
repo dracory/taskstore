@@ -34,7 +34,7 @@ type taskDefinitionManagerController struct {
 func (c *taskDefinitionManagerController) ToTag(w http.ResponseWriter, r *http.Request) hb.TagInterface {
 	data, errorMessage := c.prepareData(r)
 
-	c.layout.SetTitle("Task Manager | Zeppelin")
+	c.layout.SetTitle("Task Manager | Tasks")
 
 	if errorMessage != "" {
 		c.layout.SetBody(hb.Div().
@@ -86,7 +86,7 @@ func (controller *taskDefinitionManagerController) page(data *taskDefinitionMana
 		HxSwap("beforeend")
 
 	title := hb.Heading1().
-		HTML("Zeppelin. Task Manager").
+		HTML("Task Manager").
 		Child(buttonTaskCreate)
 
 	return hb.Div().

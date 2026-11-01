@@ -77,7 +77,7 @@ func breadcrumbs(r *http.Request, pageBreadcrumbs []Breadcrumb) hb.TagInterface 
 	breadcrumbItems := []Breadcrumb{
 		adminHomeBreadcrumb,
 		{
-			Name: "Zeppelin",
+			Name: "Tasks",
 			URL:  url(r, pathHome, nil),
 		},
 	}
