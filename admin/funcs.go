@@ -15,19 +15,6 @@ import (
 )
 
 func adminHeader(store taskstore.StoreInterface, logger *slog.Logger, r *http.Request) hb.TagInterface {
-	linkHome := hb.NewHyperlink().
-		HTML("Dashboard").
-		Href(url(r, pathHome, nil)).
-		Class("nav-link")
-	linkQueue := hb.Hyperlink().
-		HTML("Task Queue").
-		Href(url(r, pathTaskQueueManager, nil)).
-		Class("nav-link")
-	linkTasks := hb.Hyperlink().
-		HTML("Task Definitions").
-		Href(url(r, pathTaskDefinitionManager, nil)).
-		Class("nav-link")
-
 	queueCount, err := store.TaskQueueCount(context.Background(), taskstore.TaskQueueQuery())
 
 	if err != nil {
@@ -42,26 +29,45 @@ func adminHeader(store taskstore.StoreInterface, logger *slog.Logger, r *http.Re
 		taskCount = -1
 	}
 
-	ulNav := hb.NewUL().Class("nav  nav-pills justify-content-center")
-	ulNav.AddChild(hb.NewLI().Class("nav-item").Child(linkHome))
+	active := r.URL.Query().Get("controller")
+	if active == "" {
+		active = pathHome
+	}
 
-	ulNav.Child(hb.LI().
-		Class("nav-item").
-		Child(linkQueue.
-			Child(hb.Span().
+	tab := func(label, path, key string, count int64) hb.TagInterface {
+		class := "nav-link"
+		if key == active {
+			class += " active"
+		}
+		link := hb.Hyperlink().
+			HTML(label).
+			Href(url(r, path, nil)).
+			Class(class)
+		if count >= 0 {
+			link.Child(hb.Span().
 				Class("badge bg-secondary ms-2").
-				HTML(cast.ToString(queueCount)))))
+				HTML(cast.ToString(count)))
+		}
+		return hb.LI().Class("nav-item").Child(link)
+	}
 
-	ulNav.Child(hb.LI().
-		Class("nav-item").
-		Child(linkTasks.
-			Child(hb.Span().
-				Class("badge bg-secondary ms-2").
-				HTML(cast.ToString(taskCount)))))
+	return hb.UL().Class("nav nav-tabs mb-3").Children([]hb.TagInterface{
+		tab("Dashboard", pathHome, pathHome, -1),
+		tab("Task Queue", pathTaskQueueManager, pathTaskQueueManager, queueCount),
+		tab("Task Definitions", pathTaskDefinitionManager, pathTaskDefinitionManager, taskCount),
+	})
+}
 
-	divCard := hb.NewDiv().Class("card card-default mt-3 mb-3")
-	divCardBody := hb.NewDiv().Class("card-body").Style("padding: 2px;")
-	return divCard.AddChild(divCardBody.AddChild(ulNav))
+// pageHeader renders the page heading with optional right-aligned action
+// buttons, matching the admin section pattern (breadcrumb + H2 + actions).
+func pageHeader(title string, actions ...hb.TagInterface) hb.TagInterface {
+	header := hb.Div().
+		Class("d-flex justify-content-between align-items-center mb-3").
+		Child(hb.H2().Text(title).Class("mb-0"))
+	if len(actions) > 0 {
+		header.Child(hb.Div().Class("d-flex gap-2 align-items-center").Children(actions))
+	}
+	return header
 }
 
 func breadcrumbs(r *http.Request, pageBreadcrumbs []Breadcrumb) hb.TagInterface {
@@ -84,10 +90,7 @@ func breadcrumbs(r *http.Request, pageBreadcrumbs []Breadcrumb) hb.TagInterface 
 
 	breadcrumbItems = append(breadcrumbItems, pageBreadcrumbs...)
 
-	breadcrumbs := breadcrumbsUI(breadcrumbItems)
-
-	return hb.Div().
-		Child(breadcrumbs)
+	return breadcrumbsUI(breadcrumbItems)
 }
 
 func url(r *http.Request, path string, params map[string]string) string {
@@ -131,7 +134,7 @@ func breadcrumbsUI(breadcrumbs []Breadcrumb) hb.TagInterface {
 
 	ol := hb.OL().
 		Class("breadcrumb").
-		Style("margin-bottom: 0px;")
+		Style("border:none;")
 
 	for _, breadcrumb := range breadcrumbs {
 
@@ -147,7 +150,6 @@ func breadcrumbsUI(breadcrumbs []Breadcrumb) hb.TagInterface {
 	}
 
 	nav := hb.Nav().
-		Class("d-inline-block").
 		Attr("aria-label", "breadcrumb").
 		Child(ol)
 

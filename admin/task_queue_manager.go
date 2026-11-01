@@ -224,29 +224,23 @@ func (controller *taskQueueManagerController) page(data *taskQueueManagerControl
 	breadcrumbs := breadcrumbs(data.request, []Breadcrumb{
 		{
 			Name: "Queue Manager",
-			URL:  url(data.request, pathTaskQueueManager, map[string]string{}),
+			URL:  "",
 		},
 	})
 
 	buttonQueueCreate := hb.Button().
-		Class("btn btn-primary float-end").
-		Child(hb.I().Class("bi bi-plus-circle").Style("margin-top:-4px;margin-right:8px;font-size:16px;")).
+		Class("btn btn-primary btn-sm").
+		Child(hb.I().Class("bi bi-plus-circle me-1")).
 		HTML("New Task to Queue").
 		HxGet(url(data.request, pathTaskQueueCreate, map[string]string{})).
 		HxTarget("body").
 		HxSwap("beforeend")
 
-	title := hb.Heading1().
-		HTML("Queue Manager").
-		Child(buttonQueueCreate)
-
 	return hb.Div().
-		Class("container").
+		Class("container py-4").
 		Child(breadcrumbs).
-		Child(hb.HR()).
+		Child(pageHeader("Queue Manager", buttonQueueCreate)).
 		Child(adminHeader).
-		Child(hb.HR()).
-		Child(title).
 		Child(controller.tableRecords(data))
 }
 

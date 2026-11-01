@@ -73,29 +73,23 @@ func (controller *taskDefinitionManagerController) page(data *taskDefinitionMana
 	breadcrumbs := breadcrumbs(data.request, []Breadcrumb{
 		{
 			Name: "Task Manager",
-			URL:  url(data.request, pathTaskDefinitionManager, map[string]string{}),
+			URL:  "",
 		},
 	})
 
 	buttonTaskCreate := hb.Button().
-		Class("btn btn-primary float-end").
-		Child(hb.I().Class("bi bi-plus-circle").Style("margin-top:-4px;margin-right:8px;font-size:16px;")).
+		Class("btn btn-primary btn-sm").
+		Child(hb.I().Class("bi bi-plus-circle me-1")).
 		HTML("New Task").
 		HxGet(url(data.request, pathTaskDefinitionCreate, nil)).
 		HxTarget("body").
 		HxSwap("beforeend")
 
-	title := hb.Heading1().
-		HTML("Task Manager").
-		Child(buttonTaskCreate)
-
 	return hb.Div().
-		Class("container").
+		Class("container py-4").
 		Child(breadcrumbs).
-		Child(hb.HR()).
+		Child(pageHeader("Task Manager", buttonTaskCreate)).
 		Child(adminHeader).
-		Child(hb.HR()).
-		Child(title).
 		Child(controller.tableRecords(data))
 }
 

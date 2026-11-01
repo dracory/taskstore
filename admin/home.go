@@ -67,20 +67,15 @@ func (controller *homeController) page(data homeControllerData) hb.TagInterface 
 	breadcrumbs := breadcrumbs(data.request, []Breadcrumb{
 		{
 			Name: "Dashboard",
-			URL:  url(data.request, pathHome, map[string]string{}),
+			URL:  "",
 		},
 	})
 
-	title := hb.Heading1().
-		HTML("Dashboard")
-
 	return hb.Div().
-		Class("container").
+		Class("container py-4").
 		Child(breadcrumbs).
-		Child(hb.HR()).
-		Child(adminHeader).
-		Child(hb.HR()).
-		Child(title)
+		Child(pageHeader("Dashboard")).
+		Child(adminHeader)
 }
 
 func (controller *homeController) prepareData(r *http.Request) (data homeControllerData, errorMessage string) {
