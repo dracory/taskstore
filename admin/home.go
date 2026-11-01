@@ -74,7 +74,7 @@ func (controller *homeController) page(data homeControllerData) hb.TagInterface 
 	return hb.Div().
 		Class("container py-4").
 		Child(breadcrumbs).
-		Child(pageHeader("Dashboard")).
+		Child(pageHeader("Tasks. Dashboard")).
 		Child(adminHeader)
 }
 

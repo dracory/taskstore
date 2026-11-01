@@ -88,7 +88,7 @@ func (controller *taskDefinitionManagerController) page(data *taskDefinitionMana
 	return hb.Div().
 		Class("container py-4").
 		Child(breadcrumbs).
-		Child(pageHeader("Task Manager", buttonTaskCreate)).
+		Child(pageHeader("Tasks. Task Manager", buttonTaskCreate)).
 		Child(adminHeader).
 		Child(controller.tableRecords(data))
 }

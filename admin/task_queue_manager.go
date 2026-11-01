@@ -239,7 +239,7 @@ func (controller *taskQueueManagerController) page(data *taskQueueManagerControl
 	return hb.Div().
 		Class("container py-4").
 		Child(breadcrumbs).
-		Child(pageHeader("Queue Manager", buttonQueueCreate)).
+		Child(pageHeader("Tasks. Queue Manager", buttonQueueCreate)).
 		Child(adminHeader).
 		Child(controller.tableRecords(data))
 }
