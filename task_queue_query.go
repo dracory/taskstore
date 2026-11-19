@@ -162,6 +162,19 @@ func (q *taskQueueQuery) SetTaskID(taskID string) TaskQueueQueryInterface {
 	return q
 }
 
+func (q *taskQueueQuery) HasTaskIDIn() bool {
+	return q.hasProperty("task_id_in")
+}
+
+func (q *taskQueueQuery) TaskIDIn() []string {
+	return q.properties["task_id_in"].([]string)
+}
+
+func (q *taskQueueQuery) SetTaskIDIn(taskIDIn []string) TaskQueueQueryInterface {
+	q.properties["task_id_in"] = taskIDIn
+	return q
+}
+
 func (q *taskQueueQuery) HasQueueName() bool {
 	return q.hasProperty("queue_name")
 }

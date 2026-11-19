@@ -376,6 +376,14 @@ func (store *Store) buildTaskQueueQuery(options TaskQueueQueryInterface) contrac
 		q = q.Where(COLUMN_TASK_ID+" = ?", options.TaskID())
 	}
 
+	if options.HasTaskIDIn() && len(options.TaskIDIn()) > 0 {
+		args := make([]any, len(options.TaskIDIn()))
+		for i, id := range options.TaskIDIn() {
+			args[i] = id
+		}
+		q = q.WhereIn(COLUMN_TASK_ID, args)
+	}
+
 	if options.HasQueueName() && options.QueueName() != "" {
 		q = q.Where(COLUMN_QUEUE_NAME+" = ?", options.QueueName())
 	}

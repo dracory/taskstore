@@ -58,6 +58,10 @@ type TaskQueueQueryInterface interface {
 	TaskID() string
 	SetTaskID(taskID string) TaskQueueQueryInterface
 
+	HasTaskIDIn() bool
+	TaskIDIn() []string
+	SetTaskIDIn(taskIDIn []string) TaskQueueQueryInterface
+
 	HasQueueName() bool
 	QueueName() string
 	SetQueueName(queueName string) TaskQueueQueryInterface
